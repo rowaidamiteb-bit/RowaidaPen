@@ -94,14 +94,15 @@ public class GameManager : MonoBehaviour
         else if (IsPlaying && Rowaida != null)
         {
             UpdateCheckpoint();
-            float y = Rowaida.transform.position.y;
+            // نحسب الارتفاع من جهة رويدا (في الصفحة المقلوبة "تحت" يعني فوق)
+            float h = Up * Rowaida.transform.position.y;
             // أول ما تطيح تحت أوطى صفحة نشغل صوت الخسارة، ولما تنزل أكثر تخسر قلب
-            if (!falling && y < LowestPageTop() - 1.8f)
+            if (!falling && h < LowestPageTop() - 1.8f)
             {
                 falling = true;
                 Sound.PlayLose();
             }
-            if (y < Levels.All[levelIndex].deathY) OnRowaidaFell();
+            if (h < Up * Levels.All[levelIndex].deathY) OnRowaidaFell();
         }
 
         ui.SetInk(InkMax > 0f ? Ink / InkMax : 0f);
@@ -118,11 +119,18 @@ public class GameManager : MonoBehaviour
     int checkpointPage;      // آخر صفحة وقفت عليها رويدا
     float checkpointInk;     // كمية الحبر لما وصلتها
 
+    // اتجاه "فوق" بالنسبة لرويدا (في الصفحة المقلوبة يصير تحت)
+    float Up => CurrentLevel != null && CurrentLevel.flipped ? -1f : 1f;
+
+    // السطح اللي تمشي عليه رويدا في الصفحة
+    float Surface(Block b) => b.center.y + Up * b.size.y * 0.5f;
+
+    // أوطى سطح (من جهة رويدا)
     float LowestPageTop()
     {
         float lowest = 0f;
         foreach (Block b in Levels.All[levelIndex].blocks)
-            lowest = Mathf.Min(lowest, b.center.y + b.size.y * 0.5f);
+            lowest = Mathf.Min(lowest, Up * Surface(b));
         return lowest;
     }
 
@@ -134,9 +142,10 @@ public class GameManager : MonoBehaviour
         for (int i = checkpointPage + 1; i < blocks.Count; i++)
         {
             Block b = blocks[i];
-            float top = b.center.y + b.size.y * 0.5f;
+            float top = Up * Surface(b);
             bool overPage = p.x > b.center.x - b.size.x * 0.5f + 0.3f && p.x < b.center.x + b.size.x * 0.5f;
-            bool standing = p.y > top + 0.55f && p.y < top + 0.9f;
+            float h = Up * p.y;
+            bool standing = h > top + 0.55f && h < top + 0.9f;
             if (overPage && standing)
             {
                 checkpointPage = i;
@@ -172,7 +181,7 @@ public class GameManager : MonoBehaviour
         if (checkpointPage > 0)
         {
             Block b = data.blocks[checkpointPage];
-            pos = new Vector3(b.center.x - b.size.x * 0.5f + 1f, b.center.y + b.size.y * 0.5f + 1f, 0f);
+            pos = new Vector3(b.center.x - b.size.x * 0.5f + 1f, Surface(b) + Up, 0f);
         }
         Rowaida.Respawn(pos);
         cameraFollow.SetTarget(Rowaida.transform, true);
@@ -198,6 +207,11 @@ public class GameManager : MonoBehaviour
 
         levelIndex = index;
         LevelData data = Levels.All[index];
+
+        // الجاذبية والكاميرا: في الصفحة المقلوبة الجاذبية لفوق والكاميرا تطالع من تحت
+        Physics.gravity = new Vector3(0f, data.flipped ? 9.81f : -9.81f, 0f);
+        cameraFollow.offset = new Vector3(-0.6f, data.flipped ? -2.0f : 2.0f, -7.8f);
+        cameraFollow.lookOffset = new Vector3(2f, data.flipped ? -0.7f : 0.7f, 0f);
         levelRoot = LevelBuilder.Build(data, this).transform;
         DrawingsRoot = new GameObject("Drawings").transform;
         Rowaida = levelRoot.GetComponentInChildren<RowaidaController>();

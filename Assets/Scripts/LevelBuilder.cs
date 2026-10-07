@@ -15,14 +15,46 @@ public static class LevelBuilder
     {
         var root = new GameObject("Level - " + data.title);
         var rng = new System.Random(data.title.GetHashCode());
-        for (int i = 0; i < data.blocks.Count; i++)
-            CreatePaperBlock(root.transform, data.blocks[i], gm, rng, data, i == 0);
+        if (data.eraserSpeed > 0f) BuildErasablePages(root.transform, data, gm, rng);
+        else
+            for (int i = 0; i < data.blocks.Count; i++)
+                CreatePaperBlock(root.transform, data.blocks[i], gm, rng, data, i == 0);
         if (data.bridgeHint && data.blocks.Count > 1) BridgeHint(root.transform, data.blocks[0], data.blocks[1], gm);
         foreach (HintLine h in data.hints) DashedHint(root.transform, h, gm);
-        CreateDoor(root.transform, data.door, gm);
-        CreateRowaida(root.transform, data.spawn, gm);
+        CreateDoor(root.transform, data.door, gm, data.flipped);
+        CreateRowaida(root.transform, data.spawn, gm, data.flipped);
         SpawnMonsters(root.transform, data, gm);
         return root;
+    }
+
+    // صفحة الممحاة: نقسم الصفحات عند الأماكن اللي بتنمسح، ونحط الممحاة العملاقة قدام رويدا
+    static void BuildErasablePages(Transform root, LevelData data, GameManager gm, System.Random rng)
+    {
+        GiantEraser eraser = GiantEraser.Spawn(root, new Vector3(data.spawn.x + 9f, 0f, 0f), data.door.x - 3f, data.eraserSpeed, gm);
+        bool first = true;
+        foreach (Block b in data.blocks)
+        {
+            float left = b.center.x - b.size.x * 0.5f, right = b.center.x + b.size.x * 0.5f;
+            float top = b.center.y + b.size.y * 0.5f, bottom = b.center.y - b.size.y * 0.5f;
+            float x = left;
+            foreach (Vector2 hole in data.eraserHoles)
+            {
+                if (hole.y <= left || hole.x >= right) continue;
+                float h0 = Mathf.Max(hole.x, left), h1 = Mathf.Min(hole.y, right);
+                if (h0 > x) CreatePaperBlock(root, Segment(x, h0, top, bottom, b.size.z), gm, rng, data, first);
+                first = false;
+                GameObject seg = CreatePaperBlock(root, Segment(h0, h1, top, bottom, b.size.z), gm, rng, data, false);
+                eraser.AddHole(h0, h1, seg);
+                x = h1;
+            }
+            if (right > x) CreatePaperBlock(root, Segment(x, right, top, bottom, b.size.z), gm, rng, data, first);
+            first = false;
+        }
+    }
+
+    static Block Segment(float from, float to, float top, float bottom, float depth)
+    {
+        return new Block(new Vector3((from + to) * 0.5f, (top + bottom) * 0.5f, 0f), new Vector3(to - from, top - bottom, depth));
     }
 
     // وحوش الشخابيط: كل وحش يطلع فوق الصفحة اللي تحته
@@ -49,11 +81,13 @@ public static class LevelBuilder
     }
 
     // صفحة ورق سميكة: سطح ورق، جوانب صفحات مكدسة، خطوط رصاص على الحواف، شقوق، وسلك الدفتر
-    static void CreatePaperBlock(Transform parent, Block b, GameManager gm, System.Random rng, LevelData data, bool first)
+    static GameObject CreatePaperBlock(Transform parent, Block b, GameManager gm, System.Random rng, LevelData data, bool first)
     {
         var go = new GameObject("Paper Page");
         go.transform.SetParent(parent, false);
         go.transform.position = b.center;
+        // الصفحة المقلوبة: نقلب الصفحة عشان الرسومات والأغراض تكون على السطح اللي تحت
+        if (data.flipped) go.transform.rotation = Quaternion.Euler(180f, 0f, 0f);
         go.AddComponent<MeshFilter>().sharedMesh = PaperMeshes.PaperSlab(b.size);
         var top = new Material(gm.paperMaterial) { name = "Page Drawing" };
         top.SetTexture("_BaseMap", DrawPageArt(b, rng, data, first));
@@ -95,6 +129,7 @@ public static class LevelBuilder
             ring.AddComponent<MeshFilter>().sharedMesh = ringMesh;
             ring.AddComponent<MeshRenderer>().sharedMaterial = gm.metalMaterial;
         }
+        return go;
     }
 
     // خطوط رصاص على حواف صندوق (مهزوزة شوي كأنها بالقلم)
@@ -304,13 +339,14 @@ public static class LevelBuilder
     }
 
     // باب مرسوم: إطار رصاص ولوح ورق
-    static void CreateDoor(Transform parent, Vector3 basePos, GameManager gm)
+    static void CreateDoor(Transform parent, Vector3 basePos, GameManager gm, bool flipped = false)
     {
         const float w = 1.4f, h = 2.4f, t = 0.14f, d = 0.3f;
 
         var door = new GameObject("Door");
         door.transform.SetParent(parent, false);
         door.transform.position = basePos;
+        if (flipped) door.transform.rotation = Quaternion.Euler(180f, 0f, 0f);
 
         Material wood = gm.Mat("Door", new Color(0.95f, 0.93f, 0.9f), 0.15f);
         Material frame = gm.Mat("Door Frame", new Color(0.85f, 0.82f, 0.78f), 0.15f);
@@ -347,7 +383,7 @@ public static class LevelBuilder
         door.AddComponent<Door>();
     }
 
-    static void CreateRowaida(Transform parent, Vector3 pos, GameManager gm)
+    static void CreateRowaida(Transform parent, Vector3 pos, GameManager gm, bool flipped = false)
     {
         if (slippery == null)
             slippery = new PhysicsMaterial("Rowaida")
@@ -361,6 +397,7 @@ public static class LevelBuilder
         var go = new GameObject("Rowaida");
         go.transform.SetParent(parent, false);
         go.transform.position = pos;
+        if (flipped) go.transform.rotation = Quaternion.Euler(180f, 0f, 0f);
 
         var col = go.AddComponent<CapsuleCollider>();
         col.height = 1.4f;

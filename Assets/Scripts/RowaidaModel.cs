@@ -178,7 +178,7 @@ public class RowaidaModel : MonoBehaviour
         if (step != lastStep)
         {
             lastStep = step;
-            bool grounded = Physics.Raycast(transform.position, Vector3.down, 0.8f);
+            bool grounded = Physics.Raycast(transform.position, Physics.gravity.normalized, 0.8f);
             if (amount > 0.4f && grounded && GameManager.Instance != null && GameManager.Instance.Sound != null)
                 GameManager.Instance.Sound.PlayFootstep();
         }
