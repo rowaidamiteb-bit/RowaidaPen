@@ -25,6 +25,7 @@ public static class LevelBuilder
         CreateRowaida(root.transform, data.spawn, gm, data.flipped);
         SpawnMonsters(root.transform, data, gm);
         if (data.Flood) InkFlood.Spawn(root.transform, data, gm);
+        foreach (FoldSpec f in data.folds) FoldingFlap.Spawn(root.transform, f, gm);
         return root;
     }
 
