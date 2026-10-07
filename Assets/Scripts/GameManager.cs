@@ -92,17 +92,96 @@ public class GameManager : MonoBehaviour
             RestartLevel();
         else if (IsPlaying && Rowaida != null)
         {
+            UpdateCheckpoint();
             float y = Rowaida.transform.position.y;
-            // أول ما تطيح تحت مستوى الصفحات نشغل صوت الخسارة، وبعدين نعيد المرحلة
-            if (!falling && y < -1.8f)
+            // أول ما تطيح تحت أوطى صفحة نشغل صوت الخسارة، ولما تنزل أكثر تخسر قلب
+            if (!falling && y < LowestPageTop() - 1.8f)
             {
                 falling = true;
                 Sound.PlayLose();
             }
-            if (y < Levels.All[levelIndex].deathY) RestartLevel();
+            if (y < Levels.All[levelIndex].deathY) OnRowaidaFell();
         }
 
         ui.SetInk(InkMax > 0f ? Ink / InkMax : 0f);
+    }
+
+    // ---------- القلوب ونقاط الرجوع ----------
+
+    const int MaxHearts = 3;
+    int hearts;
+    int checkpointPage;      // آخر صفحة وقفت عليها رويدا
+    float checkpointInk;     // كمية الحبر لما وصلتها
+
+    float LowestPageTop()
+    {
+        float lowest = 0f;
+        foreach (Block b in Levels.All[levelIndex].blocks)
+            lowest = Mathf.Min(lowest, b.center.y + b.size.y * 0.5f);
+        return lowest;
+    }
+
+    // لما توقف رويدا على صفحة جديدة (أبعد من اللي قبل) نحفظها كنقطة رجوع
+    void UpdateCheckpoint()
+    {
+        Vector3 p = Rowaida.transform.position;
+        var blocks = Levels.All[levelIndex].blocks;
+        for (int i = checkpointPage + 1; i < blocks.Count; i++)
+        {
+            Block b = blocks[i];
+            float top = b.center.y + b.size.y * 0.5f;
+            bool overPage = p.x > b.center.x - b.size.x * 0.5f + 0.3f && p.x < b.center.x + b.size.x * 0.5f;
+            bool standing = p.y > top + 0.55f && p.y < top + 0.9f;
+            if (overPage && standing)
+            {
+                checkpointPage = i;
+                checkpointInk = Ink;
+            }
+        }
+    }
+
+    void OnRowaidaFell()
+    {
+        hearts--;
+        ui.SetHearts(hearts, true);
+        if (hearts > 0)
+        {
+            RespawnAtCheckpoint();
+            ui.ShowMessage("", 1.6f, hearts == 1 ? "باقي لك قلب واحد!" : "باقي لك قلبين");
+        }
+        else
+        {
+            StartCoroutine(OutOfHeartsRoutine());
+        }
+    }
+
+    // ترجع رويدا لبداية آخر صفحة وصلتها، والحبر يرجع مثل ما كان هناك
+    void RespawnAtCheckpoint()
+    {
+        LevelData data = Levels.All[levelIndex];
+        drawer.CancelStroke();
+        if (DrawingsRoot != null) Destroy(DrawingsRoot.gameObject);
+        DrawingsRoot = new GameObject("Drawings").transform;
+
+        Vector3 pos = data.spawn;
+        if (checkpointPage > 0)
+        {
+            Block b = data.blocks[checkpointPage];
+            pos = new Vector3(b.center.x - b.size.x * 0.5f + 1f, b.center.y + b.size.y * 0.5f + 1f, 0f);
+        }
+        Rowaida.Respawn(pos);
+        cameraFollow.SetTarget(Rowaida.transform, true);
+        Ink = checkpointInk;
+        falling = false;
+    }
+
+    IEnumerator OutOfHeartsRoutine()
+    {
+        IsPlaying = false;
+        Rowaida.Stop();
+        ui.ShowMessage("خسرتي كل القلوب!", 2.2f, "نعيد المرحلة من البداية");
+        yield return new WaitForSeconds(2.2f);
+        LoadLevel(levelIndex);
     }
 
     public void LoadLevel(int index)
@@ -121,6 +200,10 @@ public class GameManager : MonoBehaviour
 
         InkMax = Ink = data.ink;
         falling = false;
+        hearts = MaxHearts;
+        checkpointPage = 0;
+        checkpointInk = data.ink;
+        ui.SetHearts(hearts, false);
         IsPlaying = true;
         ui.SetLevel(index + 1);
         weather.Apply(data);

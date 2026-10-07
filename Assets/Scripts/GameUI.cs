@@ -48,6 +48,7 @@ public class GameUI : MonoBehaviour
         inkFill.offsetMin = inkFill.offsetMax = Vector2.zero;
 
         levelText = Label(root, "", 40, TextAnchor.MiddleRight, new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(400f, 50f));
+        BuildHearts(root);
         messageText = Label(root, "", 80, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
         subtitleText = Label(root, "", 40, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1700f, 70f));
         subtitleText.color = Color.white;
@@ -76,8 +77,91 @@ public class GameUI : MonoBehaviour
         messageTimer = duration;
     }
 
+    // ---------- القلوب ----------
+
+    const int MaxHearts = 3;
+    readonly Image[] hearts = new Image[MaxHearts];
+    readonly float[] heartPop = new float[MaxHearts];
+    static readonly Color HeartColor = new Color(1f, 0.42f, 0.55f);
+    static readonly Color HeartLost = new Color(0.35f, 0.33f, 0.4f, 0.55f);
+
+    void BuildHearts(Transform root)
+    {
+        Sprite sprite = HeartSprite();
+        for (int i = 0; i < MaxHearts; i++)
+        {
+            Image img = Panel(root, "Heart " + (i + 1), HeartColor);
+            img.sprite = sprite;
+            img.preserveAspect = true;
+            Place(img.rectTransform, new Vector2(0f, 1f), new Vector2(40f + i * 62f, -96f), new Vector2(56f, 56f));
+            hearts[i] = img;
+        }
+    }
+
+    // عدد القلوب الباقية. لو animateLoss = true القلب اللي راح ينط ويصير رمادي
+    public void SetHearts(int remaining, bool animateLoss)
+    {
+        for (int i = 0; i < MaxHearts; i++)
+        {
+            bool alive = i < remaining;
+            if (!alive && animateLoss && i == remaining) heartPop[i] = 1f;
+            hearts[i].color = alive ? HeartColor : HeartLost;
+            if (alive) heartPop[i] = 0f;
+        }
+    }
+
+    void AnimateHearts()
+    {
+        for (int i = 0; i < MaxHearts; i++)
+        {
+            float p = heartPop[i];
+            if (p > 0f) heartPop[i] = Mathf.Max(0f, p - Time.deltaTime * 2f);
+            float scale = 1f + Mathf.Sin(p * Mathf.PI) * 0.5f;
+            float shake = p > 0f ? Mathf.Sin(Time.time * 60f) * 6f * p : 0f;
+            hearts[i].rectTransform.localScale = Vector3.one * scale;
+            hearts[i].rectTransform.localRotation = Quaternion.Euler(0f, 0f, shake);
+        }
+    }
+
+    // صورة قلب مرسومة بالكود: لون وردي مع لمعة وحافة غامقة
+    static Sprite HeartSprite()
+    {
+        const int s = 128;
+        var tex = new Texture2D(s, s, TextureFormat.RGBA32, true) { name = "Heart", wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[s * s];
+        for (int y = 0; y < s; y++)
+            for (int x = 0; x < s; x++)
+            {
+                float coverage = 0f, inner = 0f;
+                for (int sy = 0; sy < 3; sy++)
+                    for (int sx = 0; sx < 3; sx++)
+                    {
+                        float u = ((x + (sx + 0.5f) / 3f) / s - 0.5f) * 2.6f;
+                        float v = ((y + (sy + 0.5f) / 3f) / s - 0.45f) * 2.6f;
+                        float a = u * u + v * v - 1f;
+                        float f = a * a * a - u * u * v * v * v;
+                        if (f <= 0f) coverage += 1f / 9f;
+                        // قلب أصغر شوي: الفرق بينه وبين الكبير هو الحافة
+                        float iu = u * 1.12f, iv = v * 1.12f + 0.03f;
+                        float ia = iu * iu + iv * iv - 1f;
+                        if (ia * ia * ia - iu * iu * iv * iv * iv <= 0f) inner += 1f / 9f;
+                    }
+                float hu = (float)x / s - 0.36f, hv = (float)y / s - 0.66f;
+                float shine = Mathf.Clamp01(1f - Mathf.Sqrt(hu * hu * 2.2f + hv * hv * 5f) / 0.12f);
+                Color c = new Color(0.86f, 0.8f, 0.83f);
+                c = Color.Lerp(c, Color.white, shine);
+                c = Color.Lerp(c, new Color(0.45f, 0.15f, 0.25f), Mathf.Clamp01(coverage - inner));
+                c.a = coverage;
+                px[y * s + x] = c;
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 100f);
+    }
+
     void Update()
     {
+        AnimateHearts();
         if (messageTimer <= 0f) return;
         messageTimer -= Time.deltaTime;
         if (messageTimer <= 0f) messageText.enabled = subtitleText.enabled = false;

@@ -35,4 +35,15 @@ public class RowaidaController : MonoBehaviour
         rb.linearVelocity = Vector3.zero;
         rb.isKinematic = true;
     }
+
+    // ترجع لمكان معين (بعد ما تطيح وباقي لها قلوب) وتنتظر شوي قبل ما تمشي
+    public void Respawn(Vector3 position)
+    {
+        rb.isKinematic = false;
+        rb.linearVelocity = Vector3.zero;
+        rb.position = position;
+        transform.position = position;
+        timer = 0f;
+        stopped = false;
+    }
 }

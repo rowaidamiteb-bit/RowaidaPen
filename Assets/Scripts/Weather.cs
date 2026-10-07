@@ -113,7 +113,8 @@ public class Weather : MonoBehaviour
         if (cam == null) return;
         // المطر يتبع الكاميرا
         Vector3 c = cam.transform.position;
-        rain.transform.position = new Vector3(c.x + 3f, 12f, 3f);
+        // نخلي المطر يبدأ بعيد شوي عن الكاميرا عشان ما تطلع قطرات ضخمة قدامها
+        rain.transform.position = new Vector3(c.x + 3f, 12f, 6f);
         splash.transform.position = new Vector3(c.x + 3f, 0.03f, 0f);
     }
 
@@ -140,7 +141,7 @@ public class Weather : MonoBehaviour
 
         var shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Box;
-        shape.scale = new Vector3(42f, 0.5f, 22f);
+        shape.scale = new Vector3(42f, 0.5f, 16f);
 
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
