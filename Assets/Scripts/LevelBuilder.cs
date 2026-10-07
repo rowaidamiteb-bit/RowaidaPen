@@ -2,78 +2,183 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// يبني المرحلة من الكود: أرضية بيضاء بحواف سوداء، باب، ورويدا
+// يبني المرحلة من الكود: صفحات ورق سميكة بخطوط رصاص وشقوق، سلك الدفتر، الباب، ورويدا
 public static class LevelBuilder
 {
-    const float EdgeWidth = 0.06f;
+    const float PencilRadius = 0.016f;
 
     static readonly Dictionary<PrimitiveType, Mesh> meshCache = new Dictionary<PrimitiveType, Mesh>();
     static PhysicsMaterial slippery;
+    static Mesh ringMesh;
 
     public static GameObject Build(LevelData data, GameManager gm)
     {
         var root = new GameObject("Level - " + data.title);
-        foreach (Block b in data.blocks) CreateBlock(root.transform, b, gm);
+        var rng = new System.Random(data.title.GetHashCode());
+        foreach (Block b in data.blocks) CreatePaperBlock(root.transform, b, gm, rng);
         CreateDoor(root.transform, data.door, gm);
         CreateRowaida(root.transform, data.spawn, gm);
         return root;
     }
 
-    // صفحة دفتر بخطوط خفيفة ورا المرحلة
-    public static GameObject BuildBackground(GameManager gm)
+    // خلفية حالمة: تدرج كحلي وبنفسجي + أوراق صغيرة طايرة
+    public static void BuildBackdrop(GameManager gm)
     {
-        var mat = new Material(gm.paperMaterial) { name = "Notebook Page" };
-        Vector2 size = new Vector2(240f, 80f);
-        mat.SetTexture("_BaseMap", CreateRuledPaperTexture());
-        mat.SetTextureScale("_BaseMap", size / 8f);
-        return Visual("Notebook Page", PrimitiveType.Quad, null, new Vector3(30f, -5f, 6f), new Vector3(size.x, size.y, 1f), mat, false);
+        Shader unlit = Shader.Find("Universal Render Pipeline/Unlit");
+        Material sky = unlit != null ? new Material(unlit) : gm.Mat("Sky", Color.black, 0f);
+        sky.name = "Dream Sky";
+        sky.SetTexture("_BaseMap", PaperMeshes.SkyGradient());
+        sky.SetColor("_BaseColor", Color.white);
+        Visual("Dream Sky", PrimitiveType.Quad, null, new Vector3(30f, 5f, 45f), new Vector3(260f, 90f, 1f), sky, false)
+            .GetComponent<MeshRenderer>().receiveShadows = false;
+
+        var dust = new GameObject("Floating Papers").AddComponent<FloatingPapers>();
+        dust.Build(gm);
     }
 
-    static void CreateBlock(Transform parent, Block b, GameManager gm)
+    // صفحة ورق سميكة: سطح ورق، جوانب صفحات مكدسة، خطوط رصاص على الحواف، شقوق، وسلك الدفتر
+    static void CreatePaperBlock(Transform parent, Block b, GameManager gm, System.Random rng)
     {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        go.name = "Ground";
+        var go = new GameObject("Paper Page");
         go.transform.SetParent(parent, false);
         go.transform.position = b.center;
-        go.transform.localScale = b.size;
-        go.GetComponent<Renderer>().sharedMaterial = gm.paperMaterial;
-        AddOutline(parent, b.center, b.size, gm.inkMaterial);
-    }
+        go.AddComponent<MeshFilter>().sharedMesh = PaperMeshes.PaperSlab(b.size);
+        go.AddComponent<MeshRenderer>().sharedMaterials = new[] { gm.paperMaterial, gm.pageEdgeMaterial };
+        go.AddComponent<BoxCollider>().size = b.size;
 
-    // خطوط سوداء على حواف المكعب كأنها مرسومة بالقلم
-    public static void AddOutline(Transform parent, Vector3 c, Vector3 s, Material ink)
-    {
-        Vector3 h = s * 0.5f;
+        Vector3 h = b.size * 0.5f;
+        Transform t = go.transform;
+
+        // خطوط الرصاص على الحواف (مهزوزة شوي كأنها بالقلم)
         for (int y = -1; y <= 1; y += 2)
             for (int z = -1; z <= 1; z += 2)
-                Edge(parent, c + new Vector3(0f, y * h.y, z * h.z), new Vector3(s.x + EdgeWidth, EdgeWidth, EdgeWidth), ink);
+                PencilLine(t, new Vector3(-h.x, y * h.y, z * h.z), new Vector3(h.x, y * h.y, z * h.z), gm, rng);
         for (int x = -1; x <= 1; x += 2)
             for (int z = -1; z <= 1; z += 2)
-                Edge(parent, c + new Vector3(x * h.x, 0f, z * h.z), new Vector3(EdgeWidth, s.y + EdgeWidth, EdgeWidth), ink);
+                PencilLine(t, new Vector3(x * h.x, -h.y, z * h.z), new Vector3(x * h.x, h.y, z * h.z), gm, rng);
         for (int x = -1; x <= 1; x += 2)
             for (int y = -1; y <= 1; y += 2)
-                Edge(parent, c + new Vector3(x * h.x, y * h.y, 0f), new Vector3(EdgeWidth, EdgeWidth, s.z + EdgeWidth), ink);
+                PencilLine(t, new Vector3(x * h.x, y * h.y, -h.z), new Vector3(x * h.x, y * h.y, h.z), gm, rng);
+
+        // شقوق عند أطراف الصفحة (جنب الحفر)
+        for (int side = -1; side <= 1; side += 2)
+        {
+            int cracks = 2 + rng.Next(2);
+            for (int i = 0; i < cracks; i++)
+            {
+                float z = Mathf.Lerp(-h.z * 0.8f, h.z * 0.8f, (float)rng.NextDouble());
+                Crack(t, new Vector3(side * h.x, h.y, z), -side, gm, rng);
+            }
+        }
+
+        // سلك الدفتر الحلزوني على الحافة الخلفية
+        if (ringMesh == null) ringMesh = PaperMeshes.Ring(0.26f, 0.03f);
+        for (float x = -h.x + 0.5f; x <= h.x - 0.4f; x += 0.55f)
+        {
+            var ring = new GameObject("Binding Ring");
+            ring.transform.SetParent(t, false);
+            ring.transform.localPosition = new Vector3(x, h.y - 0.05f, h.z + 0.02f);
+            ring.transform.localRotation = Quaternion.Euler(0f, 0f, 8f);
+            ring.AddComponent<MeshFilter>().sharedMesh = ringMesh;
+            ring.AddComponent<MeshRenderer>().sharedMaterial = gm.metalMaterial;
+        }
     }
 
-    static void Edge(Transform parent, Vector3 pos, Vector3 scale, Material ink)
+    // خط رصاص مهزوز بين نقطتين، مع امتداد بسيط عند الزوايا مثل الرسم باليد
+    static void PencilLine(Transform parent, Vector3 a, Vector3 b, GameManager gm, System.Random rng)
     {
-        var go = Visual("Edge", PrimitiveType.Cube, parent, Vector3.zero, scale, ink, false);
-        go.transform.position = pos;
+        Vector3 dir = (b - a).normalized;
+        float overshoot = 0.04f + (float)rng.NextDouble() * 0.06f;
+        a -= dir * overshoot;
+        b += dir * overshoot;
+
+        float len = Vector3.Distance(a, b);
+        int count = Mathf.Max(2, Mathf.CeilToInt(len / 0.3f) + 1);
+        Vector3 perpA = Vector3.Cross(dir, Mathf.Abs(dir.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+        Vector3 perpB = Vector3.Cross(dir, perpA);
+        float seed = (float)rng.NextDouble() * 100f;
+
+        var pts = new List<Vector3>(count);
+        for (int i = 0; i < count; i++)
+        {
+            float k = i / (count - 1f);
+            float wobble = (Mathf.PerlinNoise(seed, k * len * 1.3f) - 0.5f) * 0.03f;
+            float wobble2 = (Mathf.PerlinNoise(seed + 7f, k * len * 1.3f) - 0.5f) * 0.03f;
+            pts.Add(Vector3.Lerp(a, b, k) + perpA * wobble + perpB * wobble2);
+        }
+        Line("Pencil Line", parent, pts, PencilRadius, gm.pencilMaterial);
     }
 
+    // شق متعرج على سطح الورقة يبدأ من الحافة ويدخل لداخل
+    static void Crack(Transform parent, Vector3 start, int inward, GameManager gm, System.Random rng)
+    {
+        var pts = new List<Vector3> { start };
+        Vector3 p = start;
+        float angle = 0f;
+        int segments = 3 + rng.Next(3);
+        for (int i = 0; i < segments; i++)
+        {
+            angle += ((float)rng.NextDouble() - 0.5f) * 1.6f;
+            float step = 0.15f + (float)rng.NextDouble() * 0.25f;
+            p += new Vector3(Mathf.Cos(angle) * inward, 0f, Mathf.Sin(angle)) * step;
+            pts.Add(p);
+            if (i == 1 && rng.Next(2) == 0)
+            {
+                Vector3 branchEnd = p + new Vector3(inward * 0.2f, 0f, ((float)rng.NextDouble() - 0.5f) * 0.5f);
+                Line("Crack", parent, new List<Vector3> { p, branchEnd }, PencilRadius * 0.7f, gm.pencilMaterial);
+            }
+        }
+        Line("Crack", parent, pts, PencilRadius * 0.8f, gm.pencilMaterial);
+    }
+
+    static void Line(string name, Transform parent, List<Vector3> localPts, float radius, Material mat)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var mesh = new Mesh { name = name };
+        TubeMesh.Build(mesh, localPts, radius, false, 5);
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = go.AddComponent<MeshRenderer>();
+        r.sharedMaterial = mat;
+        r.shadowCastingMode = ShadowCastingMode.Off;
+    }
+
+    // باب مرسوم: إطار رصاص ولوح ورق
     static void CreateDoor(Transform parent, Vector3 basePos, GameManager gm)
     {
-        const float w = 1.4f, h = 2.4f, t = 0.18f, d = 0.5f;
+        const float w = 1.4f, h = 2.4f, t = 0.14f, d = 0.3f;
 
         var door = new GameObject("Door");
         door.transform.SetParent(parent, false);
         door.transform.position = basePos;
 
-        Visual("Post L", PrimitiveType.Cube, door.transform, new Vector3(-w / 2f, h / 2f, 0f), new Vector3(t, h, d), gm.inkMaterial);
-        Visual("Post R", PrimitiveType.Cube, door.transform, new Vector3(w / 2f, h / 2f, 0f), new Vector3(t, h, d), gm.inkMaterial);
-        Visual("Top", PrimitiveType.Cube, door.transform, new Vector3(0f, h + t / 2f, 0f), new Vector3(w + t, t, d), gm.inkMaterial);
-        Visual("Panel", PrimitiveType.Cube, door.transform, new Vector3(0f, h / 2f, 0.1f), new Vector3(w - t, h, 0.1f), gm.paperMaterial);
-        Visual("Knob", PrimitiveType.Sphere, door.transform, new Vector3(0.38f, 1.15f, 0f), Vector3.one * 0.14f, gm.inkMaterial);
+        Material wood = gm.Mat("Door", new Color(0.95f, 0.93f, 0.9f), 0.15f);
+        Material frame = gm.Mat("Door Frame", new Color(0.85f, 0.82f, 0.78f), 0.15f);
+        Visual("Post L", PrimitiveType.Cube, door.transform, new Vector3(-w / 2f, h / 2f, 0f), new Vector3(t, h, d), frame);
+        Visual("Post R", PrimitiveType.Cube, door.transform, new Vector3(w / 2f, h / 2f, 0f), new Vector3(t, h, d), frame);
+        Visual("Top", PrimitiveType.Cube, door.transform, new Vector3(0f, h + t / 2f, 0f), new Vector3(w + t, t, d), frame);
+        Visual("Panel", PrimitiveType.Cube, door.transform, new Vector3(0f, h / 2f, 0.05f), new Vector3(w - t, h, 0.08f), wood);
+        Visual("Knob", PrimitiveType.Sphere, door.transform, new Vector3(0.42f, 1.15f, -0.03f), Vector3.one * 0.11f, gm.metalMaterial);
+
+        // خطوط رصاص على الباب
+        var rng = new System.Random(7);
+        float l = -w / 2f - t / 2f, r = w / 2f + t / 2f, top = h + t, z = -d / 2f - 0.01f;
+        PencilLine(door.transform, new Vector3(l, 0f, z), new Vector3(l, top, z), gm, rng);
+        PencilLine(door.transform, new Vector3(r, 0f, z), new Vector3(r, top, z), gm, rng);
+        PencilLine(door.transform, new Vector3(l, top, z), new Vector3(r, top, z), gm, rng);
+        float pl = -w / 2f + 0.25f, pr = w / 2f - 0.25f, pz = 0.05f - 0.045f;
+        PencilLine(door.transform, new Vector3(pl, 1.4f, pz), new Vector3(pr, 1.4f, pz), gm, rng);
+        PencilLine(door.transform, new Vector3(pl, 2.15f, pz), new Vector3(pr, 2.15f, pz), gm, rng);
+        PencilLine(door.transform, new Vector3(pl, 1.4f, pz), new Vector3(pl, 2.15f, pz), gm, rng);
+        PencilLine(door.transform, new Vector3(pr, 1.4f, pz), new Vector3(pr, 2.15f, pz), gm, rng);
+
+        var glow = new GameObject("Door Glow").AddComponent<Light>();
+        glow.transform.SetParent(door.transform, false);
+        glow.transform.localPosition = new Vector3(0f, 1.5f, -1.2f);
+        glow.type = LightType.Point;
+        glow.range = 4f;
+        glow.intensity = 1.2f;
+        glow.color = new Color(1f, 0.85f, 0.6f);
 
         var trigger = door.AddComponent<BoxCollider>();
         trigger.isTrigger = true;
@@ -99,7 +204,7 @@ public static class LevelBuilder
 
         var col = go.AddComponent<CapsuleCollider>();
         col.height = 1.4f;
-        col.radius = 0.35f;
+        col.radius = 0.32f;
         col.sharedMaterial = slippery;
 
         var rb = go.AddComponent<Rigidbody>();
@@ -108,15 +213,7 @@ public static class LevelBuilder
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionZ;
 
-        // شكل مؤقت: كبسولة رمادية بعيون تطالع لقدام
-        Visual("Body", PrimitiveType.Capsule, go.transform, Vector3.zero, Vector3.one * 0.7f, gm.rowaidaMaterial);
-        for (int i = -1; i <= 1; i += 2)
-        {
-            float z = i * 0.13f;
-            Visual("Eye", PrimitiveType.Sphere, go.transform, new Vector3(0.29f, 0.3f, z), Vector3.one * 0.15f, gm.paperMaterial);
-            Visual("Pupil", PrimitiveType.Sphere, go.transform, new Vector3(0.355f, 0.3f, z), Vector3.one * 0.07f, gm.inkMaterial);
-        }
-
+        RowaidaModel.Build(go, gm);
         go.AddComponent<RowaidaController>();
     }
 
@@ -142,26 +239,5 @@ public static class LevelBuilder
         Object.DestroyImmediate(temp);
         meshCache[type] = m;
         return m;
-    }
-
-    static Texture2D CreateRuledPaperTexture()
-    {
-        const int size = 256;
-        const int lineEvery = 32;
-        var tex = new Texture2D(size, size, TextureFormat.RGBA32, true) { name = "Ruled Paper" };
-        Color paper = new Color(0.97f, 0.97f, 0.95f);
-        Color line = new Color(0.78f, 0.78f, 0.78f);
-        var pixels = new Color[size * size];
-        for (int y = 0; y < size; y++)
-        {
-            Color c = (y % lineEvery) < 2 ? line : paper;
-            for (int x = 0; x < size; x++) pixels[y * size + x] = c;
-        }
-        tex.SetPixels(pixels);
-        tex.wrapMode = TextureWrapMode.Repeat;
-        tex.filterMode = FilterMode.Trilinear;
-        tex.anisoLevel = 8;
-        tex.Apply();
-        return tex;
     }
 }

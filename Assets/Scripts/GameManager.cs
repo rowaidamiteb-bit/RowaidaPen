@@ -1,13 +1,16 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 // مدير اللعبة: يبني المرحلة، يتابع الحبر، يعيد المرحلة إذا طاحت رويدا، وينقل للمرحلة اللي بعدها
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [Header("المواد")]
+    [Header("مادة أساسية (كل المواد تنسخ منها)")]
     public Material paperMaterial;
     public Material inkMaterial;
     public Material rowaidaMaterial;
@@ -15,12 +18,19 @@ public class GameManager : MonoBehaviour
     [Header("الإعدادات")]
     public int startLevel = 0;
 
+    // مواد تنسوي وقت اللعب
+    [System.NonSerialized] public Material pageEdgeMaterial;
+    [System.NonSerialized] public Material pencilMaterial;
+    [System.NonSerialized] public Material metalMaterial;
+
     public float InkMax { get; private set; }
     public float Ink { get; private set; }
     public bool IsPlaying { get; private set; }
     public RowaidaController Rowaida { get; private set; }
     public Transform DrawingsRoot { get; private set; }
 
+    readonly Dictionary<string, Material> materials = new Dictionary<string, Material>();
+    Material template;
     int levelIndex;
     Transform levelRoot;
     GameUI ui;
@@ -30,14 +40,15 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
-        EnsureMaterials();
+        CreateMaterials();
         CreateCameraAndLight();
+        CreatePostProcessing(Camera.main);
 
         cameraFollow = Camera.main.GetComponent<CameraFollow>();
         ui = gameObject.AddComponent<GameUI>();
         ui.Build();
         drawer = gameObject.AddComponent<InkDrawer>();
-        LevelBuilder.BuildBackground(this);
+        LevelBuilder.BuildBackdrop(this);
     }
 
     void Start()
@@ -110,11 +121,38 @@ public class GameManager : MonoBehaviour
         LoadLevel(last ? 0 : levelIndex + 1);
     }
 
-    void EnsureMaterials()
+    // ---------- المواد ----------
+
+    void CreateMaterials()
     {
-        if (paperMaterial == null) paperMaterial = MakeMaterial(new Color(0.96f, 0.96f, 0.94f), 0.05f);
-        if (inkMaterial == null) inkMaterial = MakeMaterial(new Color(0.07f, 0.07f, 0.08f), 0.35f);
-        if (rowaidaMaterial == null) rowaidaMaterial = MakeMaterial(new Color(0.32f, 0.32f, 0.33f), 0.25f);
+        template = paperMaterial;
+
+        paperMaterial = Mat("Paper", Color.white, 0.08f);
+        paperMaterial.SetTexture("_BaseMap", PaperMeshes.PaperGrain());
+
+        pageEdgeMaterial = Mat("Page Edges", Color.white, 0.05f);
+        pageEdgeMaterial.SetTexture("_BaseMap", PaperMeshes.PageEdges());
+
+        // الحبر: رصاص غامق لامع شوي مثل الجرافيت
+        inkMaterial = Mat("Ink", new Color(0.17f, 0.17f, 0.19f), 0.62f, 0.35f);
+        pencilMaterial = Mat("Pencil Line", new Color(0.33f, 0.33f, 0.36f), 0.3f);
+        metalMaterial = Mat("Metal", new Color(0.2f, 0.2f, 0.22f), 0.75f, 0.85f);
+    }
+
+    // يرجع مادة بلون معين (ويحفظها عشان ما تتكرر)
+    public Material Mat(string key, Color color, float smoothness, float metallic = 0f)
+    {
+        if (materials.TryGetValue(key, out Material existing)) return existing;
+
+        Material m = template != null ? new Material(template) : MakeMaterial(color, smoothness);
+        m.name = key;
+        if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", null);
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", color);
+        if (m.HasProperty("_Color")) m.SetColor("_Color", color);
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", smoothness);
+        if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", metallic);
+        materials[key] = m;
+        return m;
     }
 
     public static Material MakeMaterial(Color color, float smoothness)
@@ -128,7 +166,9 @@ public class GameManager : MonoBehaviour
         return m;
     }
 
-    // كاميرا جانبية + إضاءة ناعمة بظلال (تُستخدم وقت اللعب وأيضًا لما نبني المشهد في المحرر)
+    // ---------- الكاميرا والإضاءة ----------
+
+    // كاميرا جانبية + إضاءة دافية ناعمة بظلال وخلفية حالمة
     public static void CreateCameraAndLight()
     {
         Camera cam = Camera.main;
@@ -138,14 +178,18 @@ public class GameManager : MonoBehaviour
             cam = camGo.AddComponent<Camera>();
             camGo.AddComponent<AudioListener>();
         }
+        Color night = new Color(0.07f, 0.07f, 0.14f);
         cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = new Color(0.96f, 0.96f, 0.94f);
-        cam.fieldOfView = 40f;
+        cam.backgroundColor = night;
+        cam.fieldOfView = 38f;
         cam.nearClipPlane = 0.3f;
         cam.farClipPlane = 200f;
+
         var follow = cam.GetComponent<CameraFollow>();
         if (follow == null) follow = cam.gameObject.AddComponent<CameraFollow>();
-        cam.transform.position = new Vector3(0f, 3.5f, -14f);
+        follow.offset = new Vector3(-0.5f, 3.6f, -10.5f);
+        follow.lookOffset = new Vector3(2.2f, 0.3f, 0f);
+        cam.transform.position = follow.offset;
         cam.transform.LookAt(follow.lookOffset);
 
         Light sun = null;
@@ -156,14 +200,54 @@ public class GameManager : MonoBehaviour
             sun = new GameObject("Sun").AddComponent<Light>();
             sun.type = LightType.Directional;
         }
-        sun.color = new Color(1f, 0.98f, 0.94f);
-        sun.intensity = 1.2f;
+        sun.color = new Color(1f, 0.9f, 0.78f);
+        sun.intensity = 1.35f;
         sun.shadows = LightShadows.Soft;
-        sun.shadowStrength = 0.55f;
-        sun.transform.rotation = Quaternion.Euler(45f, -35f, 0f);
+        sun.shadowStrength = 0.85f;
+        sun.transform.rotation = Quaternion.Euler(42f, -40f, 0f);
 
-        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-        RenderSettings.ambientLight = new Color(0.62f, 0.62f, 0.62f);
-        RenderSettings.fog = false;
+        // إضاءة محيطة: سماء بنفسجية، أرض كحلية
+        RenderSettings.ambientMode = AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor = new Color(0.52f, 0.5f, 0.68f);
+        RenderSettings.ambientEquatorColor = new Color(0.38f, 0.36f, 0.5f);
+        RenderSettings.ambientGroundColor = new Color(0.16f, 0.15f, 0.24f);
+        RenderSettings.fog = true;
+        RenderSettings.fogMode = FogMode.Linear;
+        RenderSettings.fogColor = night;
+        RenderSettings.fogStartDistance = 22f;
+        RenderSettings.fogEndDistance = 75f;
+    }
+
+    // تأثيرات الصورة: توهج خفيف، أطراف غامقة، وتباين ألوان
+    static void CreatePostProcessing(Camera cam)
+    {
+        var camData = cam.GetUniversalAdditionalCameraData();
+        camData.renderPostProcessing = true;
+        camData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+        camData.antialiasingQuality = AntialiasingQuality.High;
+
+        var volume = new GameObject("Post Processing").AddComponent<Volume>();
+        volume.isGlobal = true;
+        volume.priority = 10f;
+        var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+        volume.profile = profile;
+
+        var bloom = profile.Add<Bloom>(true);
+        bloom.intensity.Override(0.45f);
+        bloom.threshold.Override(0.95f);
+        bloom.scatter.Override(0.7f);
+
+        var vignette = profile.Add<Vignette>(true);
+        vignette.intensity.Override(0.35f);
+        vignette.smoothness.Override(0.5f);
+        vignette.color.Override(new Color(0.04f, 0.03f, 0.1f));
+
+        var tonemap = profile.Add<Tonemapping>(true);
+        tonemap.mode.Override(TonemappingMode.Neutral);
+
+        var color = profile.Add<ColorAdjustments>(true);
+        color.postExposure.Override(0.2f);
+        color.contrast.Override(14f);
+        color.saturation.Override(-4f);
     }
 }
