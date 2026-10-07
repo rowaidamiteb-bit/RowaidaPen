@@ -28,7 +28,8 @@ public static class PaperMeshes
         }
 
         float x = h.x, y = h.y, z = h.z;
-        System.Func<Vector3, Vector2> topUV = p => new Vector2(p.x, p.z) / 3f;
+        // السطح العلوي: الصورة تغطي الصفحة كلها مرة وحدة (عشان الرسومات)
+        System.Func<Vector3, Vector2> topUV = p => new Vector2((p.x + x) / size.x, (p.z + z) / size.z);
         System.Func<Vector3, Vector2> frontUV = p => new Vector2(p.x / 4f, p.y);
         System.Func<Vector3, Vector2> sideUV = p => new Vector2(p.z / 4f, p.y);
 

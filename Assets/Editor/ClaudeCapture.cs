@@ -131,6 +131,10 @@ public static class ClaudeCapture
                     InkDrawer drawer = Object.FindAnyObjectByType<InkDrawer>();
                     if (drawer != null) drawer.DebugDraw(new List<Vector3> { new Vector3(6.2f, 0.25f, 0f), new Vector3(11.8f, 0.25f, 0f) });
                     break;
+                case "bridge2":
+                    InkDrawer d3 = Object.FindAnyObjectByType<InkDrawer>();
+                    if (d3 != null) d3.DebugDraw(new List<Vector3> { new Vector3(20.2f, 0.25f, 0f), new Vector3(25.3f, 0.25f, 0f) });
+                    break;
                 case "circle":
                     InkDrawer d2 = Object.FindAnyObjectByType<InkDrawer>();
                     var pts = new List<Vector3>();
@@ -159,7 +163,18 @@ public static class ClaudeCapture
 
         Camera cam = main;
         GameObject temp = null;
-        if (kind == "close" || kind == "face")
+        if (kind == "wide")
+        {
+            temp = Object.Instantiate(main.gameObject);
+            foreach (var c in temp.GetComponents<MonoBehaviour>()) Object.DestroyImmediate(c);
+            var listener = temp.GetComponent<AudioListener>();
+            if (listener != null) Object.DestroyImmediate(listener);
+            cam = temp.GetComponent<Camera>();
+            cam.transform.position = new Vector3(14.5f, 9f, -27f);
+            cam.transform.LookAt(new Vector3(14.5f, -0.5f, 0f));
+            cam.fieldOfView = 42f;
+        }
+        else if (kind == "close" || kind == "face")
         {
             var rowaida = Object.FindAnyObjectByType<RowaidaController>();
             temp = Object.Instantiate(main.gameObject);

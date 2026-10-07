@@ -15,7 +15,8 @@ public static class LevelBuilder
     {
         var root = new GameObject("Level - " + data.title);
         var rng = new System.Random(data.title.GetHashCode());
-        foreach (Block b in data.blocks) CreatePaperBlock(root.transform, b, gm, rng);
+        for (int i = 0; i < data.blocks.Count; i++)
+            CreatePaperBlock(root.transform, data.blocks[i], gm, rng, data, i == 0);
         if (data.bridgeHint && data.blocks.Count > 1) BridgeHint(root.transform, data.blocks[0], data.blocks[1], gm);
         CreateDoor(root.transform, data.door, gm);
         CreateRowaida(root.transform, data.spawn, gm);
@@ -38,28 +39,22 @@ public static class LevelBuilder
     }
 
     // صفحة ورق سميكة: سطح ورق، جوانب صفحات مكدسة، خطوط رصاص على الحواف، شقوق، وسلك الدفتر
-    static void CreatePaperBlock(Transform parent, Block b, GameManager gm, System.Random rng)
+    static void CreatePaperBlock(Transform parent, Block b, GameManager gm, System.Random rng, LevelData data, bool first)
     {
         var go = new GameObject("Paper Page");
         go.transform.SetParent(parent, false);
         go.transform.position = b.center;
         go.AddComponent<MeshFilter>().sharedMesh = PaperMeshes.PaperSlab(b.size);
-        go.AddComponent<MeshRenderer>().sharedMaterials = new[] { gm.paperMaterial, gm.pageEdgeMaterial };
+        var top = new Material(gm.paperMaterial) { name = "Page Drawing" };
+        top.SetTexture("_BaseMap", DrawPageArt(b, rng, data, first));
+        go.AddComponent<MeshRenderer>().sharedMaterials = new[] { top, gm.pageEdgeMaterial };
         go.AddComponent<BoxCollider>().size = b.size;
 
         Vector3 h = b.size * 0.5f;
         Transform t = go.transform;
 
-        // خطوط الرصاص على الحواف (مهزوزة شوي كأنها بالقلم)
-        for (int y = -1; y <= 1; y += 2)
-            for (int z = -1; z <= 1; z += 2)
-                PencilLine(t, new Vector3(-h.x, y * h.y, z * h.z), new Vector3(h.x, y * h.y, z * h.z), gm, rng);
-        for (int x = -1; x <= 1; x += 2)
-            for (int z = -1; z <= 1; z += 2)
-                PencilLine(t, new Vector3(x * h.x, -h.y, z * h.z), new Vector3(x * h.x, h.y, z * h.z), gm, rng);
-        for (int x = -1; x <= 1; x += 2)
-            for (int y = -1; y <= 1; y += 2)
-                PencilLine(t, new Vector3(x * h.x, y * h.y, -h.z), new Vector3(x * h.x, y * h.y, h.z), gm, rng);
+        OutlineBox(t, b.size, gm, rng);
+        PlaceProps(t, b, gm, rng, data);
 
         // شقوق عند أطراف الصفحة (جنب الحفر)
         for (int side = -1; side <= 1; side += 2)
@@ -82,6 +77,103 @@ public static class LevelBuilder
             ring.transform.localRotation = Quaternion.Euler(0f, 0f, 8f);
             ring.AddComponent<MeshFilter>().sharedMesh = ringMesh;
             ring.AddComponent<MeshRenderer>().sharedMaterial = gm.metalMaterial;
+        }
+    }
+
+    // خطوط رصاص على حواف صندوق (مهزوزة شوي كأنها بالقلم)
+    public static void OutlineBox(Transform t, Vector3 size, GameManager gm, System.Random rng)
+    {
+        Vector3 h = size * 0.5f;
+        for (int y = -1; y <= 1; y += 2)
+            for (int z = -1; z <= 1; z += 2)
+                PencilLine(t, new Vector3(-h.x, y * h.y, z * h.z), new Vector3(h.x, y * h.y, z * h.z), gm, rng);
+        for (int x = -1; x <= 1; x += 2)
+            for (int z = -1; z <= 1; z += 2)
+                PencilLine(t, new Vector3(x * h.x, -h.y, z * h.z), new Vector3(x * h.x, h.y, z * h.z), gm, rng);
+        for (int x = -1; x <= 1; x += 2)
+            for (int y = -1; y <= 1; y += 2)
+                PencilLine(t, new Vector3(x * h.x, y * h.y, -h.z), new Vector3(x * h.x, y * h.y, h.z), gm, rng);
+    }
+
+    // رسومات الرصاص على سطح الصفحة: رسومات صغيرة، تظليل عند الحفر، لطخات، وآثار مساحة
+    static Texture2D DrawPageArt(Block b, System.Random rng, LevelData data, bool first)
+    {
+        Vector2 size = new Vector2(b.size.x, b.size.z);
+        var canvas = new PaperCanvas(size, rng.Next());
+        float hx = size.x * 0.5f, hz = size.y * 0.5f;
+        float R(float a, float c) => a + (float)rng.NextDouble() * (c - a);
+
+        // لطخات رصاص وآثار مساحة
+        for (int i = 0; i < Mathf.CeilToInt(size.x / 3f); i++)
+            canvas.Smudge(new Vector2(R(-hx, hx), R(-hz, hz)), R(0.3f, 0.8f), R(0.04f, 0.1f));
+        for (int i = 0; i < Mathf.CeilToInt(size.x / 5f); i++)
+        {
+            Vector2 c = new Vector2(R(-hx + 1f, hx - 1f), R(-hz * 0.8f, hz * 0.8f));
+            Vector2 d = new Vector2(R(0.3f, 0.7f), R(-0.15f, 0.15f));
+            canvas.Erased(c - d, c + d, R(0.08f, 0.14f));
+        }
+
+        // تظليل بالرصاص عند أطراف الصفحة (جنب الحفر)
+        canvas.Hatch(new Vector2(-hx, -hz), new Vector2(-hx + R(0.6f, 0.9f), hz), 0.07f, R(50f, 65f), false);
+        canvas.Hatch(new Vector2(hx - R(0.6f, 0.9f), -hz), new Vector2(hx, hz), 0.07f, R(50f, 65f), true);
+
+        // رسومات صغيرة متفرقة (بعيد عن طريق رويدا شوي)
+        float doodleEvery = 1.6f;
+        for (float x = -hx + 1.2f; x < hx - 1f; x += doodleEvery * R(0.8f, 1.4f))
+        {
+            if (Mathf.Abs(b.center.x + x - data.door.x) < 1.2f) continue;
+            bool back = rng.Next(3) != 0;
+            float z = back ? R(0.55f, hz - 0.45f) : R(-hz + 0.4f, -0.55f);
+            canvas.RandomDoodle(new Vector2(x, z), R(0.6f, 1.05f));
+        }
+
+        // أسهم تعلّم اللاعب إن رويدا تمشي لقدام
+        if (first)
+        {
+            canvas.Arrow(new Vector2(-hx + 2.4f, -0.9f), 0.7f);
+            canvas.Arrow(new Vector2(-hx + 3.3f, -0.9f), 0.7f);
+        }
+        return canvas.ToTexture("Page Art");
+    }
+
+    // أغراض رسم على الصفحة: قلم كبير، مساحة، كور ورق، دبابيس، برادة، ومكعبات ورق
+    static void PlaceProps(Transform t, Block b, GameManager gm, System.Random rng, LevelData data)
+    {
+        float hx = b.size.x * 0.5f, hz = b.size.z * 0.5f, top = b.size.y * 0.5f;
+        float R(float a, float c) => a + (float)rng.NextDouble() * (c - a);
+        bool NearDoor(float x) => Mathf.Abs(b.center.x + x - data.door.x) < 2f;
+
+        // قلم كبير ورا على الصفحة
+        if (b.size.x > 8f && rng.Next(2) == 0)
+        {
+            float x = R(-hx + 1.5f, hx - 5f);
+            if (!NearDoor(x) && !NearDoor(x + 3.5f))
+                Props.GiantPencil(t, new Vector3(x, top, R(1.1f, 1.4f)), R(-8f, 8f), gm);
+        }
+
+        // أغراض صغيرة متفرقة
+        for (float x = -hx + 1f; x < hx - 0.8f; x += R(1.6f, 2.8f))
+        {
+            if (NearDoor(x)) continue;
+            int kind = rng.Next(6);
+            bool back = kind != 3 && kind != 4 || rng.Next(2) == 0;
+            float z = back ? R(0.9f, hz - 0.35f) : R(-hz + 0.3f, -0.8f);
+            Vector3 p = new Vector3(x, top, z);
+            switch (kind)
+            {
+                case 0: Props.PaperBall(t, p, R(0.35f, 0.55f), gm, rng.Next(1000)); break;
+                case 1: Props.Eraser(t, p, R(-40f, 40f), gm, rng); break;
+                case 2: Props.PaperCube(t, p, R(0.35f, 0.6f), R(-30f, 30f), gm, rng); break;
+                case 3: Props.PaperClip(t, p, R(0f, 360f), gm); break;
+                case 4:
+                    for (int i = 0; i < 3; i++)
+                        Props.Shaving(t, p + new Vector3(R(-0.3f, 0.3f), 0f, R(-0.2f, 0.2f)), R(0f, 360f), gm, rng);
+                    break;
+                default:
+                    Props.PaperCube(t, p, R(0.4f, 0.55f), R(-20f, 20f), gm, rng);
+                    Props.PaperCube(t, p + new Vector3(0.55f, 0f, R(-0.1f, 0.1f)), R(0.3f, 0.4f), R(-30f, 30f), gm, rng);
+                    break;
+            }
         }
     }
 
