@@ -113,7 +113,10 @@ public static class ClaudeCapture
             if (allDone)
             {
                 SessionState.SetInt(StateKey, 0);
-                Status("done frames=" + Time.frameCount + " time=" + Time.timeSinceLevelLoad.ToString("0.0"));
+                var gmi = GameManager.Instance;
+                Status("done frames=" + Time.frameCount + " time=" + Time.timeSinceLevelLoad.ToString("0.0")
+                    + (gmi != null ? " level=" + (gmi.LevelIndex + 1) + " hearts=" + gmi.Hearts : "")
+                    + " deaths=" + DebugAutoPlayer.Deaths + " completed=" + DebugAutoPlayer.LevelsCompleted);
                 Time.captureFramerate = 0;
                 EditorApplication.isPaused = false;
                 EditorApplication.isPlaying = false;
@@ -190,6 +193,15 @@ public static class ClaudeCapture
                             zig.Add(c + new Vector3(k % 2 == 0 ? -0.35f : 0.35f, 0.3f - 0.6f * k / Mathf.Max(1, strokes), 0f));
                         Object.FindAnyObjectByType<InkDrawer>().DebugDraw(zig);
                     }
+                    break;
+                case "auto":
+                    // يشغل اللاعب الآلي
+                    DebugAutoPlayer.Deaths = 0;
+                    DebugAutoPlayer.LevelsCompleted = 0;
+                    if (GameManager.Instance.GetComponent<DebugAutoPlayer>() == null) GameManager.Instance.gameObject.AddComponent<DebugAutoPlayer>();
+                    break;
+                case "color":
+                    Object.FindAnyObjectByType<InkDrawer>().SelectColor((InkColor)int.Parse(arg));
                     break;
                 case "skip":
                     var intro = Object.FindAnyObjectByType<IntroCutscene>();

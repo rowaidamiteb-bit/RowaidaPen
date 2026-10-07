@@ -25,7 +25,7 @@ public class RowaidaController : MonoBehaviour
 
         // نثبت السرعة الأفقية ونخلي السرعة العمودية للجاذبية
         Vector3 v = rb.linearVelocity;
-        v.x = walkSpeed;
+        v.x = walkSpeed * (boosted ? 2.2f : 1f);
         rb.linearVelocity = v;
     }
 
@@ -34,6 +34,38 @@ public class RowaidaController : MonoBehaviour
         stopped = true;
         rb.linearVelocity = Vector3.zero;
         rb.isKinematic = true;
+    }
+
+    // ---------- ألوان الحبر ----------
+
+    bool boosted;      // الأزرق يسرّعها لين تلمس أرض ثانية
+    float nextBounce;
+
+    // الأحمر: تنط لفوق (عكس الجاذبية). يرجع true لو نطت
+    public bool Bounce(float speed)
+    {
+        if (Time.time < nextBounce) return false;
+        nextBounce = Time.time + 0.35f;
+        Vector3 v = rb.linearVelocity;
+        v.y = -Mathf.Sign(Physics.gravity.y) * speed;
+        rb.linearVelocity = v;
+        return true;
+    }
+
+    float lastBlue;
+
+    public void SetBoost(bool on)
+    {
+        boosted = on;
+        if (on) lastBlue = Time.time;
+    }
+
+    void OnCollisionStay(Collision c)
+    {
+        var fx = c.collider.GetComponentInParent<InkColorEffect>();
+        if (fx != null) fx.OnRowaida(this);
+        // لمست أرض عادية (مو بنفس لحظة لمس الأزرق): يخلص التسريع
+        else if (boosted && Time.time - lastBlue > 0.15f) boosted = false;
     }
 
     // وحش صدمها: تنط لورا شوي وتوقف عن المشي لحظة
@@ -55,6 +87,7 @@ public class RowaidaController : MonoBehaviour
         rb.position = position;
         transform.position = position;
         timer = 0f;
+        boosted = false;
         stopped = false;
     }
 }

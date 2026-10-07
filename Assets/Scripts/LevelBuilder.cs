@@ -18,6 +18,7 @@ public static class LevelBuilder
         for (int i = 0; i < data.blocks.Count; i++)
             CreatePaperBlock(root.transform, data.blocks[i], gm, rng, data, i == 0);
         if (data.bridgeHint && data.blocks.Count > 1) BridgeHint(root.transform, data.blocks[0], data.blocks[1], gm);
+        foreach (HintLine h in data.hints) DashedHint(root.transform, h, gm);
         CreateDoor(root.transform, data.door, gm);
         CreateRowaida(root.transform, data.spawn, gm);
         SpawnMonsters(root.transform, data, gm);
@@ -273,6 +274,20 @@ public static class LevelBuilder
                 pts.Add(Vector3.Lerp(from, to, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 0.5f);
             }
             Line("Hint", parent, pts, 0.03f, hint);
+        }
+    }
+
+    // خط تلميح منقط مستقيم بلون معين (فاتح شوي)
+    static void DashedHint(Transform parent, HintLine h, GameManager gm)
+    {
+        Color c = Color.Lerp(h.color, Color.white, 0.35f);
+        Material mat = gm.Mat("Hint " + ColorUtility.ToHtmlStringRGB(c), c, 0.2f);
+        float len = Vector3.Distance(h.a, h.b);
+        int dashes = Mathf.Max(2, Mathf.RoundToInt(len / 0.4f));
+        for (int i = 0; i < dashes; i++)
+        {
+            float t0 = i / (float)dashes, t1 = t0 + 0.55f / dashes;
+            Line("Hint", parent, new List<Vector3> { Vector3.Lerp(h.a, h.b, t0), Vector3.Lerp(h.a, h.b, t1) }, 0.035f, mat);
         }
     }
 

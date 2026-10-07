@@ -50,6 +50,7 @@ public class GameUI : MonoBehaviour
         levelText = Label(root, "", 40, TextAnchor.MiddleRight, new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(400f, 50f));
         BuildHearts(root);
         BuildWindArrow(root);
+        BuildPalette(root);
         messageText = Label(root, "", 80, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
         subtitleText = Label(root, "", 40, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1700f, 70f));
         subtitleText.color = Color.white;
@@ -76,6 +77,78 @@ public class GameUI : MonoBehaviour
         subtitleText.text = ArabicText.Fix(subtitle ?? "");
         subtitleText.enabled = true;
         messageTimer = duration;
+    }
+
+    // ---------- ألوان الحبر ----------
+
+    readonly Image[] swatches = new Image[4];
+    readonly Image[] swatchRings = new Image[4];
+
+    void BuildPalette(Transform root)
+    {
+        Sprite dot = DotSprite();
+        string[] keys = { "1", "2", "3", "4" };
+        for (int i = 0; i < 4; i++)
+        {
+            Vector2 pos = new Vector2(-135f + i * 90f, -60f);
+            Image ring = Panel(root, "Swatch Ring", Color.white);
+            ring.sprite = dot;
+            Place(ring.rectTransform, new Vector2(0.5f, 1f), pos, new Vector2(78f, 78f));
+            Image s = Panel(root, "Swatch", InkColorEffect.ColorOf((InkColor)i));
+            s.sprite = dot;
+            Place(s.rectTransform, new Vector2(0.5f, 1f), pos, new Vector2(60f, 60f));
+            Text key = Label(s.transform, keys[i], 26, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(60f, 60f));
+            key.color = Color.white;
+            swatches[i] = s;
+            swatchRings[i] = ring;
+        }
+        SetPalette(false, InkColor.Black);
+    }
+
+    public void SetPalette(bool visible, InkColor selected)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            swatches[i].enabled = visible;
+            swatches[i].GetComponentInChildren<Text>().enabled = visible;
+            bool on = (int)selected == i;
+            swatchRings[i].enabled = visible && on;
+            swatches[i].rectTransform.localScale = Vector3.one * (on ? 1.12f : 0.9f);
+        }
+    }
+
+    // الضغطة على لون؟
+    public bool PaletteHit(Vector2 screen, out InkColor color)
+    {
+        color = InkColor.Black;
+        for (int i = 0; i < 4; i++)
+        {
+            if (!swatches[i].enabled) continue;
+            if (RectTransformUtility.RectangleContainsScreenPoint(swatches[i].rectTransform, screen, canvasRef.worldCamera))
+            {
+                color = (InkColor)i;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // دائرة ناعمة (للألوان)
+    static Sprite DotSprite()
+    {
+        const int s = 64;
+        var tex = new Texture2D(s, s, TextureFormat.RGBA32, true) { name = "Dot", wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[s * s];
+        for (int y = 0; y < s; y++)
+            for (int x = 0; x < s; x++)
+            {
+                float dx = (x + 0.5f) / s * 2f - 1f, dy = (y + 0.5f) / s * 2f - 1f;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
+                px[y * s + x] = new Color(1f, 1f, 1f, Mathf.Clamp01((1f - d) * s * 0.5f));
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 100f);
     }
 
     // ---------- سهم الريح ----------

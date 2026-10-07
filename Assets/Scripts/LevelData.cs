@@ -30,6 +30,40 @@ public struct MonsterSpawn
     }
 }
 
+// خط تلميح منقط من نقطة لنقطة بلون معين
+public struct HintLine
+{
+    public Vector3 a, b;
+    public Color color;
+
+    public HintLine(Vector3 a, Vector3 b, Color color)
+    {
+        this.a = a;
+        this.b = b;
+        this.color = color;
+    }
+}
+
+// صفحة تنطوي: تلف حول مفصل (hinge) لتحت (مثل جسر متحرك) أو لفوق (تصير جدار)
+public struct FoldSpec
+{
+    public float hingeX, length, top;
+    public bool foldUp;          // true = توقف مثل الجدار، false = تنزل لتحت
+    public bool hingeOnRight;    // المفصل على يمين الصفحة بدل يسارها
+    public float period, phase;  // طول الدورة كاملة، ووين تبدأ فيها
+
+    public FoldSpec(float hingeX, float length, float top, bool foldUp, bool hingeOnRight, float period, float phase)
+    {
+        this.hingeX = hingeX;
+        this.length = length;
+        this.top = top;
+        this.foldUp = foldUp;
+        this.hingeOnRight = hingeOnRight;
+        this.period = period;
+        this.phase = phase;
+    }
+}
+
 // وصف مرحلة كاملة
 public class LevelData
 {
@@ -48,6 +82,19 @@ public class LevelData
     public List<MonsterSpawn> monsters = new List<MonsterSpawn>();   // وحوش الشخابيط
     public bool Scribbly => monsters.Count > 0;
     public bool monsterHint;       // أول وحش فوقه تلميح شخبطة
+
+    public bool colors;                                   // صفحة الألوان: أحمر ينطط، أزرق يزلّق، أخضر يطول
+    public List<HintLine> hints = new List<HintLine>();   // خطوط تلميح منقطة (ملونة)
+
+    public float eraserSpeed;                             // صفحة الممحاة: سرعة الممحاة العملاقة (0 = ما فيه)
+    public List<Vector2> eraserHoles = new List<Vector2>(); // الأماكن اللي تمسحها من الأرض (من x لـ x)
+
+    public bool flipped;                                  // الصفحة المقلوبة: الجاذبية لفوق
+
+    public float floodStart, floodSpeed, floodMax;        // صفحة الحبر المنسكب: الحبر يرتفع
+    public bool Flood => floodSpeed > 0f;
+
+    public List<FoldSpec> folds = new List<FoldSpec>();   // صفحة الطيّة: صفحات تنطوي وتنفتح
     public List<Block> blocks = new List<Block>();
 }
 
@@ -63,7 +110,158 @@ public static class Levels
         WindLevel2(),
         ScribbleLevel1(),
         ScribbleLevel2(),
+        ColorsPage(),
+        EraserPage(),
+        UpsideDownPage(),
+        SpilledInkPage(),
+        FoldingPage(),
     };
+
+
+    // صفحة سميكة من فوق (top) لتحت (bottom)، مثل جدار عالي
+    static Block Wall(float fromX, float toX, float top, float bottom = -1.2f)
+    {
+        return new Block(new Vector3((fromX + toX) * 0.5f, (top + bottom) * 0.5f, 0f), new Vector3(toX - fromX, top - bottom, 4f));
+    }
+
+    // صفحة الألوان: جدار عالي (أحمر ينطط)، حفرة طويلة (أخضر يطول)، وحفرة عريضة (أزرق يطيّرها)
+    static LevelData ColorsPage()
+    {
+        return new LevelData
+        {
+            title = "صفحة الألوان",
+            subtitle = "٢ أحمر ينطط  •  ٣ أزرق يزلّق  •  ٤ أخضر يطول",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(42f, 0f, 0f),
+            ink = 9f,
+            colors = true,
+            blocks =
+            {
+                Page(-7f, 6f),              // جدار عالي بعده
+                Wall(6f, 14f, 2.5f),        // حفرة طويلة 8
+                Wall(22f, 28f, 2.5f),       // حفرة 5.5 وصفحة أوطى
+                Page(33.5f, 46f),
+            },
+            hints =
+            {
+                new HintLine(new Vector3(4f, 0.18f, 0f), new Vector3(5.3f, 0.18f, 0f), InkColorEffect.ColorOf(InkColor.Red)),
+                new HintLine(new Vector3(13.6f, 2.7f, 0f), new Vector3(15.8f, 2.7f, 0f), InkColorEffect.ColorOf(InkColor.Green)),
+                new HintLine(new Vector3(25.5f, 2.68f, 0f), new Vector3(27.8f, 3.4f, 0f), InkColorEffect.ColorOf(InkColor.Blue)),
+            },
+        };
+    }
+
+    // صفحة الممحاة: ممحاة عملاقة تمشي قدام رويدا وتمسح الأرض
+    static LevelData EraserPage()
+    {
+        return new LevelData
+        {
+            title = "صفحة الممحاة",
+            subtitle = "ممحاة عملاقة تمسح الأرض قدامك... ارسمي قبل ما توصلين!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(50f, 0f, 0f),
+            ink = 24f,
+            eraserSpeed = 3.3f,
+            blocks = { Page(-7f, 54f) },
+            eraserHoles =
+            {
+                new Vector2(8f, 11f), new Vector2(15f, 18.5f), new Vector2(23f, 26f),
+                new Vector2(31f, 34.5f), new Vector2(39f, 42f),
+            },
+        };
+    }
+
+    // صفحة سقف: سطحها اللي تمشي عليه رويدا تحت (surface)
+    static Block Ceiling(float fromX, float toX, float surface)
+    {
+        const float thickness = 1.2f;
+        return new Block(new Vector3((fromX + toX) * 0.5f, surface + thickness * 0.5f, 0f), new Vector3(toX - fromX, thickness, 4f));
+    }
+
+    // الصفحة المقلوبة: الجاذبية لفوق، ورويدا تمشي على السقف
+    static LevelData UpsideDownPage()
+    {
+        return new LevelData
+        {
+            title = "الصفحة المقلوبة",
+            subtitle = "الجاذبية انقلبت! رويدا تمشي على السقف... والطيحة لفوق",
+            spawn = new Vector3(-5f, -1f, 0f),
+            door = new Vector3(35f, 0f, 0f),
+            ink = 22f,
+            flipped = true,
+            deathY = 9f,
+            blocks =
+            {
+                Ceiling(-7f, 5f, 0f),       // حفرة 3
+                Ceiling(8f, 15f, 0.8f),     // حفرة 3 (السقف اللي بعده أوطى)
+                Ceiling(18f, 25f, -0.6f),   // حفرة 3
+                Ceiling(28f, 38f, 0f),
+            },
+        };
+    }
+
+    // صفحة الحبر المنسكب: الحبر يرتفع، سلم يطلّعها، وقارب يطفو ويرفعها
+    static LevelData SpilledInkPage()
+    {
+        var level = new LevelData
+        {
+            title = "صفحة الحبر المنسكب",
+            subtitle = "الحبر يرتفع! ارسمي سلم تطلع عليه... وقارب كبير يطفو فيها",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(23f, 2.3f, 0f),
+            ink = 17f,
+            floodStart = -2.5f,
+            floodSpeed = 0.33f,
+            floodMax = 2f,
+            blocks =
+            {
+                Page(-7f, 3f),                 // حفرة 3 وصفحة أعلى (سلم)
+                Wall(6f, 11f, 1.3f, -3.6f),    // حوض الحبر بعده
+                Page(11f, 16f, -3f),           // أرضية الحوض
+                Wall(16f, 27f, 2.3f, -3.6f),   // جدار عالي (القارب يرفعها له)
+            },
+            hints =
+            {
+                new HintLine(new Vector3(2.7f, 0.2f, 0f), new Vector3(6.4f, 1.5f, 0f), InkColorEffect.ColorOf(InkColor.Black)),
+            },
+        };
+        // قارب منقط في الحوض
+        const int n = 16;
+        for (int i = 0; i < n; i += 2)
+        {
+            float a0 = i / (float)n * Mathf.PI * 2f, a1 = (i + 1) / (float)n * Mathf.PI * 2f;
+            Vector3 c = new Vector3(13.5f, -1.2f, 0f);
+            level.hints.Add(new HintLine(c + new Vector3(Mathf.Cos(a0) * 2f, Mathf.Sin(a0) * 0.55f, 0f), c + new Vector3(Mathf.Cos(a1) * 2f, Mathf.Sin(a1) * 0.55f, 0f), InkColorEffect.ColorOf(InkColor.Black)));
+        }
+        return level;
+    }
+
+    // صفحة الطيّة: صفحات تنطوي لتحت (جسر يختفي) وصفحة توقف مثل الجدار
+    static LevelData FoldingPage()
+    {
+        return new LevelData
+        {
+            title = "صفحة الطيّة",
+            subtitle = "الصفحات تنطوي وتنفتح... انتبهي للتوقيت!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(35f, 0f, 0f),
+            ink = 20f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(7.5f, 13f),
+                Page(16f, 22f),
+                Page(28f, 38f),
+            },
+            folds =
+            {
+                new FoldSpec(4f, 3.5f, 0f, false, false, 6f, 0f),      // تنزل لتحت
+                new FoldSpec(13f, 3f, 0f, true, false, 5f, 1f),        // توقف جدار
+                new FoldSpec(22f, 3f, 0f, false, false, 6f, 2f),       // زوج يلتقي في النص
+                new FoldSpec(28f, 3f, 0f, false, true, 6f, 4.5f),
+            },
+        };
+    }
 
     // صفحات الشخابيط: وحش واحد، وبعدين وحشين قبل الباب
     static LevelData ScribbleLevel1()

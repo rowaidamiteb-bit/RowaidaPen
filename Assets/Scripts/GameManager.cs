@@ -32,6 +32,7 @@ public class GameManager : MonoBehaviour
     public RowaidaController Rowaida { get; private set; }
     public Transform DrawingsRoot { get; private set; }
     public SoundManager Sound { get; private set; }
+    public GameUI UI => ui;
     public LevelData CurrentLevel => levelIndex >= 0 && levelIndex < Levels.All.Count ? Levels.All[levelIndex] : null;
 
     readonly Dictionary<string, Material> materials = new Dictionary<string, Material>();
@@ -105,12 +106,15 @@ public class GameManager : MonoBehaviour
 
         ui.SetInk(InkMax > 0f ? Ink / InkMax : 0f);
         ui.SetWind(Weather.Wind, CurrentLevel != null && CurrentLevel.Windy);
+        ui.SetPalette(CurrentLevel != null && CurrentLevel.colors, drawer.CurrentColor);
     }
 
     // ---------- القلوب ونقاط الرجوع ----------
 
     const int MaxHearts = 3;
     int hearts;
+    public int Hearts => hearts;
+    public int LevelIndex => levelIndex;
     int checkpointPage;      // آخر صفحة وقفت عليها رويدا
     float checkpointInk;     // كمية الحبر لما وصلتها
 

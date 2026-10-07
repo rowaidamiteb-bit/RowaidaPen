@@ -37,7 +37,15 @@ public class InkDrawer : MonoBehaviour
             return;
         }
 
+        HandleColorKeys();
         Vector2 screen = mouse.position.ReadValue();
+
+        // ضغطة على ألوان الحبر في الشاشة: نغير اللون وما نرسم
+        if (mouse.leftButton.wasPressedThisFrame && ColorsAllowed && Game.UI.PaletteHit(screen, out InkColor picked))
+        {
+            SelectColor(picked);
+            return;
+        }
         if (mouse.leftButton.wasPressedThisFrame)
             BeginStroke(screen);
         else if (drawing && mouse.leftButton.isPressed)
@@ -119,7 +127,7 @@ public class InkDrawer : MonoBehaviour
         stroke.transform.SetParent(Game.DrawingsRoot, false);
         strokeMesh = new Mesh { name = "Ink Tube" };
         stroke.AddComponent<MeshFilter>().sharedMesh = strokeMesh;
-        stroke.AddComponent<MeshRenderer>().sharedMaterial = erasing ? Game.pencilMaterial : Game.inkMaterial;
+        stroke.AddComponent<MeshRenderer>().sharedMaterial = erasing ? Game.pencilMaterial : ColorsAllowed ? ColorMaterial(CurrentColor) : Game.inkMaterial;
     }
 
     void ContinueStroke(Vector2 screen)
@@ -245,6 +253,7 @@ public class InkDrawer : MonoBehaviour
         TubeMesh.Build(strokeMesh, points, tubeRadius, false);
         AddColliders(stroke.transform, points, false);
         AddRainErosion(points, false);
+        ApplyColor(points, false);
         AddWindDrift();
     }
 
@@ -265,6 +274,7 @@ public class InkDrawer : MonoBehaviour
         TubeMesh.Build(strokeMesh, local, tubeRadius, true);
         AddColliders(stroke.transform, local, true);
         AddRainErosion(local, true);
+        ApplyColor(local, true);
 
         var rb = stroke.AddComponent<Rigidbody>();
         rb.mass = Mathf.Max(0.5f, strokeLength * 0.4f);
@@ -294,11 +304,16 @@ public class InkDrawer : MonoBehaviour
     // أجزاء تصادم على شكل كبسولات على طول الخط
     void AddColliders(Transform parent, List<Vector3> pts, bool closed)
     {
+        BuildColliders(parent, pts, closed, tubeRadius, colliderStep, ColorPhysics());
+    }
+
+    public static void BuildColliders(Transform parent, IList<Vector3> pts, bool closed, float radius, int step = 3, PhysicsMaterial material = null)
+    {
         if (inkPhysics == null)
             inkPhysics = new PhysicsMaterial("Ink") { dynamicFriction = 0.6f, staticFriction = 0.7f, bounciness = 0f };
 
         var simple = new List<Vector3>();
-        for (int i = 0; i < pts.Count; i += colliderStep) simple.Add(pts[i]);
+        for (int i = 0; i < pts.Count; i += step) simple.Add(pts[i]);
         if (!closed && simple[simple.Count - 1] != pts[pts.Count - 1]) simple.Add(pts[pts.Count - 1]);
 
         int count = closed ? simple.Count : simple.Count - 1;
@@ -317,9 +332,58 @@ public class InkDrawer : MonoBehaviour
 
             var cap = go.AddComponent<CapsuleCollider>();
             cap.direction = 2;
-            cap.radius = tubeRadius;
-            cap.height = len + tubeRadius * 2f;
-            cap.sharedMaterial = inkPhysics;
+            cap.radius = radius;
+            cap.height = len + radius * 2f;
+            cap.sharedMaterial = material != null ? material : inkPhysics;
         }
+    }
+
+    // ---------- ألوان الحبر (صفحة الألوان) ----------
+
+    public InkColor CurrentColor { get; private set; } = InkColor.Black;
+    static PhysicsMaterial bouncyPhysics, slipperyPhysics;
+
+    public void SelectColor(InkColor c)
+    {
+        if (CurrentColor == c) return;
+        CurrentColor = c;
+        Game.Sound.PlayChomp();
+    }
+
+    bool ColorsAllowed => Game.CurrentLevel != null && Game.CurrentLevel.colors;
+
+    Material ColorMaterial(InkColor c)
+    {
+        if (c == InkColor.Black) return Game.inkMaterial;
+        return Game.Mat("Ink " + c, InkColorEffect.ColorOf(c), 0.5f, 0.1f);
+    }
+
+    PhysicsMaterial ColorPhysics()
+    {
+        if (!ColorsAllowed) return null;
+        if (CurrentColor == InkColor.Red)
+            return bouncyPhysics ??= new PhysicsMaterial("Bouncy Ink") { bounciness = 0.9f, bounceCombine = PhysicsMaterialCombine.Maximum, dynamicFriction = 0.4f, staticFriction = 0.4f };
+        if (CurrentColor == InkColor.Blue)
+            return slipperyPhysics ??= new PhysicsMaterial("Slippery Ink") { dynamicFriction = 0f, staticFriction = 0f, frictionCombine = PhysicsMaterialCombine.Minimum };
+        return null;
+    }
+
+    // لما تخلص الرسمة: نعطيها قوة لونها
+    void ApplyColor(List<Vector3> pts, bool closed)
+    {
+        if (!ColorsAllowed || CurrentColor == InkColor.Black) return;
+        var fx = stroke.AddComponent<InkColorEffect>();
+        fx.color = CurrentColor;
+        if (CurrentColor == InkColor.Green && !closed) fx.StartGrowing(strokeMesh, pts, tubeRadius);
+    }
+
+    void HandleColorKeys()
+    {
+        var kb = Keyboard.current;
+        if (kb == null || !ColorsAllowed) return;
+        if (kb.digit1Key.wasPressedThisFrame) SelectColor(InkColor.Black);
+        if (kb.digit2Key.wasPressedThisFrame) SelectColor(InkColor.Red);
+        if (kb.digit3Key.wasPressedThisFrame) SelectColor(InkColor.Blue);
+        if (kb.digit4Key.wasPressedThisFrame) SelectColor(InkColor.Green);
     }
 }
