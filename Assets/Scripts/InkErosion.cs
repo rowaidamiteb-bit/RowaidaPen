@@ -4,7 +4,8 @@ using UnityEngine;
 // المطر يمسح الرسمة: لونها يبهت شوي شوي، وتنقط منها قطرات، وفي الآخر تخف وتختفي
 public class InkErosion : MonoBehaviour
 {
-    const float ShrinkTime = 1.3f;   // آخر كم ثانية: الخط يخف لين يختفي
+    // آخر جزء من العمر: الخط يخف لين يختفي (ثانية وحدة أو أقل لو الوقت قصير)
+    float ShrinkTime => Mathf.Min(1f, lifetime * 0.4f);
 
     float lifetime;
     float age;
