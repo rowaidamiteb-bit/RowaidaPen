@@ -49,6 +49,7 @@ public class GameUI : MonoBehaviour
 
         levelText = Label(root, "", 40, TextAnchor.MiddleRight, new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(400f, 50f));
         BuildHearts(root);
+        BuildWindArrow(root);
         messageText = Label(root, "", 80, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
         subtitleText = Label(root, "", 40, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1700f, 70f));
         subtitleText.color = Color.white;
@@ -75,6 +76,55 @@ public class GameUI : MonoBehaviour
         subtitleText.text = ArabicText.Fix(subtitle ?? "");
         subtitleText.enabled = true;
         messageTimer = duration;
+    }
+
+    // ---------- سهم الريح ----------
+
+    Image windArrow;
+    Text windLabel;
+
+    void BuildWindArrow(Transform root)
+    {
+        windLabel = Label(root, ArabicText.Fix("الريح"), 30, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(200f, 40f));
+        windLabel.color = Color.white;
+        windLabel.gameObject.AddComponent<Outline>().effectColor = new Color(0.05f, 0.03f, 0.1f, 0.9f);
+        windArrow = Panel(root, "Wind Arrow", Color.white);
+        windArrow.sprite = ArrowSprite();
+        Place(windArrow.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -82f), new Vector2(150f, 48f));
+        windLabel.enabled = windArrow.enabled = false;
+    }
+
+    // يوري اتجاه الريح وقوتها (0 = نخفي السهم)
+    public void SetWind(float wind, bool visible)
+    {
+        windLabel.enabled = windArrow.enabled = visible;
+        if (!visible) return;
+        float strength = Mathf.Clamp01(Mathf.Abs(wind) / 1.5f);
+        float dir = wind >= 0f ? 1f : -1f;
+        float wobble = 1f + Mathf.Sin(Time.time * 9f) * 0.05f * strength;
+        windArrow.rectTransform.localScale = new Vector3(dir * (0.35f + 0.65f * strength) * wobble, 1f, 1f);
+        windArrow.color = Color.Lerp(new Color(1f, 1f, 1f, 0.5f), new Color(0.75f, 0.9f, 1f, 1f), strength);
+    }
+
+    // سهم يأشر لليمين
+    static Sprite ArrowSprite()
+    {
+        const int w = 192, h = 64;
+        var tex = new Texture2D(w, h, TextureFormat.RGBA32, true) { name = "Wind Arrow", wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[w * h];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                float u = (x + 0.5f) / w, v = (y + 0.5f) / h - 0.5f;
+                float shaft = (u < 0.68f && Mathf.Abs(v) < 0.12f) ? 1f : 0f;
+                float head = (u >= 0.6f && Mathf.Abs(v) < (1f - u) * 1.25f) ? 1f : 0f;
+                float a = Mathf.Max(shaft, head);
+                float edge = Mathf.Max((u < 0.68f && Mathf.Abs(v) > 0.07f) ? shaft : 0f, (Mathf.Abs(v) > (1f - u) * 1.25f - 0.06f) ? head : 0f);
+                px[y * w + x] = Color.Lerp(Color.white, new Color(0.2f, 0.25f, 0.4f), edge * 0.8f) * new Color(1f, 1f, 1f, a);
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
     }
 
     // ---------- القلوب ----------

@@ -38,8 +38,96 @@ public class Weather : MonoBehaviour
         splash.gameObject.SetActive(false);
     }
 
+    // ---------- الريح ----------
+
+    // سرعة الريح الحين (موجب = لليمين). كل شي يتأثر بالريح يقرا منها
+    public static float Wind { get; private set; }
+
+    LevelData windLevel;
+    float windClock;
+    ParticleSystem windStreaks;
+
+    void UpdateWind()
+    {
+        if (windLevel == null || !windLevel.Windy)
+        {
+            Wind = 0f;
+            return;
+        }
+        windClock += Time.deltaTime;
+        float w = windLevel.windSpeed;
+        if (windLevel.windSwitchPeriod > 0f)
+        {
+            // تعكس اتجاهها كل فترة، بانتقال ناعم
+            float s = Mathf.Sin(windClock * Mathf.PI * 2f / (windLevel.windSwitchPeriod * 2f));
+            w *= Mathf.Clamp(s * 3f, -1f, 1f);
+        }
+        // هبات خفيفة
+        w *= 1f + 0.2f * Mathf.Sin(windClock * 2.3f) * Mathf.Sin(windClock * 0.7f);
+        Wind = w;
+
+        var vel = windStreaks.velocityOverLifetime;
+        vel.x = new ParticleSystem.MinMaxCurve(w * 11f, w * 15f);
+        var emission = windStreaks.emission;
+        emission.rateOverTime = Mathf.Abs(w) * 90f;
+        gm.Sound.SetWind(Mathf.Clamp01(Mathf.Abs(w) / 1.5f));
+    }
+
+    ParticleSystem CreateWindStreaks()
+    {
+        var go = new GameObject("Wind Streaks");
+        go.transform.SetParent(transform, false);
+        var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        var main = ps.main;
+        main.loop = true;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.6f, 1.1f);
+        main.startSpeed = 0f;
+        main.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.06f);
+        main.startColor = new Color(0.9f, 0.92f, 1f, 0.35f);
+        main.maxParticles = 400;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Box;
+        shape.scale = new Vector3(40f, 9f, 12f);
+
+        var vel = ps.velocityOverLifetime;
+        vel.enabled = true;
+        vel.space = ParticleSystemSimulationSpace.World;
+        vel.x = new ParticleSystem.MinMaxCurve(-12f, -10f);
+        vel.y = new ParticleSystem.MinMaxCurve(-0.3f, 0.3f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+
+        // تبان وتختفي بنعومة
+        var col = ps.colorOverLifetime;
+        col.enabled = true;
+        var grad = new Gradient();
+        grad.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                     new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.3f), new GradientAlphaKey(0f, 1f) });
+        col.color = grad;
+
+        var r = go.GetComponent<ParticleSystemRenderer>();
+        r.renderMode = ParticleSystemRenderMode.Stretch;
+        r.velocityScale = 0.12f;
+        r.lengthScale = 2f;
+        r.material = ParticleMaterial("Wind Streak", StreakTexture());
+        r.shadowCastingMode = ShadowCastingMode.Off;
+        return ps;
+    }
+
     public void Apply(LevelData level)
     {
+        windLevel = level;
+        windClock = 0f;
+        bool windy = level != null && level.Windy;
+        if (windStreaks == null) windStreaks = CreateWindStreaks();
+        windStreaks.gameObject.SetActive(windy);
+        if (windy) windStreaks.Play();
+        if (!windy) gm.Sound.SetWind(0f);
+        UpdateWind();
+
         raining = level != null && level.Rain;
         rain.gameObject.SetActive(raining);
         splash.gameObject.SetActive(raining);
@@ -84,7 +172,9 @@ public class Weather : MonoBehaviour
 
     void Update()
     {
-        if (!raining || gm.IntroActive) return;
+        if (gm.IntroActive) return;
+        UpdateWind();
+        if (!raining) return;
 
         // البرق: ومضتين سريعة، والرعد بعدها بشوي
         if (Time.time >= nextLightning)
@@ -108,9 +198,11 @@ public class Weather : MonoBehaviour
 
     void LateUpdate()
     {
-        if (!raining) return;
         Camera cam = Camera.main;
         if (cam == null) return;
+        if (windStreaks != null && windStreaks.gameObject.activeSelf)
+            windStreaks.transform.position = new Vector3(cam.transform.position.x + 3f, 3.5f, 3f);
+        if (!raining) return;
         // المطر يتبع الكاميرا
         Vector3 c = cam.transform.position;
         // نخلي المطر يبدأ بعيد شوي عن الكاميرا عشان ما تطلع قطرات ضخمة قدامها

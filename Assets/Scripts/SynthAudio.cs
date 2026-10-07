@@ -316,6 +316,28 @@ public static class SynthAudio
         return Make("Thunder", buf);
     }
 
+    // صوت ريح مستمر (لوب): هوا يعلى وينزل
+    public static AudioClip Wind()
+    {
+        int n = Mathf.RoundToInt(6f * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(47);
+        float lp = 0f, lp2 = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float noise = (float)rng.NextDouble() * 2f - 1f;
+            float swell = 0.6f + 0.4f * Mathf.Sin(t * Mathf.PI * 2f / 3f) * Mathf.Sin(t * Mathf.PI * 2f / 6f + 1f);
+            float cutoff = 0.03f + 0.05f * swell;
+            lp += (noise - lp) * cutoff;
+            lp2 += (lp - lp2) * cutoff;
+            buf[i] = (lp - lp2 * 0.6f) * swell;
+        }
+        buf = CrossfadeLoop(buf, Mathf.RoundToInt(0.3f * Rate));
+        Normalize(buf, 0.6f);
+        return Make("Wind", buf);
+    }
+
     // ---------- أدوات ----------
 
     // نخلط آخر الصوت ببدايته ونقصه، عشان اللوب ما يطقطق عند الرجوع للبداية

@@ -193,6 +193,8 @@ public class RowaidaModel : MonoBehaviour
         Vector3 p = model.localPosition;
         p.y = Mathf.Abs(Mathf.Sin(phase)) * 0.03f * amount;
         model.localPosition = p;
-        hair.localRotation = Quaternion.Euler(-4f * amount + Mathf.Sin(phase * 2f) * 1.5f * amount, 0f, 0f);
+        // الشعر يطير مع الريح (ريح من قدام = الشعر يروح لورا)
+        float windPush = Mathf.Clamp(-Weather.Wind * 9f, -14f, 14f) * (0.8f + 0.2f * Mathf.Sin(Time.time * 7f));
+        hair.localRotation = Quaternion.Euler(-4f * amount + Mathf.Sin(phase * 2f) * 1.5f * amount + windPush, 0f, 0f);
     }
 }

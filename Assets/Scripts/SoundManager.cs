@@ -107,6 +107,22 @@ public class SoundManager : MonoBehaviour
         else if (!on && rainSource.isPlaying) rainSource.Stop();
     }
 
+    // صوت الريح: intensity من 0 (ما فيه ريح) لـ 1 (ريح قوية)
+    AudioSource windSource;
+
+    public void SetWind(float intensity)
+    {
+        if (windSource == null)
+        {
+            if (intensity <= 0f) return;
+            windSource = NewSource("Wind", SynthAudio.Wind(), true);
+        }
+        windSource.volume = intensity > 0f ? 0.12f + 0.35f * intensity : 0f;
+        windSource.pitch = 0.8f + 0.4f * intensity;
+        if (intensity > 0f && !windSource.isPlaying) windSource.Play();
+        else if (intensity <= 0f && windSource.isPlaying) windSource.Stop();
+    }
+
     public void PlayThunder()
     {
         if (thunderClip == null) thunderClip = SynthAudio.Thunder();

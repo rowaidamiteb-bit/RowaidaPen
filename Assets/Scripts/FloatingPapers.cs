@@ -38,11 +38,17 @@ public class FloatingPapers : MonoBehaviour
     {
         if (papers == null) return;
         float t = Time.time;
+        Camera cam = Camera.main;
+        float cx = cam != null ? cam.transform.position.x : 0f;
         for (int i = 0; i < papers.Length; i++)
         {
             float o = offset[i];
+            // الريح تطيّر الأوراق، ولما تبعد عن الكاميرا ترجع من الجهة الثانية
+            basePos[i].x += Weather.Wind * 2.5f * Time.deltaTime;
+            if (basePos[i].x < cx - 35f) basePos[i].x += 85f;
+            else if (basePos[i].x > cx + 50f) basePos[i].x -= 85f;
             papers[i].position = basePos[i] + new Vector3(Mathf.Sin(t * 0.2f + o) * 0.6f, Mathf.Sin(t * 0.35f + o * 1.7f) * 0.4f, 0f);
-            papers[i].Rotate(spin[i] * Time.deltaTime, Space.Self);
+            papers[i].Rotate(spin[i] * Time.deltaTime * (1f + Mathf.Abs(Weather.Wind) * 2f), Space.Self);
         }
     }
 }

@@ -27,6 +27,9 @@ public class LevelData
     public string subtitle;        // جملة تطلع تحت عنوان المرحلة
     public float rainEraseTime;    // المطر يمسح الرسمة بعد هالكم ثانية (0 = ما فيه مطر)
     public bool Rain => rainEraseTime > 0f;
+    public float windSpeed;        // سرعة الريح (موجب = لليمين، سالب = لليسار، 0 = ما فيه ريح)
+    public float windSwitchPeriod; // كل كم ثانية تعكس الريح اتجاهها (0 = ثابتة)
+    public bool Windy => windSpeed != 0f;
     public List<Block> blocks = new List<Block>();
 }
 
@@ -38,7 +41,52 @@ public static class Levels
         Level1(),
         RainLevel1(),
         RainLevel2(),
+        WindLevel1(),
+        WindLevel2(),
     };
+
+    // صفحات الريح: ريح ثابتة جاية من قدام تدفع الرسمات لورا
+    static LevelData WindLevel1()
+    {
+        return new LevelData
+        {
+            title = "صفحات الريح",
+            subtitle = "الريح تدفع الرسمات لورا... ارسمي الجسر أطول من قدام!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(35f, 0f, 0f),
+            ink = 24f,
+            windSpeed = -1f,
+            blocks =
+            {
+                Page(-7f, 5f),        // حفرة 3
+                Page(8f, 15f),        // حفرة 3.5
+                Page(18.5f, 25f),     // حفرة 3
+                Page(28f, 38f),
+            },
+        };
+    }
+
+    // العاصفة: الريح تغيّر اتجاهها كل كم ثانية
+    static LevelData WindLevel2()
+    {
+        return new LevelData
+        {
+            title = "العاصفة",
+            subtitle = "الريح تغيّر اتجاهها... انتبهي للسهم فوق!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(33f, 0f, 0f),
+            ink = 26f,
+            windSpeed = 1.4f,
+            windSwitchPeriod = 7f,
+            blocks =
+            {
+                Page(-7f, 4f),             // حفرة 3.5
+                Page(7.5f, 13f),           // حفرة 3 وبعدها صفحة أعلى شوي
+                Page(16f, 22f, 0.5f),      // حفرة 3.5
+                Page(25.5f, 36f),
+            },
+        };
+    }
 
     // صندوق صفحة من أول x لآخر x، وسطحها العلوي على ارتفاع top
     static Block Page(float fromX, float toX, float top = 0f)

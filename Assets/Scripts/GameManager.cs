@@ -104,6 +104,7 @@ public class GameManager : MonoBehaviour
         }
 
         ui.SetInk(InkMax > 0f ? Ink / InkMax : 0f);
+        ui.SetWind(Weather.Wind, CurrentLevel != null && CurrentLevel.Windy);
     }
 
     // ---------- القلوب ونقاط الرجوع ----------

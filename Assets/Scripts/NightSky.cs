@@ -122,7 +122,8 @@ public class NightSky : MonoBehaviour
         for (int i = 0; i < clouds.Count; i++)
         {
             Vector3 p = clouds[i].localPosition;
-            p.x += cloudDrift[i] * Time.deltaTime;
+            p.x += (cloudDrift[i] + Weather.Wind * 1.5f) * Time.deltaTime;
+            if (p.x < -80f) p.x = 80f;
             if (p.x > 80f) p.x = -80f;
             clouds[i].localPosition = p;
         }

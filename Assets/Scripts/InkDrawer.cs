@@ -206,6 +206,7 @@ public class InkDrawer : MonoBehaviour
         TubeMesh.Build(strokeMesh, points, tubeRadius, false);
         AddColliders(stroke.transform, points, false);
         AddRainErosion(points, false);
+        AddWindDrift();
     }
 
     void MakeFallingShape()
@@ -232,6 +233,7 @@ public class InkDrawer : MonoBehaviour
         rb.constraints = RigidbodyConstraints.FreezePositionZ
                          | RigidbodyConstraints.FreezeRotationX
                          | RigidbodyConstraints.FreezeRotationY;
+        AddWindDrift();
     }
 
     // في مراحل المطر: الرسمة تنمسح بعد كم ثانية
@@ -240,6 +242,13 @@ public class InkDrawer : MonoBehaviour
         LevelData level = Game.CurrentLevel;
         if (level == null || !level.Rain) return;
         stroke.AddComponent<InkErosion>().Init(strokeMesh, pts, tubeRadius, closed, level.rainEraseTime);
+    }
+
+    // في مراحل الريح: الريح تدفع الرسمة
+    void AddWindDrift()
+    {
+        LevelData level = Game.CurrentLevel;
+        if (level != null && level.Windy) stroke.AddComponent<InkDrift>();
     }
 
     // أجزاء تصادم على شكل كبسولات على طول الخط
