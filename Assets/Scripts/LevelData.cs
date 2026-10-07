@@ -1,0 +1,53 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+// مكعب واحد من أرضية المرحلة (المركز والحجم)
+[System.Serializable]
+public struct Block
+{
+    public Vector3 center;
+    public Vector3 size;
+
+    public Block(Vector3 center, Vector3 size)
+    {
+        this.center = center;
+        this.size = size;
+    }
+}
+
+// وصف مرحلة كاملة
+public class LevelData
+{
+    public string title;
+    public Vector3 spawn;          // مكان بداية رويدا
+    public Vector3 door;           // مكان الباب (أسفل الباب)
+    public float ink = 12f;        // كمية الحبر (بطول الخطوط)
+    public float deathY = -8f;     // إذا نزلت رويدا تحت هذا الارتفاع تعيد المرحلة
+    public List<Block> blocks = new List<Block>();
+}
+
+// كل مراحل اللعبة، نضيف المراحل الجديدة هنا
+public static class Levels
+{
+    public static readonly List<LevelData> All = new List<LevelData>
+    {
+        Level1(),
+    };
+
+    // المرحلة الأولى: أرضية، حفرة عرضها 4، وبعدها أرضية ثانية فيها الباب
+    static LevelData Level1()
+    {
+        return new LevelData
+        {
+            title = "Level 1",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(21f, 0f, 0f),
+            ink = 12f,
+            blocks =
+            {
+                new Block(new Vector3(0f, -1.5f, 0f), new Vector3(14f, 3f, 4f)),   // من -7 إلى 7
+                new Block(new Vector3(18f, -1.5f, 0f), new Vector3(14f, 3f, 4f)),  // من 11 إلى 25
+            },
+        };
+    }
+}
