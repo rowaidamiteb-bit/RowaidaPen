@@ -47,7 +47,7 @@ public static class Levels
         return new Block(new Vector3((fromX + toX) * 0.5f, top - thickness * 0.5f, 0f), new Vector3(toX - fromX, thickness, 4f));
     }
 
-    // صفحات المطر 1: أربع صفحات بينها ثلاث حفر، والمطر يمسح الرسم بعد 2.5 ثانية
+    // صفحات المطر 1: أربع صفحات بينها ثلاث حفر، والمطر يمسح الرسم بعد ثانيتين
     static LevelData RainLevel1()
     {
         return new LevelData
@@ -57,12 +57,12 @@ public static class Levels
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(35f, 0f, 0f),
             ink = 16f,
-            rainEraseTime = 2.5f,
+            rainEraseTime = 2f,
             blocks =
             {
                 Page(-7f, 5f),       // حفرة 3.5
                 Page(8.5f, 15f),     // حفرة 3
-                Page(18f, 24f),      // حفرة 4
+                Page(18f, 24.5f),    // حفرة 3.5
                 Page(28f, 38f),
             },
         };
@@ -78,12 +78,12 @@ public static class Levels
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(34f, 0f, 0f),
             ink = 18f,
-            rainEraseTime = 2.2f,
+            rainEraseTime = 2f,
             blocks =
             {
                 Page(-7f, 4f),             // حفرة 3 وبعدها صفحة أوطى
-                Page(7f, 14f, -1f),        // حفرة 3 وبعدها صفحة أعلى بـ 1.6
-                Page(17f, 24f, 0.6f),      // حفرة 3
+                Page(7f, 14f, -1f),        // حفرة 2.5 وبعدها صفحة أعلى بـ 1.4
+                Page(16.5f, 24f, 0.4f),    // حفرة 3
                 Page(27f, 37f),
             },
         };

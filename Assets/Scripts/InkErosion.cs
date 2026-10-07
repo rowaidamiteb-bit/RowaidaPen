@@ -76,7 +76,7 @@ public class InkErosion : MonoBehaviour
         }
 
         // قبل ما تختفي بشوي: ما عاد تشيل رويدا
-        if (!collidersOff && age >= lifetime - 0.25f)
+        if (!collidersOff && age >= lifetime - 0.1f)
         {
             collidersOff = true;
             foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
