@@ -20,7 +20,21 @@ public static class LevelBuilder
         if (data.bridgeHint && data.blocks.Count > 1) BridgeHint(root.transform, data.blocks[0], data.blocks[1], gm);
         CreateDoor(root.transform, data.door, gm);
         CreateRowaida(root.transform, data.spawn, gm);
+        SpawnMonsters(root.transform, data, gm);
         return root;
+    }
+
+    // وحوش الشخابيط: كل وحش يطلع فوق الصفحة اللي تحته
+    static void SpawnMonsters(Transform root, LevelData data, GameManager gm)
+    {
+        foreach (MonsterSpawn m in data.monsters)
+        {
+            float top = 0f;
+            foreach (Block b in data.blocks)
+                if (m.x >= b.center.x - b.size.x * 0.5f && m.x <= b.center.x + b.size.x * 0.5f)
+                    top = b.center.y + b.size.y * 0.5f;
+            ScribbleMonster.Spawn(root, m.kind, new Vector3(m.x, top, 0f), m.patrolMin, m.patrolMax, gm);
+        }
     }
 
     // خلفية حالمة: سما ليلية (نجوم وغيوم وهلال) + أوراق صغيرة طايرة
@@ -119,13 +133,14 @@ public static class LevelBuilder
         canvas.Hatch(new Vector2(hx - R(0.6f, 0.9f), -hz), new Vector2(hx, hz), 0.07f, R(50f, 65f), true);
 
         // رسومات صغيرة متفرقة (بعيد عن طريق رويدا شوي)
-        float doodleEvery = 1.6f;
+        // صفحات الشخابيط فيها رسومات أكثر (وحوش ما كملت وشخابيط)
+        float doodleEvery = data.Scribbly ? 0.9f : 1.6f;
         for (float x = -hx + 1.2f; x < hx - 1f; x += doodleEvery * R(0.8f, 1.4f))
         {
             if (Mathf.Abs(b.center.x + x - data.door.x) < 1.2f) continue;
             bool back = rng.Next(3) != 0;
             float z = back ? R(0.55f, hz - 0.45f) : R(-hz + 0.4f, -0.55f);
-            canvas.RandomDoodle(new Vector2(x, z), R(0.6f, 1.05f));
+            canvas.RandomDoodle(new Vector2(x, z), R(0.6f, 1.05f), data.Scribbly);
         }
 
         // أسهم تعلّم اللاعب إن رويدا تمشي لقدام

@@ -21,7 +21,7 @@ public class RowaidaController : MonoBehaviour
         if (stopped) return;
 
         timer += Time.fixedDeltaTime;
-        if (timer < startDelay) return;
+        if (timer < startDelay || IsKnocked) return;
 
         // نثبت السرعة الأفقية ونخلي السرعة العمودية للجاذبية
         Vector3 v = rb.linearVelocity;
@@ -35,6 +35,17 @@ public class RowaidaController : MonoBehaviour
         rb.linearVelocity = Vector3.zero;
         rb.isKinematic = true;
     }
+
+    // وحش صدمها: تنط لورا شوي وتوقف عن المشي لحظة
+    float knockedUntil;
+
+    public void Knockback(float dirX)
+    {
+        knockedUntil = Time.time + 0.6f;
+        rb.linearVelocity = new Vector3(dirX * 3.2f, 3.5f, 0f);
+    }
+
+    public bool IsKnocked => Time.time < knockedUntil;
 
     // ترجع لمكان معين (بعد ما تطيح وباقي لها قلوب) وتنتظر شوي قبل ما تمشي
     public void Respawn(Vector3 position)

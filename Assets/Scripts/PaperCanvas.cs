@@ -194,9 +194,11 @@ public class PaperCanvas
     // ---------- رسومات صغيرة ----------
 
     // يرسم رسمة عشوائية من رسومات رويدا في مكان معين
-    public void RandomDoodle(Vector2 center, float scale)
+    public void RandomDoodle(Vector2 center, float scale, bool scribbly = false)
     {
-        int kind = rng.Next(12);
+        // في صفحات الشخابيط: أغلبها وحوش ما كملت وشخابيط
+        int[] scribbleKinds = { Doodles.MonsterKind, Doodles.MonsterKind, 10, 10, 8 };
+        int kind = scribbly && rng.Next(4) != 0 ? scribbleKinds[rng.Next(scribbleKinds.Length)] : rng.Next(12);
         float angle = R(-25f, 25f);
         var shape = Doodles.Get(kind, rng);
         DrawShape(shape, center, scale, angle);
@@ -230,6 +232,7 @@ public class PaperCanvas
 public static class Doodles
 {
     public const int ArrowKind = 100;
+    public const int MonsterKind = 12;
 
     public static List<List<Vector2>> Get(int kind, System.Random rng)
     {
@@ -360,6 +363,23 @@ public static class Doodles
                 s.Add(Pts(-0.38f, 0.22f, -0.22f, 0.38f));
                 s.Add(Pts(-0.38f, 0.38f, -0.22f, 0.22f));
                 s.Add(Circle(0.3f, -0.3f, 0.09f, 12));
+                break;
+            case MonsterKind: // وحش ما كمل: جسم مدور، عيون، وأسنان
+                var body = new List<Vector2>();
+                for (int i = 0; i <= 30; i++)
+                {
+                    float a = i / 30f * Mathf.PI * 2f;
+                    float r = 0.36f + 0.04f * Mathf.Sin(a * 5f);
+                    body.Add(new Vector2(Mathf.Cos(a) * r, Mathf.Sin(a) * r * 0.9f));
+                }
+                s.Add(body);
+                s.Add(Circle(-0.12f, 0.1f, 0.09f, 10));
+                s.Add(Circle(0.12f, 0.1f, 0.09f, 10));
+                s.Add(Circle(-0.11f, 0.09f, 0.025f, 6));
+                s.Add(Circle(0.13f, 0.09f, 0.025f, 6));
+                s.Add(Pts(-0.18f, -0.12f, -0.12f, -0.2f, -0.06f, -0.12f, 0f, -0.2f, 0.06f, -0.12f, 0.12f, -0.2f, 0.18f, -0.12f));
+                s.Add(Pts(-0.1f, 0.3f, -0.18f, 0.48f));
+                s.Add(Pts(0.1f, 0.3f, 0.18f, 0.48f));
                 break;
             default: // سهم لقدام
                 s.Add(Pts(-0.45f, 0f, 0.42f, 0.02f));

@@ -123,6 +123,42 @@ public class SoundManager : MonoBehaviour
         else if (intensity <= 0f && windSource.isPlaying) windSource.Stop();
     }
 
+    // ---------- أصوات الوحوش ----------
+    AudioClip squeakClip, chompClip, boingClip, poofClip;
+    AudioSource monsterSource;
+
+    AudioSource MonsterSource()
+    {
+        if (monsterSource == null) monsterSource = NewSource("Monsters", null, false);
+        return monsterSource;
+    }
+
+    public void PlaySqueak(float pitch)
+    {
+        if (squeakClip == null) squeakClip = SynthAudio.Squeak();
+        var s = MonsterSource();
+        s.pitch = pitch;
+        s.PlayOneShot(squeakClip, effectsVolume * 0.45f);
+    }
+
+    public void PlayChomp()
+    {
+        if (chompClip == null) chompClip = SynthAudio.Chomp();
+        effects.PlayOneShot(chompClip, effectsVolume * 0.6f);
+    }
+
+    public void PlayBoing()
+    {
+        if (boingClip == null) boingClip = SynthAudio.Boing();
+        effects.PlayOneShot(boingClip, effectsVolume * 0.6f);
+    }
+
+    public void PlayPoof()
+    {
+        if (poofClip == null) poofClip = SynthAudio.Poof();
+        effects.PlayOneShot(poofClip, effectsVolume * 0.8f);
+    }
+
     public void PlayThunder()
     {
         if (thunderClip == null) thunderClip = SynthAudio.Thunder();

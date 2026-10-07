@@ -203,6 +203,7 @@ public class InkDrawer : MonoBehaviour
     void MakePlatform()
     {
         stroke.name = "Ink Platform";
+        stroke.AddComponent<InkMark>().closed = false;
         TubeMesh.Build(strokeMesh, points, tubeRadius, false);
         AddColliders(stroke.transform, points, false);
         AddRainErosion(points, false);
@@ -212,6 +213,7 @@ public class InkDrawer : MonoBehaviour
     void MakeFallingShape()
     {
         stroke.name = "Ink Shape";
+        stroke.AddComponent<InkMark>().closed = true;
 
         // نخلي مركز الجسم في منتصف الشكل عشان يتدحرج صح
         Vector3 center = Vector3.zero;

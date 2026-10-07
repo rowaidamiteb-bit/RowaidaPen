@@ -160,6 +160,20 @@ public static class ClaudeCapture
                         path.Add(new Vector3(float.Parse(nums[k], System.Globalization.CultureInfo.InvariantCulture), float.Parse(nums[k + 1], System.Globalization.CultureInfo.InvariantCulture), 0f));
                     Object.FindAnyObjectByType<InkDrawer>().DebugDraw(path);
                     break;
+                case "ball":
+                    // يرسم كورة (شكل مغلق): ball:x;y;r
+                    var b = arg.Split(';');
+                    float bx = float.Parse(b[0], System.Globalization.CultureInfo.InvariantCulture);
+                    float by = float.Parse(b[1], System.Globalization.CultureInfo.InvariantCulture);
+                    float br = float.Parse(b[2], System.Globalization.CultureInfo.InvariantCulture);
+                    var circle = new List<Vector3>();
+                    for (int k = 0; k <= 28; k++)
+                    {
+                        float a = k / 28f * Mathf.PI * 2f;
+                        circle.Add(new Vector3(bx + Mathf.Cos(a) * br, by + Mathf.Sin(a) * br, 0f));
+                    }
+                    Object.FindAnyObjectByType<InkDrawer>().DebugDraw(circle);
+                    break;
                 case "skip":
                     var intro = Object.FindAnyObjectByType<IntroCutscene>();
                     if (intro != null) intro.Skip();

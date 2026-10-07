@@ -338,6 +338,78 @@ public static class SynthAudio
         return Make("Wind", buf);
     }
 
+    // صوت وحش صغير: صفرة تطلع وتنزل
+    public static AudioClip Squeak()
+    {
+        int n = Mathf.RoundToInt(0.35f * Rate);
+        var buf = new float[n];
+        float ph = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float k = t / 0.35f;
+            float f = 520f + 380f * Mathf.Sin(k * Mathf.PI) + 60f * Mathf.Sin(t * 40f);
+            ph += 2f * Mathf.PI * f / Rate;
+            float env = Mathf.Clamp01(t / 0.02f) * Mathf.Clamp01((0.35f - t) / 0.08f);
+            buf[i] = (Mathf.Sin(ph) + 0.3f * Mathf.Sin(ph * 2f)) * env;
+        }
+        Normalize(buf, 0.6f);
+        return Make("Squeak", buf);
+    }
+
+    // قضمة: خبطة قصيرة
+    public static AudioClip Chomp()
+    {
+        int n = Mathf.RoundToInt(0.12f * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(19);
+        float lp = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            lp += (((float)rng.NextDouble() * 2f - 1f) - lp) * 0.25f;
+            buf[i] = (lp + Mathf.Sin(2f * Mathf.PI * 180f * t) * 0.6f) * Mathf.Exp(-t * 40f);
+        }
+        Normalize(buf, 0.6f);
+        return Make("Chomp", buf);
+    }
+
+    // بوينق: لما رويدا تصدم وحش
+    public static AudioClip Boing()
+    {
+        int n = Mathf.RoundToInt(0.45f * Rate);
+        var buf = new float[n];
+        float ph = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float f = 180f + 260f * Mathf.Exp(-t * 6f) * (1f + 0.3f * Mathf.Sin(t * 70f));
+            ph += 2f * Mathf.PI * f / Rate;
+            buf[i] = Mathf.Sin(ph) * Mathf.Exp(-t * 6f);
+        }
+        Normalize(buf, 0.6f);
+        return Make("Boing", buf);
+    }
+
+    // بوف: الوحش يختفي بسحابة
+    public static AudioClip Poof()
+    {
+        int n = Mathf.RoundToInt(0.6f * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(23);
+        float lp = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            lp += (((float)rng.NextDouble() * 2f - 1f) - lp) * Mathf.Lerp(0.5f, 0.05f, t / 0.6f);
+            buf[i] = lp * Mathf.Clamp01(t / 0.01f) * Mathf.Exp(-t * 7f);
+        }
+        Bell(buf, 0.05f, Midi(84), 0.25f, 6f, false);
+        Bell(buf, 0.12f, Midi(91), 0.2f, 6f, false);
+        Normalize(buf, 0.65f);
+        return Make("Poof", buf);
+    }
+
     // ---------- أدوات ----------
 
     // نخلط آخر الصوت ببدايته ونقصه، عشان اللوب ما يطقطق عند الرجوع للبداية

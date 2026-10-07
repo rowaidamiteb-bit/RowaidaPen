@@ -1,0 +1,8 @@
+using UnityEngine;
+
+// علامة على كل رسمة: الوحوش تعرف منها إذا هي جسر (تاكله) أو كورة (تلعب فيها)
+public class InkMark : MonoBehaviour
+{
+    public bool closed;     // شكل مغلق = لعبة تلهي الوحوش
+    public bool beingEaten; // وحش قاعد ياكلها
+}

@@ -15,6 +15,21 @@ public struct Block
     }
 }
 
+// وحش شخابيط: نوعه، مكانه، والمنطقة اللي يتمشى فيها
+public struct MonsterSpawn
+{
+    public ScribbleMonster.Kind kind;
+    public float x, patrolMin, patrolMax;
+
+    public MonsterSpawn(ScribbleMonster.Kind kind, float x, float patrolMin, float patrolMax)
+    {
+        this.kind = kind;
+        this.x = x;
+        this.patrolMin = patrolMin;
+        this.patrolMax = patrolMax;
+    }
+}
+
 // وصف مرحلة كاملة
 public class LevelData
 {
@@ -30,6 +45,8 @@ public class LevelData
     public float windSpeed;        // سرعة الريح (موجب = لليمين، سالب = لليسار، 0 = ما فيه ريح)
     public float windSwitchPeriod; // كل كم ثانية تعكس الريح اتجاهها (0 = ثابتة)
     public bool Windy => windSpeed != 0f;
+    public List<MonsterSpawn> monsters = new List<MonsterSpawn>();   // وحوش الشخابيط
+    public bool Scribbly => monsters.Count > 0;
     public List<Block> blocks = new List<Block>();
 }
 
@@ -43,7 +60,61 @@ public static class Levels
         RainLevel2(),
         WindLevel1(),
         WindLevel2(),
+        ScribbleLevel1(),
+        ScribbleLevel2(),
     };
+
+    // صفحات الشخابيط: وحش واحد، وبعدين وحشين قبل الباب
+    static LevelData ScribbleLevel1()
+    {
+        return new LevelData
+        {
+            title = "صفحات الشخابيط",
+            subtitle = "رسوماتي القديمة صحت! ارسمي كورة تلهيهم عن الطريق",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(32f, 0f, 0f),
+            ink = 30f,
+            blocks =
+            {
+                Page(-7f, 6f),        // حفرة 3
+                Page(9f, 20f),        // حفرة 3
+                Page(23f, 35f),
+            },
+            monsters =
+            {
+                new MonsterSpawn(ScribbleMonster.Kind.PurpleBlob, 15f, 12f, 19f),
+                new MonsterSpawn(ScribbleMonster.Kind.FuzzyBall, 26f, 24.5f, 29f),
+                new MonsterSpawn(ScribbleMonster.Kind.GreenEye, 29f, 27f, 30.5f),
+            },
+        };
+    }
+
+    // شخابيط أكثر: وحوش جنب الحفر، والكورة اللي تطيح في الحفرة تطيّح الوحش وراها
+    static LevelData ScribbleLevel2()
+    {
+        return new LevelData
+        {
+            title = "شخابيط أكثر",
+            subtitle = "لو طاحت الكورة في حفرة... الوحش بيلحقها!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(36f, 0f, 0f),
+            ink = 34f,
+            blocks =
+            {
+                Page(-7f, 4f),             // حفرة 3
+                Page(7f, 15f),             // حفرة 3.5
+                Page(18.5f, 26f, 0.5f),    // حفرة 3
+                Page(29f, 39f),
+            },
+            monsters =
+            {
+                new MonsterSpawn(ScribbleMonster.Kind.FuzzyBall, 11f, 9f, 14f),
+                new MonsterSpawn(ScribbleMonster.Kind.PurpleBlob, 21f, 19.5f, 25f),
+                new MonsterSpawn(ScribbleMonster.Kind.GreenEye, 24f, 20f, 25.5f),
+                new MonsterSpawn(ScribbleMonster.Kind.GreenEye, 33f, 31f, 37.5f),
+            },
+        };
+    }
 
     // صفحات الريح: ريح ثابتة جاية من قدام تدفع الرسمات لورا
     static LevelData WindLevel1()
