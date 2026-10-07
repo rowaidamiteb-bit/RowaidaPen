@@ -174,6 +174,23 @@ public static class ClaudeCapture
                     }
                     Object.FindAnyObjectByType<InkDrawer>().DebugDraw(circle);
                     break;
+                case "erase":
+                    // يشخبط على أقرب وحش لـ x: erase:x;strokes
+                    var ea = arg.Split(';');
+                    float ex = float.Parse(ea[0], System.Globalization.CultureInfo.InvariantCulture);
+                    int strokes = ea.Length > 1 ? int.Parse(ea[1]) : 14;
+                    ScribbleMonster nearest = null;
+                    foreach (var mon in Object.FindObjectsByType<ScribbleMonster>(FindObjectsSortMode.None))
+                        if (nearest == null || Mathf.Abs(mon.transform.position.x - ex) < Mathf.Abs(nearest.transform.position.x - ex)) nearest = mon;
+                    if (nearest != null)
+                    {
+                        Vector3 c = nearest.transform.position;
+                        var zig = new List<Vector3>();
+                        for (int k = 0; k <= strokes; k++)
+                            zig.Add(c + new Vector3(k % 2 == 0 ? -0.35f : 0.35f, 0.3f - 0.6f * k / Mathf.Max(1, strokes), 0f));
+                        Object.FindAnyObjectByType<InkDrawer>().DebugDraw(zig);
+                    }
+                    break;
                 case "skip":
                     var intro = Object.FindAnyObjectByType<IntroCutscene>();
                     if (intro != null) intro.Skip();

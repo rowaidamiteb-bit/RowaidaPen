@@ -47,6 +47,7 @@ public class LevelData
     public bool Windy => windSpeed != 0f;
     public List<MonsterSpawn> monsters = new List<MonsterSpawn>();   // وحوش الشخابيط
     public bool Scribbly => monsters.Count > 0;
+    public bool monsterHint;       // أول وحش فوقه تلميح شخبطة
     public List<Block> blocks = new List<Block>();
 }
 
@@ -70,7 +71,8 @@ public static class Levels
         return new LevelData
         {
             title = "صفحات الشخابيط",
-            subtitle = "رسوماتي القديمة صحت! ارسمي كورة تلهيهم عن الطريق",
+            subtitle = "رسوماتي القديمة صحت! شخبطي عليها عشان تنمسح",
+            monsterHint = true,
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(32f, 0f, 0f),
             ink = 30f,
@@ -89,13 +91,13 @@ public static class Levels
         };
     }
 
-    // شخابيط أكثر: وحوش جنب الحفر، والكورة اللي تطيح في الحفرة تطيّح الوحش وراها
+    // شخابيط أكثر: وحوش جنب الحفر تاكل الجسور
     static LevelData ScribbleLevel2()
     {
         return new LevelData
         {
             title = "شخابيط أكثر",
-            subtitle = "لو طاحت الكورة في حفرة... الوحش بيلحقها!",
+            subtitle = "الوحوش تاكل الجسور... امسحيها قبل ما ترسمين!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(36f, 0f, 0f),
             ink = 34f,

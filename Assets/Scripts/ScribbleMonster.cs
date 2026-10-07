@@ -3,35 +3,42 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 // وحش شخابيط: رسمة قديمة ما كملت وصحت. يتمشى على صفحته، ياكل الجسور القريبة،
-// يسكر الطريق على رويدا، ويركض لأي كورة (شكل مغلق) ويلعب فيها لين يمل.
-// إذا طاح في حفرة يختفي بسحابة.
+// ويسكر الطريق على رويدا. اللاعب يشخبط عليه عشان يمسحه: كل ما شخبط أكثر يبهت ويصغر لين يختفي.
 public class ScribbleMonster : MonoBehaviour
 {
     public enum Kind { PurpleBlob, FuzzyBall, GreenEye }
-    enum State { Wander, ChaseToy, PlayToy, EatInk }
+    enum State { Wander, EatInk }
 
     const float Radius = 0.45f;
-    const float WanderSpeed = 1.1f, ChaseSpeed = 2.6f;
-    const float ToySight = 9f, FoodSight = 3.5f;
+    const float WanderSpeed = 1.1f, ChaseSpeed = 1.8f;
+    const float FoodSight = 3.5f;
+    const float EraseNeeded = 3.2f;         // كم متر شخبطة لازم عشان ينمسح
+    public const float EraseReach = 0.75f;  // الشخبطة لازم تكون قريبة من الوحش بهالمسافة
 
     Kind kind;
     float patrolMin, patrolMax;
     int dir = 1;
     State state = State.Wander;
     Rigidbody rb;
-    Transform visual, mouth;
+    Transform visual, mouth, hint;
     readonly List<Transform> pupils = new List<Transform>();
-    float nextThink, stateTime, nextBump, nextSqueak, nextChomp;
+    float nextThink, stateTime, nextSqueak, nextChomp;
     InkMark target;
-    float lostTargetTime;
     float phase;
     bool dead;
+
+    // المسح بالشخبطة
+    float erased;          // من 0 لـ 1
+    float stunnedUntil;
+    readonly List<Renderer> renderers = new List<Renderer>();
+    readonly List<Color> baseColors = new List<Color>();
+    MaterialPropertyBlock block;
 
     static PhysicsMaterial slippery;
 
     // ---------- البناء ----------
 
-    public static ScribbleMonster Spawn(Transform parent, Kind kind, Vector3 groundPos, float patrolMin, float patrolMax, GameManager gm)
+    public static ScribbleMonster Spawn(Transform parent, Kind kind, Vector3 groundPos, float patrolMin, float patrolMax, GameManager gm, bool showHint = false)
     {
         var go = new GameObject("Scribble Monster (" + kind + ")");
         go.transform.SetParent(parent, false);
@@ -56,6 +63,8 @@ public class ScribbleMonster : MonoBehaviour
         m.dir = Random.value < 0.5f ? -1 : 1;
         m.phase = Random.value * 10f;
         m.BuildVisual(gm);
+        m.CollectRenderers();
+        if (showHint) m.BuildHint(gm);
         return m;
     }
 
@@ -121,7 +130,7 @@ public class ScribbleMonster : MonoBehaviour
                 Part(PrimitiveType.Capsule, new Vector3(0f, 0.02f, 0f), new Vector3(0.7f, 0.46f, 0.65f), body, true);
                 Part(PrimitiveType.Sphere, new Vector3(-0.22f, 0.25f, -0.15f), Vector3.one * 0.12f, spots);
                 Part(PrimitiveType.Sphere, new Vector3(0.25f, -0.1f, -0.2f), Vector3.one * 0.09f, spots);
-                var eye = Part(PrimitiveType.Sphere, new Vector3(0f, 0.16f, 0.27f), Vector3.one * 0.34f, white);
+                Part(PrimitiveType.Sphere, new Vector3(0f, 0.16f, 0.27f), Vector3.one * 0.34f, white);
                 pupils.Add(Part(PrimitiveType.Sphere, new Vector3(0f, 0.16f, 0.43f), Vector3.one * 0.15f, black));
                 for (int s = -1; s <= 1; s += 2)
                 {
@@ -169,6 +178,39 @@ public class ScribbleMonster : MonoBehaviour
         return outlineMat;
     }
 
+    void CollectRenderers()
+    {
+        block = new MaterialPropertyBlock();
+        foreach (Renderer r in visual.GetComponentsInChildren<Renderer>())
+        {
+            if (r.sharedMaterial == OutlineMat()) continue;
+            renderers.Add(r);
+            baseColors.Add(r.sharedMaterial.GetColor("_BaseColor"));
+        }
+    }
+
+    // تلميح: شخبطة منقطة فوق أول وحش توري اللاعب وش يسوي
+    void BuildHint(GameManager gm)
+    {
+        hint = new GameObject("Scribble Hint").transform;
+        hint.SetParent(transform, false);
+        Material mat = gm.Mat("Hint", new Color(0.55f, 0.55f, 0.62f), 0.2f);
+        var pts = new List<Vector3>();
+        for (int i = 0; i <= 6; i++)
+            pts.Add(new Vector3(-0.45f + i * 0.15f, i % 2 == 0 ? 0.28f : -0.28f, 0f));
+        // متقطعة: كل جزء لحاله
+        for (int i = 0; i < pts.Count - 1; i++)
+        {
+            var go = new GameObject("Hint Dash");
+            go.transform.SetParent(hint, false);
+            var mesh = new Mesh();
+            Vector3 a = pts[i], b = pts[i + 1];
+            TubeMesh.Build(mesh, new List<Vector3> { Vector3.Lerp(a, b, 0.1f), Vector3.Lerp(a, b, 0.75f) }, 0.035f, false, 6);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+        }
+    }
+
     // ---------- التفكير والحركة ----------
 
     void Update()
@@ -182,7 +224,10 @@ public class ScribbleMonster : MonoBehaviour
         }
 
         if (state == State.EatInk) UpdateEating();
-        if (state == State.PlayToy) UpdatePlaying();
+
+        // لو وقفت الشخبطة يرجع لونه شوي شوي
+        if (Time.time > stunnedUntil + 0.6f) erased = Mathf.Max(0f, erased - Time.deltaTime * 0.12f);
+
         Animate();
 
         // طاح في حفرة
@@ -191,58 +236,25 @@ public class ScribbleMonster : MonoBehaviour
 
     void Think()
     {
-        if (state == State.ChaseToy || state == State.PlayToy)
-        {
-            // الكورة راحت أو طاحت: نظل نلاحقها لحظة (عشان الوحش يطيح وراها في الحفرة) وبعدين نرجع نتمشى
-            bool lost = target == null || target.transform.position.y < -1.5f;
-            if (lost)
-            {
-                if (lostTargetTime <= 0f) lostTargetTime = Time.time;
-                else if (Time.time - lostTargetTime > 0.7f)
-                {
-                    target = null;
-                    lostTargetTime = 0f;
-                    SetState(State.Wander);
-                }
-                return;
-            }
-            lostTargetTime = 0f;
-            if (state == State.PlayToy) return;
-        }
-        if (state == State.EatInk) return;
+        if (state == State.EatInk || Stunned) return;
 
-        InkMark toy = null, food = null;
-        float bestToy = ToySight, bestFood = FoodSight;
+        // يدور على جسر قريب ياكله
+        InkMark food = null;
+        float best = FoodSight;
         Vector3 p = transform.position;
         foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
         {
+            if (mark.closed || mark.beingEaten) continue;
             Vector3 q = ClosestPoint(mark, p);
-            float dx = Mathf.Abs(q.x - p.x), dy = Mathf.Abs(q.y - p.y);
-            if (dy > 2.5f) continue;
-            if (mark.closed) { if (dx < bestToy && q.y > -1.5f) { bestToy = dx; toy = mark; } }
-            else if (!mark.beingEaten && dx < bestFood) { bestFood = dx; food = mark; }
+            float dx = Mathf.Abs(q.x - p.x);
+            if (Mathf.Abs(q.y - p.y) < 2.5f && dx < best) { best = dx; food = mark; }
         }
-
-        if (toy != null)
+        target = food;
+        if (food != null && Mathf.Abs(ClosestPoint(food, p).x - p.x) < 0.7f)
         {
-            target = toy;
-            if (state != State.ChaseToy) { SetState(State.ChaseToy); Squeak(1.4f); }
-        }
-        else if (food != null)
-        {
-            // جسر قريب: نمشي له (في حالة التمشي)، ولما نوصله ناكله
-            target = food;
-            if (state == State.ChaseToy) SetState(State.Wander);
-            if (Mathf.Abs(ClosestPoint(food, p).x - p.x) < 0.7f)
-            {
-                SetState(State.EatInk);
-                food.beingEaten = true;
-            }
-        }
-        else
-        {
-            target = null;
-            if (state == State.ChaseToy) SetState(State.Wander);
+            state = State.EatInk;
+            stateTime = 0f;
+            food.beingEaten = true;
         }
     }
 
@@ -260,91 +272,79 @@ public class ScribbleMonster : MonoBehaviour
         return best;
     }
 
-    void SetState(State s)
-    {
-        state = s;
-        stateTime = 0f;
-
-        // لما يكون ملتهي بكورة ما يسكر الطريق: يعدي جنب رويدا بدون ما يصدمها
-        bool distracted = s == State.ChaseToy || s == State.PlayToy;
-        var rowaida = GameManager.Instance != null ? GameManager.Instance.Rowaida : null;
-        if (rowaida != null)
-            Physics.IgnoreCollision(GetComponent<Collider>(), rowaida.GetComponent<Collider>(), distracted);
-    }
+    bool Stunned => Time.time < stunnedUntil;
 
     void FixedUpdate()
     {
         if (dead) return;
         Vector3 v = rb.linearVelocity;
-        float speed = 0f;
         Vector3 p = transform.position;
+        float speed = 0f;
 
-        switch (state)
+        if (!Stunned && state == State.Wander)
         {
-            case State.Wander:
-                if (p.x < patrolMin) dir = 1;
-                else if (p.x > patrolMax) dir = -1;
-                speed = WanderSpeed * dir;
-                // أكل قريب؟ نمشي له
-                if (target != null && !target.closed && target.gameObject != null)
-                {
-                    float tx = ClosestPoint(target, p).x;
-                    if (Mathf.Abs(tx - p.x) < FoodSight) { dir = tx > p.x ? 1 : -1; speed = ChaseSpeed * 0.7f * dir; }
-                }
-                break;
-            case State.ChaseToy:
-                float targetX = target != null ? target.transform.position.x : p.x + dir;
-                if (Mathf.Abs(targetX - p.x) > 0.3f) dir = targetX > p.x ? 1 : -1;
+            if (p.x < patrolMin) dir = 1;
+            else if (p.x > patrolMax) dir = -1;
+            speed = WanderSpeed * dir;
+            // جسر قريب؟ نمشي له
+            if (target != null)
+            {
+                dir = ClosestPoint(target, p).x > p.x ? 1 : -1;
                 speed = ChaseSpeed * dir;
-                if (target != null && Vector3.Distance(ClosestPoint(target, p), p) < Radius + 0.35f) SetState(State.PlayToy);
-                break;
-            case State.PlayToy:
-            case State.EatInk:
-                speed = 0f;
-                break;
+            }
         }
         v.x = speed;
         rb.linearVelocity = v;
     }
 
-    void UpdatePlaying()
-    {
-        if (target == null) { SetState(State.Wander); return; }
-        var toyRb = target.GetComponent<Rigidbody>();
-        Vector3 p = transform.position;
-        if (Vector3.Distance(ClosestPoint(target, p), p) > Radius + 1f) { SetState(State.ChaseToy); return; }
-        if (Time.time >= nextBump && toyRb != null && !toyRb.isKinematic)
-        {
-            // يدف الكورة ويلعب فيها
-            nextBump = Time.time + Random.Range(0.7f, 1.2f);
-            float side = Random.value < 0.5f ? -1f : 1f;
-            toyRb.AddForce(new Vector3(side * Random.Range(1.5f, 3f), Random.Range(2.5f, 4f), 0f), ForceMode.VelocityChange);
-            Squeak(Random.Range(1.2f, 1.7f));
-        }
-        // بعد شوي يمل وتختفي الكورة
-        if (stateTime > 7f)
-        {
-            Destroy(target.gameObject);
-            target = null;
-            SetState(State.Wander);
-        }
-    }
-
     void UpdateEating()
     {
-        if (target == null) { SetState(State.Wander); return; }
+        if (target == null) { state = State.Wander; return; }
+        if (Stunned)
+        {
+            // الشخبطة وقفته عن الأكل
+            target.beingEaten = false;
+            target = null;
+            state = State.Wander;
+            return;
+        }
         if (Time.time >= nextChomp)
         {
             nextChomp = Time.time + 0.3f;
             GameManager.Instance.Sound.PlayChomp();
         }
-        // بعد ثانية وشوي يخلص الجسر
         if (stateTime > 1.3f)
         {
             Destroy(target.gameObject);
             target = null;
-            SetState(State.Wander);
+            state = State.Wander;
         }
+    }
+
+    // ---------- المسح بالشخبطة ----------
+
+    // اللاعب يشخبط على الوحش: amount = طول الشخبطة الجديدة
+    public void Erase(float amount)
+    {
+        if (dead) return;
+        erased += amount / EraseNeeded;
+        stunnedUntil = Time.time + 0.35f;
+        if (hint != null) Destroy(hint.gameObject);
+        if (Time.time > nextSqueak)
+        {
+            nextSqueak = Time.time + 0.4f;
+            GameManager.Instance.Sound.PlaySqueak(Random.Range(1.6f, 2.1f));
+        }
+        if (Random.value < 0.35f) Crumb();
+        if (erased >= 1f) Poof();
+    }
+
+    // فتات مساحة يطيح من الوحش
+    void Crumb()
+    {
+        var mat = GameManager.Instance.Mat("Eraser Pink", new Color(0.95f, 0.62f, 0.66f), 0.15f);
+        var c = LevelBuilder.Visual("Eraser Crumb", PrimitiveType.Sphere, null, transform.position + Random.insideUnitSphere * 0.35f, new Vector3(0.07f, 0.04f, 0.04f), mat, false);
+        c.AddComponent<PoofPuff>().shrinkOnly = true;
     }
 
     // ---------- رويدا ----------
@@ -366,14 +366,16 @@ public class ScribbleMonster : MonoBehaviour
         float speed = Mathf.Abs(rb.linearVelocity.x);
         phase += Time.deltaTime * (2f + speed * 4f);
 
-        // ينط ويتمطط وهو يمشي
+        // ينط ويتمطط وهو يمشي، ويرتجف ويصغر وهو ينمسح
         float hop = Mathf.Abs(Mathf.Sin(phase)) * 0.08f * Mathf.Clamp01(speed);
         float squash = 1f + Mathf.Sin(phase * 2f) * 0.05f;
-        visual.localPosition = new Vector3(0f, hop, 0f);
-        visual.localScale = new Vector3(1f / squash, squash, 1f / squash);
+        float shrink = 1f - erased * 0.4f;
+        Vector3 shake = Stunned ? Random.insideUnitSphere * 0.04f : Vector3.zero;
+        visual.localPosition = new Vector3(0f, hop, 0f) + shake;
+        visual.localScale = new Vector3(1f / squash, squash, 1f / squash) * shrink;
 
         // الوجه يطالع الكاميرا (لفة 180) مع ميلة صغيرة لجهة مشيه
-        float face = state == State.PlayToy || state == State.EatInk ? 0f : dir * 30f;
+        float face = state == State.EatInk || Stunned ? 0f : dir * 30f;
         visual.localRotation = Quaternion.Slerp(visual.localRotation, Quaternion.Euler(0f, 180f - face, 0f), Time.deltaTime * 6f);
 
         // العيون تطالع الهدف (محور x المحلي معكوس لأن الوجه ملفوف 180)
@@ -394,6 +396,22 @@ public class ScribbleMonster : MonoBehaviour
             mouth.localScale = new Vector3(ms.x, MouthBase() * open, ms.z);
         }
 
+        // يبهت لونه لين يصير مثل الورق
+        Color paper = new Color(0.93f, 0.92f, 0.95f);
+        for (int i = 0; i < renderers.Count; i++)
+        {
+            renderers[i].GetPropertyBlock(block);
+            block.SetColor("_BaseColor", Color.Lerp(baseColors[i], paper, erased * 0.85f));
+            renderers[i].SetPropertyBlock(block);
+        }
+
+        // التلميح يتحرك فوق الوحش
+        if (hint != null)
+        {
+            hint.localPosition = new Vector3(Mathf.Sin(Time.time * 4f) * 0.12f, 1.05f + Mathf.Sin(Time.time * 2f) * 0.05f, -0.6f);
+            hint.localScale = Vector3.one * (1f + Mathf.Sin(Time.time * 6f) * 0.06f);
+        }
+
         if (Time.time > nextSqueak && Random.value < Time.deltaTime * 0.15f) Squeak(Random.Range(0.9f, 1.3f));
     }
 
@@ -406,7 +424,11 @@ public class ScribbleMonster : MonoBehaviour
         return b;
     }
 
-    float MouthBase() { if (mouthBase < 0f) mouthBase = mouth.localScale.y; return mouthBase; }
+    float MouthBase()
+    {
+        if (mouthBase < 0f) mouthBase = mouth.localScale.y;
+        return mouthBase;
+    }
 
     void Squeak(float pitch)
     {
@@ -418,7 +440,9 @@ public class ScribbleMonster : MonoBehaviour
 
     void Poof()
     {
+        if (dead) return;
         dead = true;
+        if (target != null) target.beingEaten = false;
         GameManager.Instance.Sound.PlayPoof();
         var mat = GameManager.Instance.Mat("Poof Cloud", new Color(0.95f, 0.93f, 1f), 0.1f);
         for (int i = 0; i < 10; i++)
@@ -430,23 +454,25 @@ public class ScribbleMonster : MonoBehaviour
     }
 }
 
-// سحابة صغيرة تكبر وتختفي (لما يطيح الوحش)
+// سحابة صغيرة تكبر وتختفي (لما ينمسح الوحش)، أو فتات يطيح ويصغر
 public class PoofPuff : MonoBehaviour
 {
+    public bool shrinkOnly;
     float age;
     Vector3 vel;
 
     void Start()
     {
-        vel = Random.insideUnitSphere * 1.2f + Vector3.up * 1.5f;
+        vel = shrinkOnly ? new Vector3(Random.Range(-1f, 1f), Random.Range(0.5f, 1.5f), 0f) : Random.insideUnitSphere * 1.2f + Vector3.up * 1.5f;
         vel.z = 0f;
     }
 
     void Update()
     {
         age += Time.deltaTime;
+        if (shrinkOnly) vel.y -= 9f * Time.deltaTime;
         transform.position += vel * Time.deltaTime;
-        transform.localScale *= 1f + Time.deltaTime * 1.5f;
+        if (!shrinkOnly) transform.localScale *= 1f + Time.deltaTime * 1.5f;
         if (age > 0.6f) transform.localScale *= 1f - Time.deltaTime * 6f;
         if (age > 1f) Destroy(gameObject);
     }

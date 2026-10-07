@@ -20,6 +20,7 @@ public class InkDrawer : MonoBehaviour
     readonly Plane drawPlane = new Plane(Vector3.forward, Vector3.zero);
     float strokeLength;
     bool drawing;
+    bool erasing;   // الرسمة الحالية شخبطة تمسح وحش
     GameObject stroke;
     Mesh strokeMesh;
 
@@ -79,6 +80,7 @@ public class InkDrawer : MonoBehaviour
     public void CancelStroke()
     {
         drawing = false;
+        erasing = false;
         if (stroke != null) Destroy(stroke);
         stroke = null;
         points.Clear();
@@ -104,7 +106,9 @@ public class InkDrawer : MonoBehaviour
 
     void BeginStrokeAt(Vector3 p)
     {
-        if (Game.Ink <= 0.01f || TouchesRowaida(p)) return;
+        // لو بدأ الرسم فوق وحش: هذي شخبطة تمسحه (ما تصرف حبر وما تصير جسر)
+        erasing = MonsterNear(p, ScribbleMonster.EraseReach + 0.25f);
+        if ((!erasing && Game.Ink <= 0.01f) || TouchesRowaida(p)) return;
 
         points.Clear();
         points.Add(p);
@@ -115,7 +119,7 @@ public class InkDrawer : MonoBehaviour
         stroke.transform.SetParent(Game.DrawingsRoot, false);
         strokeMesh = new Mesh { name = "Ink Tube" };
         stroke.AddComponent<MeshFilter>().sharedMesh = strokeMesh;
-        stroke.AddComponent<MeshRenderer>().sharedMaterial = Game.inkMaterial;
+        stroke.AddComponent<MeshRenderer>().sharedMaterial = erasing ? Game.pencilMaterial : Game.inkMaterial;
     }
 
     void ContinueStroke(Vector2 screen)
@@ -141,6 +145,15 @@ public class InkDrawer : MonoBehaviour
                 if (changed) RebuildMesh();
                 FinishStroke();
                 return;
+            }
+
+            if (erasing)
+            {
+                points.Add(next);
+                if (points.Count > 120) points.RemoveAt(0);
+                EraseMonstersAt(next, pointSpacing);
+                changed = true;
+                continue;
             }
 
             float used = Game.UseInk(pointSpacing);
@@ -174,12 +187,37 @@ public class InkDrawer : MonoBehaviour
 
     void RebuildMesh()
     {
-        TubeMesh.Build(strokeMesh, points, tubeRadius, false);
+        TubeMesh.Build(strokeMesh, points, erasing ? 0.05f : tubeRadius, false, erasing ? 6 : 10);
+    }
+
+    // فيه وحش قريب من هالنقطة؟
+    static bool MonsterNear(Vector3 p, float reach)
+    {
+        foreach (ScribbleMonster m in FindObjectsByType<ScribbleMonster>(FindObjectsSortMode.None))
+            if (Vector3.Distance(m.transform.position, p) < reach) return true;
+        return false;
+    }
+
+    static void EraseMonstersAt(Vector3 p, float amount)
+    {
+        foreach (ScribbleMonster m in FindObjectsByType<ScribbleMonster>(FindObjectsSortMode.None))
+            if (Vector3.Distance(m.transform.position, p) < ScribbleMonster.EraseReach) m.Erase(amount);
     }
 
     void FinishStroke()
     {
         drawing = false;
+
+        // شخبطة المسح تختفي بعد شوي وما تصير جسر
+        if (erasing)
+        {
+            if (stroke != null) Destroy(stroke, 0.3f);
+            stroke = null;
+            points.Clear();
+            strokeLength = 0f;
+            erasing = false;
+            return;
+        }
 
         if (strokeLength < minStrokeLength || points.Count < 2)
         {
