@@ -23,16 +23,10 @@ public static class LevelBuilder
         return root;
     }
 
-    // خلفية حالمة: تدرج كحلي وبنفسجي + أوراق صغيرة طايرة
+    // خلفية حالمة: سما ليلية (نجوم وغيوم وهلال) + أوراق صغيرة طايرة
     public static void BuildBackdrop(GameManager gm)
     {
-        Shader unlit = Shader.Find("Universal Render Pipeline/Unlit");
-        Material sky = unlit != null ? new Material(unlit) : gm.Mat("Sky", Color.black, 0f);
-        sky.name = "Dream Sky";
-        sky.SetTexture("_BaseMap", PaperMeshes.SkyGradient());
-        sky.SetColor("_BaseColor", Color.white);
-        Visual("Dream Sky", PrimitiveType.Quad, null, new Vector3(30f, 10f, 95f), new Vector3(520f, 200f, 1f), sky, false)
-            .GetComponent<MeshRenderer>().receiveShadows = false;
+        new GameObject("Night Sky").AddComponent<NightSky>().Build();
 
         var dust = new GameObject("Floating Papers").AddComponent<FloatingPapers>();
         dust.Build(gm);
