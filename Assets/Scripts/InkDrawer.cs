@@ -278,6 +278,8 @@ public class InkDrawer : MonoBehaviour
 
         var rb = stroke.AddComponent<Rigidbody>();
         rb.mass = Mathf.Max(0.5f, strokeLength * 0.4f);
+        // لو انرسم الشكل داخل جدار، يطلع منه بهدوء بدل ما ينقذف
+        rb.maxDepenetrationVelocity = 2f;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.constraints = RigidbodyConstraints.FreezePositionZ

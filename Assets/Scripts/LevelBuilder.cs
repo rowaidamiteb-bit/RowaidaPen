@@ -24,6 +24,7 @@ public static class LevelBuilder
         CreateDoor(root.transform, data.door, gm, data.flipped);
         CreateRowaida(root.transform, data.spawn, gm, data.flipped);
         SpawnMonsters(root.transform, data, gm);
+        if (data.Flood) InkFlood.Spawn(root.transform, data, gm);
         return root;
     }
 
@@ -411,6 +412,8 @@ public static class LevelBuilder
         rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionZ;
 
         RowaidaModel.Build(go, gm);
+        // مقلوبة: نلف الشكل عشان وجهها يظل يطالع الكاميرا
+        if (flipped) go.GetComponent<RowaidaModel>().Model.localRotation = Quaternion.LookRotation(new Vector3(1f, 0f, 0.9f));
         go.AddComponent<RowaidaController>();
     }
 

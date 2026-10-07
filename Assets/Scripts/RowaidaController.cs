@@ -25,7 +25,7 @@ public class RowaidaController : MonoBehaviour
 
         // نثبت السرعة الأفقية ونخلي السرعة العمودية للجاذبية
         Vector3 v = rb.linearVelocity;
-        v.x = walkSpeed * (boosted ? 2.2f : 1f);
+        v.x = WaitOnBoat() ? 0f : walkSpeed * (boosted ? 2.2f : 1f);
         rb.linearVelocity = v;
     }
 
@@ -60,8 +60,25 @@ public class RowaidaController : MonoBehaviour
         if (on) lastBlue = Time.time;
     }
 
+    // على قارب في الحبر المنسكب وقدامها جدار: توقف وتنتظر لين يرفعها القارب فوقه
+    float onBoatUntil;
+
+    bool WaitOnBoat()
+    {
+        if (Time.time > onBoatUntil) return false;
+        var level = GameManager.Instance != null ? GameManager.Instance.CurrentLevel : null;
+        if (level == null || !level.Flood) return false;
+        Vector3 from = transform.position + Vector3.down * 0.3f;
+        foreach (RaycastHit hit in Physics.RaycastAll(from, Vector3.right, 4f))
+            if (!hit.collider.isTrigger && hit.collider.GetComponentInParent<InkMark>() == null && hit.collider.GetComponentInParent<RowaidaController>() == null)
+                return true;
+        return false;
+    }
+
     void OnCollisionStay(Collision c)
     {
+        var mark = c.collider.GetComponentInParent<InkMark>();
+        if (mark != null && mark.closed) onBoatUntil = Time.time + 0.15f;
         var fx = c.collider.GetComponentInParent<InkColorEffect>();
         if (fx != null) fx.OnRowaida(this);
         // لمست أرض عادية (مو بنفس لحظة لمس الأزرق): يخلص التسريع

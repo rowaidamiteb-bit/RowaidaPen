@@ -203,6 +203,30 @@ public static class ClaudeCapture
                 case "color":
                     Object.FindAnyObjectByType<InkDrawer>().SelectColor((InkColor)int.Parse(arg));
                     break;
+                case "ellipse":
+                    // يرسم شكل بيضاوي مغلق: ellipse:cx;cy;rx;ry
+                    var el = arg.Split(';');
+                    float ecx = float.Parse(el[0], System.Globalization.CultureInfo.InvariantCulture), ecy = float.Parse(el[1], System.Globalization.CultureInfo.InvariantCulture);
+                    float erx = float.Parse(el[2], System.Globalization.CultureInfo.InvariantCulture), ery = float.Parse(el[3], System.Globalization.CultureInfo.InvariantCulture);
+                    var oval = new List<Vector3>();
+                    for (int k = 0; k <= 40; k++)
+                    {
+                        float a = k / 40f * Mathf.PI * 2f;
+                        oval.Add(new Vector3(ecx + Mathf.Cos(a) * erx, ecy + Mathf.Sin(a) * ery, 0f));
+                    }
+                    Object.FindAnyObjectByType<InkDrawer>().DebugDraw(oval);
+                    break;
+                case "probe":
+                    // يكتب أرقام للتشخيص: مكان رويدا، مستوى الحبر، ومكان القوارب
+                    var gmp = GameManager.Instance;
+                    string line = "\nt=" + Time.timeSinceLevelLoad.ToString("0.00");
+                    if (gmp.Rowaida != null) line += " rowaida=" + gmp.Rowaida.transform.position.ToString("F2") + " v=" + gmp.Rowaida.GetComponent<Rigidbody>().linearVelocity.ToString("F1") + " hearts=" + gmp.Hearts;
+                    var flood = Object.FindAnyObjectByType<InkFlood>();
+                    if (flood != null) line += " ink=" + flood.Level.ToString("F2");
+                    foreach (var mk in Object.FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+                        if (mk.closed) line += " boat=" + mk.GetComponent<MeshRenderer>().bounds.ToString();
+                    File.AppendAllText(Path.Combine(OutDir, "probe.txt"), line);
+                    break;
                 case "skip":
                     var intro = Object.FindAnyObjectByType<IntroCutscene>();
                     if (intro != null) intro.Skip();

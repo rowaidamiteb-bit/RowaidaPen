@@ -72,6 +72,7 @@ public static class ArabicText
 
     static bool IsArabic(char c) => forms.ContainsKey(c);
     static bool IsDiacritic(char c) => c >= 'ً' && c <= 'ٟ';
+    static bool IsDigit(char c) => (c >= '0' && c <= '9') || (c >= '٠' && c <= '٩');
 
     // الحرف يقدر يتصل باللي بعده (يعني له شكل أول/وسط)
     static bool JoinsNext(char c) => forms.TryGetValue(c, out var f) && f[2] != 0;
@@ -126,6 +127,15 @@ public static class ArabicText
         {
             // نعكس الأقواس عشان تطلع بالاتجاه الصح
             if (arr[i] == '(') arr[i] = ')'; else if (arr[i] == ')') arr[i] = '(';
+        }
+        // الأرقام تنكتب من اليسار لليمين حتى في العربي: نرجع ترتيبها (10 مو 01)
+        for (int i = 0; i < arr.Length; i++)
+        {
+            if (!IsDigit(arr[i])) continue;
+            int j = i;
+            while (j + 1 < arr.Length && IsDigit(arr[j + 1])) j++;
+            System.Array.Reverse(arr, i, j - i + 1);
+            i = j;
         }
         return new string(arr);
     }

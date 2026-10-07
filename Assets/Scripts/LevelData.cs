@@ -231,7 +231,7 @@ public static class Levels
         {
             float a0 = i / (float)n * Mathf.PI * 2f, a1 = (i + 1) / (float)n * Mathf.PI * 2f;
             Vector3 c = new Vector3(13.5f, -1.2f, 0f);
-            level.hints.Add(new HintLine(c + new Vector3(Mathf.Cos(a0) * 2f, Mathf.Sin(a0) * 0.55f, 0f), c + new Vector3(Mathf.Cos(a1) * 2f, Mathf.Sin(a1) * 0.55f, 0f), InkColorEffect.ColorOf(InkColor.Black)));
+            level.hints.Add(new HintLine(c + new Vector3(Mathf.Cos(a0) * 2f, Mathf.Sin(a0) * 0.6f, 0f), c + new Vector3(Mathf.Cos(a1) * 2f, Mathf.Sin(a1) * 0.6f, 0f), InkColorEffect.ColorOf(InkColor.Black)));
         }
         return level;
     }

@@ -33,6 +33,9 @@ public class GameManager : MonoBehaviour
     public Transform DrawingsRoot { get; private set; }
     public SoundManager Sound { get; private set; }
     public GameUI UI => ui;
+
+    // لما ترجع رويدا بعد ما تخسر قلب (مكانها الجديد)
+    public event System.Action<Vector3> Respawned;
     public LevelData CurrentLevel => levelIndex >= 0 && levelIndex < Levels.All.Count ? Levels.All[levelIndex] : null;
 
     readonly Dictionary<string, Material> materials = new Dictionary<string, Material>();
@@ -154,6 +157,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // شي قتل رويدا (مثل الحبر المنسكب): تخسر قلب
+    public void KillRowaida()
+    {
+        if (!IsPlaying) return;
+        Sound.PlayLose();
+        OnRowaidaFell();
+    }
+
     void OnRowaidaFell()
     {
         hearts--;
@@ -184,6 +195,7 @@ public class GameManager : MonoBehaviour
             pos = new Vector3(b.center.x - b.size.x * 0.5f + 1f, Surface(b) + Up, 0f);
         }
         Rowaida.Respawn(pos);
+        Respawned?.Invoke(pos);
         cameraFollow.SetTarget(Rowaida.transform, true);
         Ink = checkpointInk;
         falling = false;
