@@ -41,6 +41,12 @@ public static class LevelBuilder
         go.AddComponent<MeshFilter>().sharedMesh = PaperMeshes.PaperSlab(b.size);
         var top = new Material(gm.paperMaterial) { name = "Page Drawing" };
         top.SetTexture("_BaseMap", DrawPageArt(b, rng, data, first));
+        if (data.Rain)
+        {
+            // ورق مبلول: أغمق شوي ولامع
+            top.SetColor("_BaseColor", new Color(0.84f, 0.87f, 0.95f));
+            top.SetFloat("_Smoothness", 0.6f);
+        }
         go.AddComponent<MeshRenderer>().sharedMaterials = new[] { top, gm.pageEdgeMaterial };
         go.AddComponent<BoxCollider>().size = b.size;
 
@@ -49,6 +55,7 @@ public static class LevelBuilder
 
         OutlineBox(t, b.size, gm, rng);
         PlaceProps(t, b, gm, rng, data);
+        if (data.Rain) Puddles(t, b, gm, rng);
 
         // شقوق عند أطراف الصفحة (جنب الحفر)
         for (int side = -1; side <= 1; side += 2)
@@ -168,6 +175,21 @@ public static class LevelBuilder
                     Props.PaperCube(t, p + new Vector3(0.55f, 0f, R(-0.1f, 0.1f)), R(0.3f, 0.4f), R(-30f, 30f), gm, rng);
                     break;
             }
+        }
+    }
+
+    // برك مويه صغيرة لامعة على الصفحة (للزينة)
+    static void Puddles(Transform t, Block b, GameManager gm, System.Random rng)
+    {
+        float hx = b.size.x * 0.5f, hz = b.size.z * 0.5f, top = b.size.y * 0.5f;
+        Material water = gm.Mat("Puddle", new Color(0.66f, 0.72f, 0.86f), 0.92f);
+        int count = 2 + Mathf.RoundToInt(b.size.x / 4f);
+        for (int i = 0; i < count; i++)
+        {
+            float w = 0.4f + (float)rng.NextDouble() * 0.8f;
+            Vector3 p = new Vector3(Mathf.Lerp(-hx + 0.6f, hx - 0.6f, (float)rng.NextDouble()), top + 0.004f, Mathf.Lerp(-hz + 0.4f, hz - 0.4f, (float)rng.NextDouble()));
+            var puddle = Visual("Puddle", PrimitiveType.Cylinder, t, p, new Vector3(w, 0.003f, w * (0.5f + (float)rng.NextDouble() * 0.4f)), water, false);
+            puddle.transform.localRotation = Quaternion.Euler(0f, (float)rng.NextDouble() * 180f, 0f);
         }
     }
 

@@ -92,6 +92,27 @@ public class SoundManager : MonoBehaviour
         effects.PlayOneShot(clip, volume * effectsVolume);
     }
 
+    // صوت المطر المستمر
+    AudioSource rainSource;
+    AudioClip thunderClip;
+
+    public void SetRain(bool on)
+    {
+        if (rainSource == null)
+        {
+            rainSource = NewSource("Rain", SynthAudio.Rain(), true);
+            rainSource.volume = 0.35f;
+        }
+        if (on && !rainSource.isPlaying) rainSource.Play();
+        else if (!on && rainSource.isPlaying) rainSource.Stop();
+    }
+
+    public void PlayThunder()
+    {
+        if (thunderClip == null) thunderClip = SynthAudio.Thunder();
+        effects.PlayOneShot(thunderClip, effectsVolume * Random.Range(0.6f, 1f));
+    }
+
     public void PlayLose()
     {
         effects.PlayOneShot(LoseClip, effectsVolume);

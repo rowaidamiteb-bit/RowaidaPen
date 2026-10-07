@@ -272,6 +272,50 @@ public static class SynthAudio
         return Make("Magic", buf);
     }
 
+    // صوت مطر مستمر (لوب): هسهسة ناعمة + نقرات قطرات
+    public static AudioClip Rain()
+    {
+        int n = Mathf.RoundToInt(4.2f * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(31);
+        var hp = Biquad.HighPass(400f, 0.7f);
+        var bp = Biquad.BandPass(5000f, 1.2f);
+        float lp = 0f, slow = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float noise = (float)rng.NextDouble() * 2f - 1f;
+            lp += (noise - lp) * 0.35f;
+            slow += (((float)rng.NextDouble() * 2f - 1f) - slow) * 0.0004f;
+            float hiss = hp.Process(lp) * (0.8f + slow * 3f);
+            float drop = rng.NextDouble() < 0.004 ? ((float)rng.NextDouble() * 2f - 1f) * 4f : 0f;
+            buf[i] = hiss * 0.6f + bp.Process(drop) * 0.9f;
+        }
+        buf = CrossfadeLoop(buf, Mathf.RoundToInt(0.2f * Rate));
+        Normalize(buf, 0.6f);
+        return Make("Rain", buf);
+    }
+
+    // رعد بعيد: هدير منخفض يعلى وينزل
+    public static AudioClip Thunder()
+    {
+        int n = Mathf.RoundToInt(4f * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(66);
+        float lp1 = 0f, lp2 = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float noise = (float)rng.NextDouble() * 2f - 1f;
+            lp1 += (noise - lp1) * 0.02f;
+            lp2 += (lp1 - lp2) * 0.05f;
+            float crack = Mathf.Exp(-t * 9f) * noise * 0.25f;
+            float rumble = Mathf.Clamp01(t / 0.25f) * Mathf.Exp(-t * 0.9f) * (0.7f + 0.3f * Mathf.Sin(t * 7f + Mathf.Sin(t * 2.3f) * 3f));
+            buf[i] = lp2 * 8f * rumble + crack;
+        }
+        Normalize(buf, 0.8f);
+        return Make("Thunder", buf);
+    }
+
     // ---------- أدوات ----------
 
     // نخلط آخر الصوت ببدايته ونقصه، عشان اللوب ما يطقطق عند الرجوع للبداية

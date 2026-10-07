@@ -100,9 +100,10 @@ public static class ClaudeCapture
                 string[] parts = shots[i].Trim().Split(':');
                 float t = float.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture);
                 string kind = parts.Length > 1 ? parts[1] : "main";
+                string arg = parts.Length > 2 ? parts[2] : null;
                 if (elapsed >= t)
                 {
-                    RunCommand(kind, i);
+                    RunCommand(kind, i, arg);
                     done += tag;
                     SessionState.SetString(DoneKey, done);
                 }
@@ -120,7 +121,7 @@ public static class ClaudeCapture
         }
     }
 
-    static void RunCommand(string kind, int index)
+    static void RunCommand(string kind, int index, string arg)
     {
         try
         {
@@ -146,6 +147,18 @@ public static class ClaudeCapture
                         SynthAudio.SaveWav(sound.LoseClip, Path.Combine(OutDir, "lose.wav"));
                         SynthAudio.SaveWav(sound.WinClip, Path.Combine(OutDir, "win.wav"));
                     }
+                    break;
+                case "level":
+                    // ينقل لمرحلة معينة: level:1
+                    GameManager.Instance.LoadLevel(int.Parse(arg));
+                    break;
+                case "draw":
+                    // يرسم خط من نقاط: draw:x1;y1;x2;y2;...
+                    var nums = arg.Split(';');
+                    var path = new List<Vector3>();
+                    for (int k = 0; k + 1 < nums.Length; k += 2)
+                        path.Add(new Vector3(float.Parse(nums[k], System.Globalization.CultureInfo.InvariantCulture), float.Parse(nums[k + 1], System.Globalization.CultureInfo.InvariantCulture), 0f));
+                    Object.FindAnyObjectByType<InkDrawer>().DebugDraw(path);
                     break;
                 case "skip":
                     var intro = Object.FindAnyObjectByType<IntroCutscene>();

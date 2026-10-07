@@ -32,6 +32,7 @@ public class GameManager : MonoBehaviour
     public RowaidaController Rowaida { get; private set; }
     public Transform DrawingsRoot { get; private set; }
     public SoundManager Sound { get; private set; }
+    public LevelData CurrentLevel => levelIndex >= 0 && levelIndex < Levels.All.Count ? Levels.All[levelIndex] : null;
 
     readonly Dictionary<string, Material> materials = new Dictionary<string, Material>();
     Material template;
@@ -40,6 +41,7 @@ public class GameManager : MonoBehaviour
     GameUI ui;
     InkDrawer drawer;
     CameraFollow cameraFollow;
+    Weather weather;
     bool falling;
 
     void Awake()
@@ -56,6 +58,8 @@ public class GameManager : MonoBehaviour
         drawer = gameObject.AddComponent<InkDrawer>();
         Sound = gameObject.AddComponent<SoundManager>();
         Sound.Build();
+        weather = gameObject.AddComponent<Weather>();
+        weather.Build(this);
         LevelBuilder.BuildBackdrop(this);
     }
 
@@ -119,7 +123,8 @@ public class GameManager : MonoBehaviour
         falling = false;
         IsPlaying = true;
         ui.SetLevel(index + 1);
-        ui.ShowMessage(data.title, 1.5f);
+        weather.Apply(data);
+        ui.ShowMessage(data.title, data.subtitle != null ? 4f : 1.5f, data.subtitle);
     }
 
     public void RestartLevel()

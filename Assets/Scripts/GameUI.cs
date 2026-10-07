@@ -7,7 +7,7 @@ public class GameUI : MonoBehaviour
 {
     RectTransform inkFill;
     Text levelText;
-    Text messageText;
+    Text messageText, subtitleText;
     Canvas canvasRef;
 
     public void SetVisible(bool visible)
@@ -49,6 +49,9 @@ public class GameUI : MonoBehaviour
 
         levelText = Label(root, "", 40, TextAnchor.MiddleRight, new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(400f, 50f));
         messageText = Label(root, "", 80, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
+        subtitleText = Label(root, "", 40, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1700f, 70f));
+        subtitleText.color = Color.white;
+        subtitleText.gameObject.AddComponent<Outline>().effectColor = new Color(0.05f, 0.03f, 0.1f, 0.9f);
         messageText.gameObject.AddComponent<Outline>().effectColor = Color.white;
         Label(root, ArabicText.Fix("ارسمي بالماوس   •   زر R يعيد المرحلة"), 28, TextAnchor.MiddleCenter, new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1200f, 40f))
             .color = new Color(0f, 0f, 0f, 0.6f);
@@ -64,10 +67,12 @@ public class GameUI : MonoBehaviour
         if (levelText != null) levelText.text = ArabicText.Fix("المرحلة " + number);
     }
 
-    public void ShowMessage(string message, float duration)
+    public void ShowMessage(string message, float duration, string subtitle = null)
     {
         messageText.text = ArabicText.Fix(message);
         messageText.enabled = true;
+        subtitleText.text = ArabicText.Fix(subtitle ?? "");
+        subtitleText.enabled = true;
         messageTimer = duration;
     }
 
@@ -75,7 +80,7 @@ public class GameUI : MonoBehaviour
     {
         if (messageTimer <= 0f) return;
         messageTimer -= Time.deltaTime;
-        if (messageTimer <= 0f) messageText.enabled = false;
+        if (messageTimer <= 0f) messageText.enabled = subtitleText.enabled = false;
     }
 
     static Image Panel(Transform parent, string name, Color color)
