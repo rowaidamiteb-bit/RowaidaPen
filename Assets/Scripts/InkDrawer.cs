@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 // - شكل مغلق  => جسم صلب يطيح بالجاذبية ويتدحرج
 public class InkDrawer : MonoBehaviour
 {
-    public float tubeRadius = 0.22f;
+    public float tubeRadius = 0.17f;
     public float pointSpacing = 0.12f;
     public float closeDistance = 0.7f;     // إذا آخر الخط قريب من أوله بهالمسافة يعتبر مغلق
     public float minClosedLength = 2.5f;
@@ -46,6 +46,22 @@ public class InkDrawer : MonoBehaviour
             FinishStroke();
     }
 
+    // رسم تلقائي من نقاط جاهزة (للتجربة فقط)
+    public void DebugDraw(List<Vector3> path)
+    {
+        if (Game == null || path.Count < 2) return;
+        CancelStroke();
+        BeginStrokeAt(path[0]);
+        if (!drawing) return;
+        for (int i = 1; i < path.Count && drawing; i++)
+            ExtendTo(path[i]);
+        if (drawing)
+        {
+            RebuildMesh();
+            FinishStroke();
+        }
+    }
+
     public void CancelStroke()
     {
         drawing = false;
@@ -69,8 +85,12 @@ public class InkDrawer : MonoBehaviour
 
     void BeginStroke(Vector2 screen)
     {
-        if (Game.Ink <= 0.01f) return;
-        if (!ScreenToWorld(screen, out Vector3 p) || TouchesRowaida(p)) return;
+        if (ScreenToWorld(screen, out Vector3 p)) BeginStrokeAt(p);
+    }
+
+    void BeginStrokeAt(Vector3 p)
+    {
+        if (Game.Ink <= 0.01f || TouchesRowaida(p)) return;
 
         points.Clear();
         points.Add(p);
@@ -86,8 +106,11 @@ public class InkDrawer : MonoBehaviour
 
     void ContinueStroke(Vector2 screen)
     {
-        if (!ScreenToWorld(screen, out Vector3 target)) return;
+        if (ScreenToWorld(screen, out Vector3 target)) ExtendTo(target);
+    }
 
+    void ExtendTo(Vector3 target)
+    {
         bool changed = false;
         while (true)
         {

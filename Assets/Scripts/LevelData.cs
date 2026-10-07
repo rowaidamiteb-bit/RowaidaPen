@@ -23,6 +23,7 @@ public class LevelData
     public Vector3 door;           // مكان الباب (أسفل الباب)
     public float ink = 12f;        // كمية الحبر (بطول الخطوط)
     public float deathY = -8f;     // إذا نزلت رويدا تحت هذا الارتفاع تعيد المرحلة
+    public bool bridgeHint;        // خط منقط فوق أول حفرة يعلّم اللاعب وين يرسم
     public List<Block> blocks = new List<Block>();
 }
 
@@ -43,10 +44,11 @@ public static class Levels
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(21f, 0f, 0f),
             ink = 12f,
+            bridgeHint = true,
             blocks =
             {
-                new Block(new Vector3(0f, -1.5f, 0f), new Vector3(14f, 3f, 4f)),   // من -7 إلى 7
-                new Block(new Vector3(18f, -1.5f, 0f), new Vector3(14f, 3f, 4f)),  // من 11 إلى 25
+                new Block(new Vector3(0f, -0.6f, 0f), new Vector3(14f, 1.2f, 4f)),   // من -7 إلى 7
+                new Block(new Vector3(18f, -0.6f, 0f), new Vector3(14f, 1.2f, 4f)),  // من 11 إلى 25
             },
         };
     }

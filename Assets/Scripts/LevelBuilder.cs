@@ -16,6 +16,7 @@ public static class LevelBuilder
         var root = new GameObject("Level - " + data.title);
         var rng = new System.Random(data.title.GetHashCode());
         foreach (Block b in data.blocks) CreatePaperBlock(root.transform, b, gm, rng);
+        if (data.bridgeHint && data.blocks.Count > 1) BridgeHint(root.transform, data.blocks[0], data.blocks[1], gm);
         CreateDoor(root.transform, data.door, gm);
         CreateRowaida(root.transform, data.spawn, gm);
         return root;
@@ -29,7 +30,7 @@ public static class LevelBuilder
         sky.name = "Dream Sky";
         sky.SetTexture("_BaseMap", PaperMeshes.SkyGradient());
         sky.SetColor("_BaseColor", Color.white);
-        Visual("Dream Sky", PrimitiveType.Quad, null, new Vector3(30f, 5f, 45f), new Vector3(260f, 90f, 1f), sky, false)
+        Visual("Dream Sky", PrimitiveType.Quad, null, new Vector3(30f, 10f, 95f), new Vector3(520f, 200f, 1f), sky, false)
             .GetComponent<MeshRenderer>().receiveShadows = false;
 
         var dust = new GameObject("Floating Papers").AddComponent<FloatingPapers>();
@@ -129,6 +130,26 @@ public static class LevelBuilder
             }
         }
         Line("Crack", parent, pts, PencilRadius * 0.8f, gm.pencilMaterial);
+    }
+
+    // قوس منقط خفيف بين صفحتين: تلميح إن اللاعب يرسم جسر هنا
+    static void BridgeHint(Transform parent, Block a, Block b, GameManager gm)
+    {
+        Vector3 from = new Vector3(a.center.x + a.size.x * 0.5f - 0.4f, a.center.y + a.size.y * 0.5f + 0.05f, 0f);
+        Vector3 to = new Vector3(b.center.x - b.size.x * 0.5f + 0.4f, b.center.y + b.size.y * 0.5f + 0.05f, 0f);
+        Material hint = gm.Mat("Hint", new Color(0.55f, 0.55f, 0.62f), 0.2f);
+        const int dashes = 14;
+        for (int i = 0; i < dashes; i++)
+        {
+            float t0 = i / (float)dashes, t1 = t0 + 0.55f / dashes;
+            var pts = new List<Vector3>();
+            for (int k = 0; k <= 3; k++)
+            {
+                float t = Mathf.Lerp(t0, t1, k / 3f);
+                pts.Add(Vector3.Lerp(from, to, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 0.5f);
+            }
+            Line("Hint", parent, pts, 0.03f, hint);
+        }
     }
 
     static void Line(string name, Transform parent, List<Vector3> localPts, float radius, Material mat)

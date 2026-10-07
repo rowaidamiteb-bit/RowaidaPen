@@ -40,6 +40,7 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
+        Application.runInBackground = true;
         CreateMaterials();
         CreateCameraAndLight();
         CreatePostProcessing(Camera.main);
@@ -134,7 +135,7 @@ public class GameManager : MonoBehaviour
         pageEdgeMaterial.SetTexture("_BaseMap", PaperMeshes.PageEdges());
 
         // الحبر: رصاص غامق لامع شوي مثل الجرافيت
-        inkMaterial = Mat("Ink", new Color(0.17f, 0.17f, 0.19f), 0.62f, 0.35f);
+        inkMaterial = Mat("Ink", new Color(0.21f, 0.21f, 0.23f), 0.42f, 0.2f);
         pencilMaterial = Mat("Pencil Line", new Color(0.33f, 0.33f, 0.36f), 0.3f);
         metalMaterial = Mat("Metal", new Color(0.2f, 0.2f, 0.22f), 0.75f, 0.85f);
     }
@@ -187,8 +188,8 @@ public class GameManager : MonoBehaviour
 
         var follow = cam.GetComponent<CameraFollow>();
         if (follow == null) follow = cam.gameObject.AddComponent<CameraFollow>();
-        follow.offset = new Vector3(-0.5f, 3.6f, -10.5f);
-        follow.lookOffset = new Vector3(2.2f, 0.3f, 0f);
+        follow.offset = new Vector3(-0.6f, 2.0f, -7.8f);
+        follow.lookOffset = new Vector3(2f, 0.7f, 0f);
         cam.transform.position = follow.offset;
         cam.transform.LookAt(follow.lookOffset);
 
@@ -214,8 +215,8 @@ public class GameManager : MonoBehaviour
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
         RenderSettings.fogColor = night;
-        RenderSettings.fogStartDistance = 22f;
-        RenderSettings.fogEndDistance = 75f;
+        RenderSettings.fogStartDistance = 25f;
+        RenderSettings.fogEndDistance = 220f;
     }
 
     // تأثيرات الصورة: توهج خفيف، أطراف غامقة، وتباين ألوان

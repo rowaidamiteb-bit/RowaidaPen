@@ -11,7 +11,7 @@ public static class TubeMesh
     static readonly List<int> tris = new List<int>();
     static int sides = 10;
 
-    public static void Build(Mesh mesh, IList<Vector3> pts, float radius, bool closed, int sideCount = 10)
+    public static void Build(Mesh mesh, IList<Vector3> pts, float radius, bool closed, int sideCount = 10, IList<float> radii = null)
     {
         mesh.Clear();
         verts.Clear();
@@ -26,7 +26,7 @@ public static class TubeMesh
         for (int i = 0; i < n; i++)
         {
             Frame(Tangent(pts, i, closed), out Vector3 side, out Vector3 up);
-            AddRing(pts[i], side, up, Vector3.zero, radius, 0f);
+            AddRing(pts[i], side, up, Vector3.zero, R(radii, i, radius), 0f);
         }
 
         // نوصل كل حلقة باللي بعدها
@@ -39,17 +39,22 @@ public static class TubeMesh
         {
             Vector3 t0 = Tangent(pts, 0, false);
             Frame(t0, out Vector3 s0, out Vector3 u0);
-            AddCap(pts[0], -t0, s0, u0, radius, 0, false);
+            AddCap(pts[0], -t0, s0, u0, R(radii, 0, radius), 0, false);
 
             Vector3 t1 = Tangent(pts, n - 1, false);
             Frame(t1, out Vector3 s1, out Vector3 u1);
-            AddCap(pts[n - 1], t1, s1, u1, radius, (n - 1) * sides, true);
+            AddCap(pts[n - 1], t1, s1, u1, R(radii, n - 1, radius), (n - 1) * sides, true);
         }
 
         mesh.SetVertices(verts);
         mesh.SetNormals(normals);
         mesh.SetTriangles(tris, 0);
         mesh.RecalculateBounds();
+    }
+
+    static float R(IList<float> radii, int i, float fallback)
+    {
+        return radii != null && i < radii.Count ? radii[i] : fallback;
     }
 
     static Vector3 Tangent(IList<Vector3> pts, int i, bool closed)
