@@ -86,6 +86,12 @@ public class SoundManager : MonoBehaviour
         steps.PlayOneShot(StepClips[i], stepVolume);
     }
 
+    // يشغل أي صوت مرة وحدة (مثل أصوات المشهد الافتتاحي)
+    public void Play(AudioClip clip, float volume)
+    {
+        effects.PlayOneShot(clip, volume * effectsVolume);
+    }
+
     public void PlayLose()
     {
         effects.PlayOneShot(LoseClip, effectsVolume);

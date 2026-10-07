@@ -227,6 +227,51 @@ public static class SynthAudio
         return Make("Win", buf);
     }
 
+    // الدفتر يطيح على الأرض: خبطة ناعمة + حفيف ورق
+    public static AudioClip BookFlop()
+    {
+        int n = Mathf.RoundToInt(0.7f * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(12);
+        var bp = Biquad.BandPass(2500f, 0.9f);
+        float lp = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float noise = (float)rng.NextDouble() * 2f - 1f;
+            lp += (noise - lp) * 0.08f;
+            float thump = (Mathf.Sin(2f * Mathf.PI * 70f * t) * 0.8f + lp * 1.5f) * Mathf.Exp(-t * 22f);
+            float rustle = bp.Process(noise) * Mathf.Exp(-t * 7f) * (0.6f + 0.4f * Mathf.PerlinNoise(t * 60f, 0f));
+            buf[i] = thump + rustle * 1.4f;
+        }
+        Normalize(buf, 0.7f);
+        return Make("Book Flop", buf);
+    }
+
+    // سحر: نغمات لامعة طالعة + هواء يعلى (للدخول داخل الدفتر)
+    public static AudioClip Magic()
+    {
+        int n = Mathf.RoundToInt(4f * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(8);
+        float lp = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float cutoff = Mathf.Lerp(0.01f, 0.3f, Mathf.Clamp01(t / 3.2f));
+            lp += (((float)rng.NextDouble() * 2f - 1f) - lp) * cutoff;
+            float env = Mathf.Clamp01(t / 2.5f) * Mathf.Clamp01((4f - t) / 0.8f);
+            buf[i] = lp * env * 0.35f;
+        }
+        float[] notes = { 72, 76, 79, 83, 84, 88, 91, 95, 96 };
+        for (int k = 0; k < notes.Length; k++)
+            Bell(buf, 0.3f + k * 0.3f, Midi(notes[k]), 0.16f, 2.2f, false);
+        for (int k = 0; k < 14; k++)
+            Bell(buf, 1.2f + (float)rng.NextDouble() * 2.4f, Midi(96 + rng.Next(10)), 0.06f, 5f, false);
+        Normalize(buf, 0.7f);
+        return Make("Magic", buf);
+    }
+
     // ---------- أدوات ----------
 
     // نخلط آخر الصوت ببدايته ونقصه، عشان اللوب ما يطقطق عند الرجوع للبداية

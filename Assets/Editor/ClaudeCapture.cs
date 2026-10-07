@@ -147,6 +147,10 @@ public static class ClaudeCapture
                         SynthAudio.SaveWav(sound.WinClip, Path.Combine(OutDir, "win.wav"));
                     }
                     break;
+                case "skip":
+                    var intro = Object.FindAnyObjectByType<IntroCutscene>();
+                    if (intro != null) intro.Skip();
+                    break;
                 case "circle":
                     InkDrawer d2 = Object.FindAnyObjectByType<InkDrawer>();
                     var pts = new List<Vector3>();

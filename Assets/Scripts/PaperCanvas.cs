@@ -5,7 +5,7 @@ using UnityEngine;
 // الإحداثيات بالمتر على سطح الصفحة: x (طول الصفحة) و z (عمقها)، والمركز في النص
 public class PaperCanvas
 {
-    const float PixelsPerUnit = 80f;
+    readonly float PixelsPerUnit;
     static readonly Color Graphite = new Color(0.3f, 0.3f, 0.34f);
 
     readonly int w, h;
@@ -13,9 +13,10 @@ public class PaperCanvas
     readonly Color[] px;
     readonly System.Random rng;
 
-    public PaperCanvas(Vector2 worldSize, int seed)
+    public PaperCanvas(Vector2 worldSize, int seed, float pixelsPerUnit = 80f)
     {
         size = worldSize;
+        PixelsPerUnit = pixelsPerUnit;
         w = Mathf.Clamp(Mathf.RoundToInt(worldSize.x * PixelsPerUnit), 16, 2048);
         h = Mathf.Clamp(Mathf.RoundToInt(worldSize.y * PixelsPerUnit), 16, 2048);
         px = new Color[w * h];
@@ -72,13 +73,43 @@ public class PaperCanvas
                 float a2 = Mathf.Clamp01(width - d + 0.5f);
                 if (a2 <= 0f) continue;
                 float grain = 0.55f + 0.45f * Mathf.PerlinNoise(x * 0.9f, y * 0.9f);
-                Blend(x, y, Graphite, a2 * strength * grain);
+                StrokeBlend(x, y, a2 * strength * grain);
             }
     }
 
     public void Polyline(IList<Vector2> pts, float width = 1.4f, float strength = 0.75f)
     {
+        currentStroke++;
         for (int i = 0; i < pts.Count - 1; i++) Line(pts[i], pts[i + 1], width, strength);
+        currentStroke++;
+    }
+
+    // داخل نفس الخط، المكان اللي ينرسم مرتين ما يغمق أكثر (عشان ما تطلع نقاط عند الوصلات)
+    int currentStroke = 1;
+    int[] strokeStamp;
+    float[] strokeAlpha;
+
+    void StrokeBlend(int x, int y, float a)
+    {
+        if (strokeStamp == null)
+        {
+            strokeStamp = new int[w * h];
+            strokeAlpha = new float[w * h];
+        }
+        int i = y * w + x;
+        if (strokeStamp[i] == currentStroke)
+        {
+            float prev = strokeAlpha[i];
+            if (a <= prev) return;
+            Blend(x, y, Graphite, (a - prev) / Mathf.Max(1e-3f, 1f - prev));
+            strokeAlpha[i] = a;
+        }
+        else
+        {
+            strokeStamp[i] = currentStroke;
+            strokeAlpha[i] = a;
+            Blend(x, y, Graphite, a);
+        }
     }
 
     // لطخة رصاص ناعمة
@@ -189,7 +220,8 @@ public class PaperCanvas
                 q += new Vector2(R(-0.01f, 0.01f), R(-0.01f, 0.01f));
                 pts.Add(center + q);
             }
-            Polyline(pts, R(1.6f, 2.2f), strength);
+            // الخط أعرض شوي في الأوراق الصغيرة اللي دقتها عالية
+            Polyline(pts, R(1.6f, 2.2f) * Mathf.Max(1f, PixelsPerUnit / 200f), strength);
         }
     }
 }

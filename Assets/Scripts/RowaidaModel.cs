@@ -9,9 +9,24 @@ public class RowaidaModel : MonoBehaviour
     static readonly Vector3 HeadRadius = new Vector3(0.235f, 0.225f, 0.22f);
 
     static Mesh headMesh, hairCapMesh, hairMesh, sweaterMesh, sleeveMesh, pantsMesh;
-    static Texture2D faceTex;
+    static Texture2D faceTex, faceClosedTex;
 
     Transform model, hair;
+    Material faceMat;
+
+    // مفاصل الشخصية (للمشهد الافتتاحي)
+    public Transform Model => model;
+    public Transform LegL => legL;
+    public Transform LegR => legR;
+    public Transform ArmL => armL;
+    public Transform ArmR => armR;
+
+    // يسكر عيونها أو يفتحها
+    public void SetEyesClosed(bool closed)
+    {
+        faceMat.SetTexture("_BaseMap", closed ? faceClosedTex : faceTex);
+    }
+
     Transform legL, legR, armL, armR;
     Rigidbody rb;
     float phase;
@@ -23,8 +38,13 @@ public class RowaidaModel : MonoBehaviour
         me.rb = root.GetComponent<Rigidbody>();
 
         Color skinColor = new Color(1f, 0.87f, 0.79f);
-        if (faceTex == null) faceTex = CharacterMeshes.FaceTexture(skinColor);
-        Material face = gm.Mat("Face", Color.white, 0.3f);
+        if (faceTex == null)
+        {
+            faceTex = CharacterMeshes.FaceTexture(skinColor);
+            faceClosedTex = CharacterMeshes.FaceTexture(skinColor, true);
+        }
+        Material face = new Material(gm.Mat("Face", Color.white, 0.3f));
+        me.faceMat = face;
         face.SetTexture("_BaseMap", faceTex);
         Material skin = gm.Mat("Skin", skinColor, 0.3f);
         Material hairMat = gm.Mat("Hair", new Color(0.075f, 0.055f, 0.05f), 0.62f);

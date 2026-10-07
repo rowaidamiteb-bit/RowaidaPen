@@ -84,7 +84,7 @@ public static class CharacterMeshes
     // ---------- الوجه ----------
 
     // يرسم الوجه على صورة الراس: عيون كبيرة لامعة، رموش، حواجب، خدود وردية، وفم صغير
-    public static Texture2D FaceTexture(Color skin)
+    public static Texture2D FaceTexture(Color skin, bool closed = false)
     {
         const int w = 1024, h = 512;
         var tex = new Texture2D(w, h, TextureFormat.RGBA32, true) { name = "Rowaida Face" };
@@ -137,6 +137,25 @@ public static class CharacterMeshes
                             float by = 0.27f + 0.045f * (1f - bx * bx) - s * bx * 0.012f;
                             float thick = 0.016f * (1f - 0.5f * Mathf.Abs(bx));
                             c = Color.Lerp(c, brow, 0.9f * Band(Mathf.Abs(fy - by), thick, aa));
+                        }
+
+                        // عين مسكرة (نايمة): خط مقوس لتحت مع رموش صغيرة
+                        if (closed)
+                        {
+                            float ex = (fx - cx) / 0.14f;
+                            if (Mathf.Abs(ex) < 1.1f)
+                            {
+                                float ey = cy - 0.035f * (1f - ex * ex);
+                                c = Color.Lerp(c, lash, Band(Mathf.Abs(fy - ey), 0.013f * (1.2f - 0.5f * Mathf.Abs(ex)), aa));
+                            }
+                            for (int k = 0; k < 3; k++)
+                            {
+                                float lx = cx + s * (0.06f + k * 0.035f);
+                                float lb = cy - 0.035f * (1f - Mathf.Pow((lx - cx) / 0.14f, 2f));
+                                if (Mathf.Abs(fx - lx) < 0.006f && fy < lb && fy > lb - 0.03f)
+                                    c = Color.Lerp(c, lash, 0.85f);
+                            }
+                            continue;
                         }
 
                         // العين

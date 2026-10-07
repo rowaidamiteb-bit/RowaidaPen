@@ -17,6 +17,9 @@ public class GameManager : MonoBehaviour
 
     [Header("الإعدادات")]
     public int startLevel = 0;
+    public bool playIntro = true;   // المشهد الافتتاحي (رويدا في غرفتها)
+
+    public bool IntroActive { get; private set; }
 
     // مواد تنسوي وقت اللعب
     [System.NonSerialized] public Material pageEdgeMaterial;
@@ -58,11 +61,28 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        LoadLevel(Mathf.Clamp(startLevel, 0, Levels.All.Count - 1));
+        int first = Mathf.Clamp(startLevel, 0, Levels.All.Count - 1);
+        if (!playIntro)
+        {
+            LoadLevel(first);
+            return;
+        }
+
+        // المشهد الافتتاحي أول، وبعده المرحلة الأولى
+        IntroActive = true;
+        ui.SetVisible(false);
+        gameObject.AddComponent<IntroCutscene>().Play(this, () =>
+        {
+            IntroActive = false;
+            ui.SetVisible(true);
+            LoadLevel(first);
+        });
     }
 
     void Update()
     {
+        if (IntroActive) return;
+
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
             RestartLevel();
@@ -132,7 +152,7 @@ public class GameManager : MonoBehaviour
     IEnumerator NextLevelRoutine()
     {
         bool last = levelIndex + 1 >= Levels.All.Count;
-        ui.ShowMessage(last ? "You finished all levels!" : "Level Complete!", 2f);
+        ui.ShowMessage(last ? "خلصتي كل المراحل!" : "أحسنتِ! خلصتي المرحلة", 2f);
         yield return new WaitForSeconds(2f);
         LoadLevel(last ? 0 : levelIndex + 1);
     }

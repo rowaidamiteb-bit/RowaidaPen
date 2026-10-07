@@ -52,7 +52,7 @@ public class InkDrawer : MonoBehaviour
 
     void LateUpdate()
     {
-        if (Game == null || Game.Sound == null) return;
+        if (Game == null || Game.Sound == null || Game.IntroActive) return;
         float delta = drawing ? Mathf.Max(0f, strokeLength - lastLength) : 0f;
         lastLength = drawing ? strokeLength : 0f;
         float instant = delta / Mathf.Max(Time.deltaTime, 1e-4f);

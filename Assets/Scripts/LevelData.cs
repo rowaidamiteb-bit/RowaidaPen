@@ -40,7 +40,7 @@ public static class Levels
     {
         return new LevelData
         {
-            title = "Level 1",
+            title = "الصفحات الأولى",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(33f, 0f, 0f),
             ink = 16f,

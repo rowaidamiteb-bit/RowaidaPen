@@ -8,16 +8,25 @@ public class GameUI : MonoBehaviour
     RectTransform inkFill;
     Text levelText;
     Text messageText;
+    Canvas canvasRef;
+
+    public void SetVisible(bool visible)
+    {
+        if (canvasRef != null) canvasRef.enabled = visible;
+    }
     float messageTimer;
     Font font;
 
     public void Build()
     {
-        font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        font = ArabicText.Font;
 
         var canvasGo = new GameObject("UI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         var canvas = canvasGo.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.renderMode = RenderMode.ScreenSpaceCamera;
+        canvas.worldCamera = Camera.main;
+        canvas.planeDistance = 0.5f;
+        canvasRef = canvas;
         var scaler = canvasGo.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
@@ -25,7 +34,7 @@ public class GameUI : MonoBehaviour
         Transform root = canvasGo.transform;
 
         // شريط الحبر
-        Label(root, "INK", 30, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(40f, -40f), new Vector2(100f, 44f));
+        Label(root, ArabicText.Fix("الحبر"), 32, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(40f, -40f), new Vector2(100f, 44f));
         Image frame = Panel(root, "Ink Bar", Color.black);
         Place(frame.rectTransform, new Vector2(0f, 1f), new Vector2(120f, -40f), new Vector2(420f, 44f));
         Image inner = Panel(frame.transform, "Inner", Color.white);
@@ -38,10 +47,10 @@ public class GameUI : MonoBehaviour
         inkFill.anchorMax = Vector2.one;
         inkFill.offsetMin = inkFill.offsetMax = Vector2.zero;
 
-        levelText = Label(root, "Level 1", 40, TextAnchor.MiddleRight, new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(400f, 50f));
+        levelText = Label(root, "", 40, TextAnchor.MiddleRight, new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(400f, 50f));
         messageText = Label(root, "", 80, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
         messageText.gameObject.AddComponent<Outline>().effectColor = Color.white;
-        Label(root, "Draw with the mouse   |   R = Restart", 28, TextAnchor.MiddleCenter, new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1200f, 40f))
+        Label(root, ArabicText.Fix("ارسمي بالماوس   •   زر R يعيد المرحلة"), 28, TextAnchor.MiddleCenter, new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1200f, 40f))
             .color = new Color(0f, 0f, 0f, 0.6f);
     }
 
@@ -52,12 +61,12 @@ public class GameUI : MonoBehaviour
 
     public void SetLevel(int number)
     {
-        if (levelText != null) levelText.text = "Level " + number;
+        if (levelText != null) levelText.text = ArabicText.Fix("المرحلة " + number);
     }
 
     public void ShowMessage(string message, float duration)
     {
-        messageText.text = message;
+        messageText.text = ArabicText.Fix(message);
         messageText.enabled = true;
         messageTimer = duration;
     }
