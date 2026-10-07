@@ -28,6 +28,7 @@ public class GameManager : MonoBehaviour
     public bool IsPlaying { get; private set; }
     public RowaidaController Rowaida { get; private set; }
     public Transform DrawingsRoot { get; private set; }
+    public SoundManager Sound { get; private set; }
 
     readonly Dictionary<string, Material> materials = new Dictionary<string, Material>();
     Material template;
@@ -36,6 +37,7 @@ public class GameManager : MonoBehaviour
     GameUI ui;
     InkDrawer drawer;
     CameraFollow cameraFollow;
+    bool falling;
 
     void Awake()
     {
@@ -49,6 +51,8 @@ public class GameManager : MonoBehaviour
         ui = gameObject.AddComponent<GameUI>();
         ui.Build();
         drawer = gameObject.AddComponent<InkDrawer>();
+        Sound = gameObject.AddComponent<SoundManager>();
+        Sound.Build();
         LevelBuilder.BuildBackdrop(this);
     }
 
@@ -62,8 +66,17 @@ public class GameManager : MonoBehaviour
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
             RestartLevel();
-        else if (IsPlaying && Rowaida != null && Rowaida.transform.position.y < Levels.All[levelIndex].deathY)
-            RestartLevel();
+        else if (IsPlaying && Rowaida != null)
+        {
+            float y = Rowaida.transform.position.y;
+            // أول ما تطيح تحت مستوى الصفحات نشغل صوت الخسارة، وبعدين نعيد المرحلة
+            if (!falling && y < -1.8f)
+            {
+                falling = true;
+                Sound.PlayLose();
+            }
+            if (y < Levels.All[levelIndex].deathY) RestartLevel();
+        }
 
         ui.SetInk(InkMax > 0f ? Ink / InkMax : 0f);
     }
@@ -83,6 +96,7 @@ public class GameManager : MonoBehaviour
         cameraFollow.SetTarget(Rowaida.transform, true);
 
         InkMax = Ink = data.ink;
+        falling = false;
         IsPlaying = true;
         ui.SetLevel(index + 1);
         ui.ShowMessage(data.title, 1.5f);
@@ -111,6 +125,7 @@ public class GameManager : MonoBehaviour
         if (!IsPlaying) return;
         IsPlaying = false;
         Rowaida.Stop();
+        Sound.PlayWin();
         StartCoroutine(NextLevelRoutine());
     }
 

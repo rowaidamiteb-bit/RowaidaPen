@@ -46,6 +46,20 @@ public class InkDrawer : MonoBehaviour
             FinishStroke();
     }
 
+    // صوت القلم: يعلى ويسرع مع سرعة الرسم، ويسكت لما يوقف القلم
+    float lastLength;
+    float drawSpeed;
+
+    void LateUpdate()
+    {
+        if (Game == null || Game.Sound == null) return;
+        float delta = drawing ? Mathf.Max(0f, strokeLength - lastLength) : 0f;
+        lastLength = drawing ? strokeLength : 0f;
+        float instant = delta / Mathf.Max(Time.deltaTime, 1e-4f);
+        drawSpeed = Mathf.Lerp(drawSpeed, instant, 0.35f);
+        Game.Sound.SetPencil(drawing && drawSpeed > 0.15f, drawSpeed);
+    }
+
     // رسم تلقائي من نقاط جاهزة (للتجربة فقط)
     public void DebugDraw(List<Vector3> path)
     {

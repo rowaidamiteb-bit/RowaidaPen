@@ -15,6 +15,7 @@ public class RowaidaModel : MonoBehaviour
     Transform legL, legR, armL, armR;
     Rigidbody rb;
     float phase;
+    int lastStep;
 
     public static void Build(GameObject root, GameManager gm)
     {
@@ -151,6 +152,16 @@ public class RowaidaModel : MonoBehaviour
         float speed = Mathf.Abs(rb.linearVelocity.x);
         float amount = Mathf.Clamp01(speed / 2.5f);
         phase += speed * Time.deltaTime * 4.5f;
+
+        // صوت خطوة مع كل نزلة رجل (إذا كانت على الأرض)
+        int step = Mathf.FloorToInt(phase / Mathf.PI);
+        if (step != lastStep)
+        {
+            lastStep = step;
+            bool grounded = Physics.Raycast(transform.position, Vector3.down, 0.8f);
+            if (amount > 0.4f && grounded && GameManager.Instance != null && GameManager.Instance.Sound != null)
+                GameManager.Instance.Sound.PlayFootstep();
+        }
 
         float swing = Mathf.Sin(phase) * 32f * amount;
         legL.localRotation = Quaternion.Euler(swing, 0f, 0f);

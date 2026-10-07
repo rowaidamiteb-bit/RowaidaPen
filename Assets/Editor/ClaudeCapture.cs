@@ -135,6 +135,18 @@ public static class ClaudeCapture
                     InkDrawer d3 = Object.FindAnyObjectByType<InkDrawer>();
                     if (d3 != null) d3.DebugDraw(new List<Vector3> { new Vector3(20.2f, 0.25f, 0f), new Vector3(25.3f, 0.25f, 0f) });
                     break;
+                case "wav":
+                    // يحفظ كل الأصوات كملفات WAV عشان نسمعها ونفحصها
+                    var sound = Object.FindAnyObjectByType<SoundManager>();
+                    if (sound != null)
+                    {
+                        SynthAudio.SaveWav(sound.MusicClip, Path.Combine(OutDir, "music.wav"));
+                        SynthAudio.SaveWav(sound.PencilClip, Path.Combine(OutDir, "pencil.wav"));
+                        SynthAudio.SaveWav(sound.StepClips[0], Path.Combine(OutDir, "step.wav"));
+                        SynthAudio.SaveWav(sound.LoseClip, Path.Combine(OutDir, "lose.wav"));
+                        SynthAudio.SaveWav(sound.WinClip, Path.Combine(OutDir, "win.wav"));
+                    }
+                    break;
                 case "circle":
                     InkDrawer d2 = Object.FindAnyObjectByType<InkDrawer>();
                     var pts = new List<Vector3>();
