@@ -66,6 +66,21 @@ public struct FoldSpec
     }
 }
 
+// أرضية طايرة: مكانها، عرضها، وكم تتحرك يمين ويسار (وكل كم ثانية)
+public struct FloaterSpec
+{
+    public float centerX, width, amplitude, period, phase;
+
+    public FloaterSpec(float centerX, float width, float amplitude, float period, float phase)
+    {
+        this.centerX = centerX;
+        this.width = width;
+        this.amplitude = amplitude;
+        this.period = period;
+        this.phase = phase;
+    }
+}
+
 // وصف مرحلة كاملة
 public class LevelData
 {
@@ -89,8 +104,6 @@ public class LevelData
     public bool colors;                                   // صفحة الألوان: أحمر ينطط، أزرق يزلّق، أخضر يطول
     public List<HintLine> hints = new List<HintLine>();   // خطوط تلميح منقطة (ملونة)
 
-    public float eraserSpeed;                             // صفحة الممحاة: سرعة الممحاة العملاقة (0 = ما فيه)
-    public List<Vector2> eraserHoles = new List<Vector2>(); // الأماكن اللي تمسحها من الأرض (من x لـ x)
 
     public bool flipped;                                  // الصفحة المقلوبة: الجاذبية لفوق
 
@@ -99,7 +112,7 @@ public class LevelData
 
     public List<FoldSpec> folds = new List<FoldSpec>();   // صفحة الطيّة: صفحات تنطوي وتنفتح
     public List<Vector3> vanishTiles = new List<Vector3>(); // الصفحة المتلاشية: (من x، لـ x، مسافة البداية)
-    public bool eraserChaser;                             // صفحة الممحاة: ممحاة ثانية تلحق رويدا من ورا
+    public List<FloaterSpec> floaters = new List<FloaterSpec>(); // الأرض الطايرة: صفحات تتحرك في السما
     public float timeLimit;                               // وقت محدود للمرحلة بالثواني (0 = بدون وقت)
     public List<Block> blocks = new List<Block>();
 }
@@ -117,7 +130,7 @@ public static class Levels
         ScribbleLevel1(),
         ScribbleLevel2(),
         ColorsPage(),
-        EraserPage(),
+        FloatingPagesLevel(),
         UpsideDownPage(),
         SpilledInkPage(),
         FoldingPage(),
@@ -158,25 +171,27 @@ public static class Levels
         };
     }
 
-    // صفحة الممحاة: ممحاة عملاقة تمشي قدام رويدا وتمسح الأرض
-    static LevelData EraserPage()
+    // الأرض الطايرة: أربع أرضيات تتحرك في سما الدفتر، ارسمي جسر بينها في الوقت الصح.
+    // الحبر ما يكفي لخط واحد طويل، والأرضية اللي تعدينها تختفي وراك
+    static LevelData FloatingPagesLevel()
     {
         return new LevelData
         {
-            title = "صفحة الممحاة",
+            title = "الأرض الطايرة",
             theme = LevelTheme.EraserAfternoon(),
-            subtitle = "ممحاة تمسح الأرض قدامك وممحاة تلحقك من ورا... لا توقفين!",
-            eraserChaser = true,
+            subtitle = "أربع أرضيات تطير في سما الدفتر... ارسمي جسر بينها!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(50f, 0f, 0f),
+            door = new Vector3(37f, 0f, 0f),
             ink = 24f,
-            eraserSpeed = 3.3f,
-            blocks = { Page(-7f, 54f) },
-            eraserHoles =
+            blocks = { Page(-7f, 4f), Page(30f, 41f) },
+            floaters =
             {
-                new Vector2(8f, 11f), new Vector2(15f, 18.5f), new Vector2(23f, 26f),
-                new Vector2(31f, 34.5f), new Vector2(39f, 42f),
+                new FloaterSpec(7.5f, 3f, 1.3f, 4f, 0f),
+                new FloaterSpec(13.5f, 3f, 1.6f, 5f, 1.5f),
+                new FloaterSpec(19.5f, 2.6f, 1.4f, 3.6f, 3f),
+                new FloaterSpec(25.5f, 3f, 1.6f, 4.6f, 4.5f),
             },
+            hints = { new HintLine(new Vector3(3.6f, 0.12f, 0f), new Vector3(6.6f, 0.12f, 0f), new Color(0.3f, 0.3f, 0.35f)) },
         };
     }
 

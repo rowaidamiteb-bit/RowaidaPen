@@ -70,3 +70,33 @@ public class VanishingTile : MonoBehaviour
         }
     }
 }
+
+// جزء من الأرض انمسح: يختفي التصادم فورًا، والشكل يصغر وينزل لين يختفي.
+// keep = نخفيه بس (عشان نرجعه لما رويدا ترجع)
+public class ErasedSegment : MonoBehaviour
+{
+    public bool keep;
+    float t;
+    Vector3 startScale, startPos;
+
+    void Start()
+    {
+        foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
+        startScale = transform.localScale;
+        startPos = transform.position;
+        GameManager.Instance.Sound.PlayPoof();
+    }
+
+    void Update()
+    {
+        t += Time.deltaTime / 0.6f;
+        transform.localScale = new Vector3(startScale.x, startScale.y * Mathf.Max(0.01f, 1f - t), startScale.z);
+        transform.position = startPos + Vector3.down * t * 0.8f;
+        if (t < 1f) return;
+        if (!keep) { Destroy(gameObject); return; }
+        transform.localScale = startScale;
+        transform.position = startPos;
+        gameObject.SetActive(false);
+        Destroy(this);
+    }
+}

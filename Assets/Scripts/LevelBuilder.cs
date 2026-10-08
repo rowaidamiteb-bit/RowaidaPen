@@ -15,8 +15,7 @@ public static class LevelBuilder
     {
         var root = new GameObject("Level - " + data.title);
         var rng = new System.Random(data.title.GetHashCode());
-        if (data.eraserSpeed > 0f) BuildErasablePages(root.transform, data, gm, rng);
-        else if (data.vanishTiles.Count > 0) BuildVanishingPages(root.transform, data, gm, rng);
+        if (data.vanishTiles.Count > 0) BuildVanishingPages(root.transform, data, gm, rng);
         else
             for (int i = 0; i < data.blocks.Count; i++)
                 CreatePaperBlock(root.transform, data.blocks[i], gm, rng, data, i == 0, i);
@@ -27,34 +26,12 @@ public static class LevelBuilder
         SpawnMonsters(root.transform, data, gm);
         if (data.Flood) InkFlood.Spawn(root.transform, data, gm);
         foreach (FoldSpec f in data.folds) FoldingFlap.Spawn(root.transform, f, gm);
+        BuildFloaters(root.transform, data, gm, rng);
         return root;
-    }
-
-    // صفحة الممحاة: نقسم الصفحات عند الأماكن اللي بتنمسح، وممحاة صغيرة قدام رويدا وممحاة تلحقها من ورا
-    static void BuildErasablePages(Transform root, LevelData data, GameManager gm, System.Random rng)
-    {
-        GiantEraser eraser = GiantEraser.Spawn(root, new Vector3(data.spawn.x + 9f, 0f, 0f), data.door.x - 3f, data.eraserSpeed, gm, false);
-        GiantEraser chaser = data.eraserChaser ? GiantEraser.Spawn(root, new Vector3(data.spawn.x - 5f, 0f, 0f), data.door.x, 3f, gm, true) : null;
-        BuildSegmentedPages(root, data, gm, rng, data.eraserHoles, chaser != null ? 2.5f : 0f,
-            (from, to, seg) => eraser.AddHole(from, to, seg),
-            (from, to, seg) => { if (chaser != null) chaser.AddFloor(from, to, seg); });
     }
 
     // الصفحة المتلاشية: الأجزاء اللي بتختفي تصير قطع لحالها
     static void BuildVanishingPages(Transform root, LevelData data, GameManager gm, System.Random rng)
-    {
-        var cuts = new List<Vector2>();
-        foreach (Vector3 v in data.vanishTiles) cuts.Add(new Vector2(v.x, v.y));
-        BuildSegmentedPages(root, data, gm, rng, cuts, 0f, (from, to, seg) =>
-        {
-            foreach (Vector3 v in data.vanishTiles)
-                if (Mathf.Approximately(v.x, from)) VanishingTile.Attach(seg, from, v.z);
-        }, null);
-    }
-
-    // نقسم كل صفحة عند المقاطع (cuts)، والباقي نقسمه قطع ما تزيد عن maxPiece (0 = بدون تقسيم)
-    static void BuildSegmentedPages(Transform root, LevelData data, GameManager gm, System.Random rng, List<Vector2> cuts, float maxPiece,
-                                    System.Action<float, float, GameObject> onCut, System.Action<float, float, GameObject> onPiece)
     {
         bool first = true;
         for (int bi = 0; bi < data.blocks.Count; bi++)
@@ -62,31 +39,29 @@ public static class LevelBuilder
             Block b = data.blocks[bi];
             float left = b.center.x - b.size.x * 0.5f, right = b.center.x + b.size.x * 0.5f;
             float top = b.center.y + b.size.y * 0.5f, bottom = b.center.y - b.size.y * 0.5f;
-
-            void Floor(float from, float to)
-            {
-                int n = maxPiece > 0f ? Mathf.Max(1, Mathf.CeilToInt((to - from) / maxPiece)) : 1;
-                for (int k = 0; k < n; k++)
-                {
-                    float a = Mathf.Lerp(from, to, k / (float)n), c = Mathf.Lerp(from, to, (k + 1) / (float)n);
-                    GameObject piece = CreatePaperBlock(root, Segment(a, c, top, bottom, b.size.z), gm, rng, data, first, bi);
-                    first = false;
-                    onPiece?.Invoke(a, c, piece);
-                }
-            }
-
             float x = left;
-            foreach (Vector2 cut in cuts)
+            foreach (Vector3 v in data.vanishTiles)
             {
-                if (cut.y <= left || cut.x >= right) continue;
-                float h0 = Mathf.Max(cut.x, left), h1 = Mathf.Min(cut.y, right);
-                if (h0 > x) Floor(x, h0);
-                GameObject seg = CreatePaperBlock(root, Segment(h0, h1, top, bottom, b.size.z), gm, rng, data, first);
+                if (v.y <= left || v.x >= right) continue;
+                float h0 = Mathf.Max(v.x, left), h1 = Mathf.Min(v.y, right);
+                if (h0 > x) CreatePaperBlock(root, Segment(x, h0, top, bottom, b.size.z), gm, rng, data, first, bi);
                 first = false;
-                onCut(h0, h1, seg);
+                GameObject seg = CreatePaperBlock(root, Segment(h0, h1, top, bottom, b.size.z), gm, rng, data, false);
+                VanishingTile.Attach(seg, h0, v.z);
                 x = h1;
             }
-            if (right > x) Floor(x, right);
+            if (right > x) CreatePaperBlock(root, Segment(x, right, top, bottom, b.size.z), gm, rng, data, first, bi);
+            first = false;
+        }
+    }
+
+    // الأرض الطايرة: صفحات صغيرة تتحرك في سما الدفتر
+    static void BuildFloaters(Transform root, LevelData data, GameManager gm, System.Random rng)
+    {
+        foreach (FloaterSpec f in data.floaters)
+        {
+            Transform mover = FloatingPlatform.Create(root, f);
+            CreatePaperBlock(mover, new Block(new Vector3(f.centerX, -0.5f, 0f), new Vector3(f.width, 1f, 3.2f)), gm, rng, data, false);
         }
     }
 
