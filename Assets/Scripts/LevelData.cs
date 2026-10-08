@@ -49,15 +49,17 @@ public struct FoldSpec
 {
     public float hingeX, length, top;
     public bool foldUp;          // true = توقف مثل الجدار، false = تنزل لتحت
+    public bool foldOver;        // تنطوي فوق الصفحة اللي جنبها (مثل قلب ورقة)
     public bool hingeOnRight;    // المفصل على يمين الصفحة بدل يسارها
     public float period, phase;  // طول الدورة كاملة، ووين تبدأ فيها
 
-    public FoldSpec(float hingeX, float length, float top, bool foldUp, bool hingeOnRight, float period, float phase)
+    public FoldSpec(float hingeX, float length, float top, bool foldUp, bool hingeOnRight, float period, float phase, bool foldOver = false)
     {
         this.hingeX = hingeX;
         this.length = length;
         this.top = top;
         this.foldUp = foldUp;
+        this.foldOver = foldOver;
         this.hingeOnRight = hingeOnRight;
         this.period = period;
         this.phase = phase;
@@ -95,6 +97,7 @@ public class LevelData
     public bool Flood => floodSpeed > 0f;
 
     public List<FoldSpec> folds = new List<FoldSpec>();   // صفحة الطيّة: صفحات تنطوي وتنفتح
+    public float timeLimit;                               // وقت محدود للمرحلة بالثواني (0 = بدون وقت)
     public List<Block> blocks = new List<Block>();
 }
 
@@ -178,27 +181,38 @@ public static class Levels
         return new Block(new Vector3((fromX + toX) * 0.5f, surface + thickness * 0.5f, 0f), new Vector3(toX - fromX, thickness, 4f));
     }
 
-    // الصفحة المقلوبة: الجاذبية لفوق، ورويدا تمشي على السقف
+    // الصفحة المقلوبة: الجاذبية لفوق ورويدا تمشي على السقف.
+    // فيها حفر، سقوف على ارتفاعات مختلفة، بروزات تسكر الطريق، ووحوش تمشي مقلوبة
     static LevelData UpsideDownPage()
     {
         return new LevelData
         {
             title = "الصفحة المقلوبة",
-            subtitle = "الجاذبية انقلبت! رويدا تمشي على السقف... والطيحة لفوق",
+            subtitle = "الجاذبية انقلبت! ارسمي طرق تعدي البروزات... وامسحي الوحوش",
             spawn = new Vector3(-5f, -1f, 0f),
-            door = new Vector3(35f, 0f, 0f),
-            ink = 22f,
+            door = new Vector3(43f, 0f, 0f),
+            ink = 28f,
             flipped = true,
             deathY = 9f,
             blocks =
             {
-                Ceiling(-7f, 5f, 0f),       // حفرة 3
-                Ceiling(8f, 15f, 0.8f),     // حفرة 3 (السقف اللي بعده أوطى)
-                Ceiling(18f, 25f, -0.6f),   // حفرة 3
-                Ceiling(28f, 38f, 0f),
+                Ceiling(-7f, 4f, 0f),           // حفرة 3
+                Ceiling(7f, 14f, 0f),           // فيها بروز
+                Ceiling(9.8f, 10.8f, -0.9f),    // بروز يسكر الطريق (يحتاج طريق يطلع فوقه)
+                Ceiling(17f, 24f, 0.8f),        // حفرة 3 (سقف أوطى)، فيها وحش
+                Ceiling(27f, 32f, -0.6f),       // حفرة 3 (سقف أعلى)، فيها وحش
+                Ceiling(35.5f, 47f, 0f),        // حفرة 3.5
+                Ceiling(38.5f, 39.5f, -0.8f),   // بروز ثاني
+            },
+            monsters =
+            {
+                Monster(ScribbleMonster.Kind.GreenEye, 21f, 18.5f, 23f),
+                Monster(ScribbleMonster.Kind.PurpleBlob, 30f, 28f, 31.5f),
             },
         };
     }
+
+    static MonsterSpawn Monster(ScribbleMonster.Kind kind, float x, float from, float to) => new MonsterSpawn(kind, x, from, to);
 
     // صفحة الحبر المنسكب: الحبر يرتفع، سلم يطلّعها، وقارب يطفو ويرفعها
     static LevelData SpilledInkPage()
@@ -236,29 +250,33 @@ public static class Levels
         return level;
     }
 
-    // صفحة الطيّة: صفحات تنطوي لتحت (جسر يختفي) وصفحة توقف مثل الجدار
+    // صفحة الطيّة: صفحات تنطوي فوق اللي جنبها (مثل قلب ورقة) وصفحات توقف جدار.
+    // الطيّة تمسح أي رسمة تعترضها، والحبر ما يكفي تجسرين كل شي، فلازم توقيت
     static LevelData FoldingPage()
     {
         return new LevelData
         {
             title = "صفحة الطيّة",
-            subtitle = "الصفحات تنطوي وتنفتح... انتبهي للتوقيت!",
+            subtitle = "الصفحات تنطوي وتمسح الرسم اللي يعترضها... انتبهي للتوقيت!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(35f, 0f, 0f),
-            ink = 20f,
+            door = new Vector3(37f, 0f, 0f),
+            ink = 18f,
+            timeLimit = 26f,
             blocks =
             {
                 Page(-7f, 4f),
-                Page(7.5f, 13f),
-                Page(16f, 22f),
-                Page(28f, 38f),
+                Page(7f, 11f),
+                Page(14f, 17f),
+                Page(23f, 27f),
+                Page(30.5f, 40f),
             },
             folds =
             {
-                new FoldSpec(4f, 3.5f, 0f, false, false, 6f, 0f),      // تنزل لتحت
-                new FoldSpec(13f, 3f, 0f, true, false, 5f, 1f),        // توقف جدار
-                new FoldSpec(22f, 3f, 0f, false, false, 6f, 2f),       // زوج يلتقي في النص
-                new FoldSpec(28f, 3f, 0f, false, true, 6f, 4.5f),
+                new FoldSpec(4f, 3f, 0f, false, false, 5f, 1f, true),       // تنطوي فوق الصفحة الأولى (أول مرة تكون مفتوحة)
+                new FoldSpec(11f, 3f, 0f, true, false, 4.5f, 1.5f),         // توقف جدار
+                new FoldSpec(17f, 3f, 0f, false, false, 4f, 2.5f, true),    // زوج يلتقي في النص
+                new FoldSpec(23f, 3f, 0f, false, true, 4f, 2.5f, true),     // (الزوج ينطوي مع بعض)
+                new FoldSpec(27f, 3.5f, 0f, false, false, 3.5f, 1f, true),  // سريعة
             },
         };
     }

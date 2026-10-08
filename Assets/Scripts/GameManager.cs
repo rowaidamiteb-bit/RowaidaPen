@@ -111,6 +111,7 @@ public class GameManager : MonoBehaviour
         ui.SetInk(InkMax > 0f ? Ink / InkMax : 0f);
         ui.SetWind(Weather.Wind, CurrentLevel != null && CurrentLevel.Windy);
         ui.SetPalette(CurrentLevel != null && CurrentLevel.colors, drawer.CurrentColor);
+        UpdateTimer();
     }
 
     // ---------- القلوب ونقاط الرجوع ----------
@@ -157,6 +158,27 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // ---------- الوقت المحدود (صفحة الطيّة) ----------
+
+    float timeLeft;
+
+    void UpdateTimer()
+    {
+        LevelData level = CurrentLevel;
+        bool timed = level != null && level.timeLimit > 0f;
+        if (timed && IsPlaying)
+        {
+            timeLeft -= Time.deltaTime;
+            if (timeLeft <= 0f)
+            {
+                timeLeft = 0f;
+                ui.ShowMessage("الصفحة انطوت!", 1.5f);
+                KillRowaida();
+            }
+        }
+        ui.SetTimer(timed, timeLeft);
+    }
+
     // شي قتل رويدا (مثل الحبر المنسكب): تخسر قلب
     public void KillRowaida()
     {
@@ -196,6 +218,8 @@ public class GameManager : MonoBehaviour
         }
         Rowaida.Respawn(pos);
         Respawned?.Invoke(pos);
+        // نرجع لها شوي وقت عشان تلحق
+        if (data.timeLimit > 0f) timeLeft = Mathf.Max(timeLeft, data.timeLimit * 0.6f);
         cameraFollow.SetTarget(Rowaida.transform, true);
         Ink = checkpointInk;
         falling = false;
@@ -234,6 +258,7 @@ public class GameManager : MonoBehaviour
         hearts = MaxHearts;
         checkpointPage = 0;
         checkpointInk = data.ink;
+        timeLeft = data.timeLimit;
         ui.SetHearts(hearts, false);
         IsPlaying = true;
         ui.SetLevel(index + 1);

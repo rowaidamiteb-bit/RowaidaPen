@@ -16,6 +16,7 @@ public static class ClaudeCapture
     const string ShotsKey = "ClaudeCapture.Shots";
     const string StartKey = "ClaudeCapture.PlayStart";
     const string DoneKey = "ClaudeCapture.Done";
+    const string WaitKey = "ClaudeCapture.WaitSince";
 
     static double nextTick;
 
@@ -75,6 +76,7 @@ public static class ClaudeCapture
             SessionState.SetInt(StateKey, 2);
             SessionState.SetFloat(StartKey, -1f);
             PlayerSettings.runInBackground = true;
+            SessionState.SetFloat(WaitKey, (float)EditorApplication.timeSinceStartup);
             Status("starting-play");
             EditorApplication.isPlaying = true;
             return;
@@ -82,7 +84,17 @@ public static class ClaudeCapture
 
         if (state == 2)
         {
-            if (!EditorApplication.isPlaying) return;
+            // لو أحد وقف اللعب من برا (مثلًا رويدا تجرب بنفسها) نلغي الطلب بدل ما نعلق
+            if (!EditorApplication.isPlaying)
+            {
+                if (SessionState.GetFloat(StartKey, -1f) >= 0f || now - SessionState.GetFloat(WaitKey, (float)now) > 20f)
+                {
+                    SessionState.SetInt(StateKey, 0);
+                    Time.captureFramerate = 0;
+                    Status("aborted");
+                }
+                return;
+            }
             float start = SessionState.GetFloat(StartKey, -1f);
             if (start < 0f) return;
             // نستخدم وقت اللعبة نفسها، ومهلة قصوى دقيقتين

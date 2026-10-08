@@ -25,7 +25,7 @@ public class RowaidaController : MonoBehaviour
 
         // نثبت السرعة الأفقية ونخلي السرعة العمودية للجاذبية
         Vector3 v = rb.linearVelocity;
-        v.x = WaitOnBoat() ? 0f : walkSpeed * (boosted ? 2.2f : 1f);
+        v.x = WaitOnBoat() || WaitAtFold() ? 0f : walkSpeed * (boosted ? 2.2f : 1f);
         rb.linearVelocity = v;
     }
 
@@ -75,6 +75,48 @@ public class RowaidaController : MonoBehaviour
         return false;
     }
 
+    // صفحة الطيّة: توقف قبل الصفحة اللي بتنطوي (أو المطوية) إذا ما فيه جسر، عشان ما تطيح ظلم
+    bool WaitAtFold()
+    {
+        if (FoldingFlap.All.Count == 0) return false;
+        float x = transform.position.x;
+        foreach (FoldingFlap f in FoldingFlap.All)
+        {
+            float edge = f.MinX - x;
+            if (edge < 0.3f || edge > 0.8f) continue;
+
+            // الصفحات المتلاصقة اللي تبدأ من هنا لازم كلها تظل مفتوحة لين تعديها
+            float end = f.MaxX;
+            var chain = new System.Collections.Generic.List<FoldingFlap> { f };
+            bool grew = true;
+            while (grew)
+            {
+                grew = false;
+                foreach (FoldingFlap g in FoldingFlap.All)
+                    if (!chain.Contains(g) && Mathf.Abs(g.MinX - end) < 0.1f) { chain.Add(g); end = g.MaxX; grew = true; }
+            }
+            float cross = (end - f.MinX + 0.8f) / walkSpeed;
+            bool safe = true;
+            foreach (FoldingFlap g in chain) if (!g.StaysFlatFor(cross)) safe = false;
+            if (safe || BridgeCovers(f.MinX, end, f.Top)) continue;
+            return true;
+        }
+        return false;
+    }
+
+    static bool BridgeCovers(float x0, float x1, float top)
+    {
+        foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+        {
+            if (m.closed) continue;
+            var r = m.GetComponent<MeshRenderer>();
+            if (r == null) continue;
+            Bounds b = r.bounds;
+            if (b.min.x <= x0 + 0.3f && b.max.x >= x1 - 0.3f && Mathf.Abs(b.center.y - top) < 1.5f) return true;
+        }
+        return false;
+    }
+
     void OnCollisionStay(Collision c)
     {
         var mark = c.collider.GetComponentInParent<InkMark>();
@@ -91,7 +133,7 @@ public class RowaidaController : MonoBehaviour
     public void Knockback(float dirX)
     {
         knockedUntil = Time.time + 0.6f;
-        rb.linearVelocity = new Vector3(dirX * 3.2f, 3.5f, 0f);
+        rb.linearVelocity = new Vector3(dirX * 3.2f, -Mathf.Sign(Physics.gravity.y) * 3.5f, 0f);
     }
 
     public bool IsKnocked => Time.time < knockedUntil;

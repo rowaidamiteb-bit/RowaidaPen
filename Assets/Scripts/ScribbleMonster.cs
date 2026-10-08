@@ -42,7 +42,10 @@ public class ScribbleMonster : MonoBehaviour
     {
         var go = new GameObject("Scribble Monster (" + kind + ")");
         go.transform.SetParent(parent, false);
-        go.transform.position = groundPos + Vector3.up * Radius;
+        // في الصفحة المقلوبة الوحش يمشي على السقف: تحت السطح ومقلوب
+        bool flipped = Physics.gravity.y > 0f;
+        go.transform.position = groundPos + (flipped ? Vector3.down : Vector3.up) * Radius;
+        if (flipped) go.transform.rotation = Quaternion.Euler(0f, 0f, 180f);
 
         if (slippery == null)
             slippery = new PhysicsMaterial("Monster") { dynamicFriction = 0f, staticFriction = 0f, frictionCombine = PhysicsMaterialCombine.Minimum };
@@ -231,7 +234,7 @@ public class ScribbleMonster : MonoBehaviour
         Animate();
 
         // طاح في حفرة
-        if (transform.position.y < -5f) Poof();
+        if (Physics.gravity.y > 0f ? transform.position.y > 7f : transform.position.y < -5f) Poof();
     }
 
     void Think()

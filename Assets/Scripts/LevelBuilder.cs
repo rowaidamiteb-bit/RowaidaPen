@@ -67,7 +67,7 @@ public static class LevelBuilder
             float top = 0f;
             foreach (Block b in data.blocks)
                 if (m.x >= b.center.x - b.size.x * 0.5f && m.x <= b.center.x + b.size.x * 0.5f)
-                    top = b.center.y + b.size.y * 0.5f;
+                    top = b.center.y + (data.flipped ? -0.5f : 0.5f) * b.size.y;
             bool hint = data.monsterHint && m.Equals(data.monsters[0]);
             ScribbleMonster.Spawn(root, m.kind, new Vector3(m.x, top, 0f), m.patrolMin, m.patrolMax, gm, hint);
         }

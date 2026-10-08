@@ -51,6 +51,8 @@ public class GameUI : MonoBehaviour
         BuildHearts(root);
         BuildWindArrow(root);
         BuildPalette(root);
+        timerText = Label(root, "", 38, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0f, -45f), new Vector2(400f, 50f));
+        timerText.gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.8f);
         messageText = Label(root, "", 80, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
         subtitleText = Label(root, "", 40, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1700f, 70f));
         subtitleText.color = Color.white;
@@ -77,6 +79,19 @@ public class GameUI : MonoBehaviour
         subtitleText.text = ArabicText.Fix(subtitle ?? "");
         subtitleText.enabled = true;
         messageTimer = duration;
+    }
+
+    // ---------- الوقت ----------
+
+    Text timerText;
+
+    public void SetTimer(bool visible, float seconds)
+    {
+        timerText.enabled = visible;
+        if (!visible) return;
+        int s = Mathf.CeilToInt(seconds);
+        timerText.text = ArabicText.Fix("الصفحة تنطوي بعد " + s);
+        timerText.color = s <= 8 ? new Color(0.85f, 0.15f, 0.2f) : Color.black;
     }
 
     // ---------- ألوان الحبر ----------
