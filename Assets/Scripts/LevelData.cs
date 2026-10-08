@@ -98,6 +98,8 @@ public class LevelData
     public bool Flood => floodSpeed > 0f;
 
     public List<FoldSpec> folds = new List<FoldSpec>();   // صفحة الطيّة: صفحات تنطوي وتنفتح
+    public List<Vector3> vanishTiles = new List<Vector3>(); // الصفحة المتلاشية: (من x، لـ x، مسافة البداية)
+    public bool eraserChaser;                             // صفحة الممحاة: ممحاة ثانية تلحق رويدا من ورا
     public float timeLimit;                               // وقت محدود للمرحلة بالثواني (0 = بدون وقت)
     public List<Block> blocks = new List<Block>();
 }
@@ -163,7 +165,8 @@ public static class Levels
         {
             title = "صفحة الممحاة",
             theme = LevelTheme.EraserAfternoon(),
-            subtitle = "ممحاة عملاقة تمسح الأرض قدامك... ارسمي قبل ما توصلين!",
+            subtitle = "ممحاة تمسح الأرض قدامك وممحاة تلحقك من ورا... لا توقفين!",
+            eraserChaser = true,
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(50f, 0f, 0f),
             ink = 24f,
@@ -255,35 +258,34 @@ public static class Levels
         return level;
     }
 
-    // صفحة الطيّة: صفحات تنطوي فوق اللي جنبها (مثل قلب ورقة) وصفحات توقف جدار.
-    // الطيّة تمسح أي رسمة تعترضها، والحبر ما يكفي تجسرين كل شي، فلازم توقيت
+    // الصفحة المتلاشية: أجزاء من الأرض تهتز وتختفي لما تقربين منها، ارسمي خط فوقها عشان تعدين.
+    // (تقدرين ترسمين الخط قبل لا تختفي، والخط يبقى)
     static LevelData FoldingPage()
     {
         return new LevelData
         {
-            title = "صفحة الطيّة",
+            title = "الصفحة المتلاشية",
             theme = LevelTheme.Origami(),
-            subtitle = "الصفحات تنطوي وتمسح الرسم اللي يعترضها... انتبهي للتوقيت!",
+            subtitle = "الأرض تختفي قدامك... ارسمي خط وعدّي!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(37f, 0f, 0f),
-            ink = 18f,
-            timeLimit = 26f,
+            door = new Vector3(51f, 0f, 0f),
+            ink = 34f,
             blocks =
             {
-                Page(-7f, 4f),
-                Page(7f, 11f),
-                Page(14f, 17f),
-                Page(23f, 27f),
-                Page(30.5f, 40f),
+                Page(-7f, 18f),
+                Page(21f, 36f),
+                Page(38.5f, 54f),
             },
-            folds =
+            // من x، لـ x، وتبدا تختفي إذا صارت رويدا على بعد كذا منها
+            vanishTiles =
             {
-                new FoldSpec(4f, 3f, 0f, false, false, 5f, 1f, true),       // تنطوي فوق الصفحة الأولى (أول مرة تكون مفتوحة)
-                new FoldSpec(11f, 3f, 0f, true, false, 4.5f, 1.5f),         // توقف جدار
-                new FoldSpec(17f, 3f, 0f, false, false, 4f, 2.5f, true),    // زوج يلتقي في النص
-                new FoldSpec(23f, 3f, 0f, false, true, 4f, 2.5f, true),     // (الزوج ينطوي مع بعض)
-                new FoldSpec(27f, 3.5f, 0f, false, false, 3.5f, 1f, true),  // سريعة
+                new Vector3(3f, 6f, 5f),
+                new Vector3(10f, 13.5f, 4.5f),
+                new Vector3(27f, 30f, 4.3f),
+                new Vector3(31.5f, 34.5f, 3.8f),
+                new Vector3(44.5f, 47.5f, 3.6f),
             },
+            hints = { new HintLine(new Vector3(2.4f, 0.12f, 0f), new Vector3(6.6f, 0.12f, 0f), new Color(0.3f, 0.3f, 0.35f)) },
         };
     }
 

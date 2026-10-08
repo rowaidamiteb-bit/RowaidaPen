@@ -146,7 +146,7 @@ public class LevelTheme
         sun = true, moonColor = new Color(2.7f, 2.0f, 1.3f), stars = 0f, cloudTint = new Color(1f, 1f, 0.97f), cloudAlpha = 0.7f,
         sunLight = new Color(1f, 0.95f, 0.8f), sunIntensity = 1.5f, sunAngles = new Vector3(30f, -45f, 0f),
         ambientSky = new Color(0.75f, 0.92f, 0.88f), ambientEquator = new Color(0.62f, 0.75f, 0.7f), ambientGround = new Color(0.28f, 0.38f, 0.35f),
-        fog = new Color(0.65f, 0.88f, 0.82f), props = PropSet.Erasers, floating = FloatKind.EraserBits,
+        fog = new Color(0.65f, 0.88f, 0.82f), props = PropSet.Crayons, floating = FloatKind.EraserBits,
         floatColors = new[] { new Color(0.95f, 0.62f, 0.66f), new Color(0.97f, 0.96f, 0.95f) },
         ringColor = new Color(0.3f, 0.55f, 0.5f),
     };
