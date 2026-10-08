@@ -132,11 +132,13 @@ public static class PaperMeshes
     // تدرّج للخلفية: كحلي تحت وبنفسجي فوق
     public static Texture2D SkyGradient()
     {
+        return SkyGradient(new Color(0.05f, 0.05f, 0.11f), new Color(0.16f, 0.15f, 0.30f), new Color(0.30f, 0.24f, 0.42f));
+    }
+
+    public static Texture2D SkyGradient(Color bottom, Color middle, Color top)
+    {
         const int size = 256;
         var tex = new Texture2D(4, size, TextureFormat.RGBA32, false) { name = "Dream Sky" };
-        Color bottom = new Color(0.05f, 0.05f, 0.11f);
-        Color middle = new Color(0.16f, 0.15f, 0.30f);
-        Color top = new Color(0.30f, 0.24f, 0.42f);
         var pixels = new Color[4 * size];
         for (int y = 0; y < size; y++)
         {

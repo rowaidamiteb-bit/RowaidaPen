@@ -248,6 +248,7 @@ public class GameManager : MonoBehaviour
         Physics.gravity = new Vector3(0f, data.flipped ? 9.81f : -9.81f, 0f);
         cameraFollow.offset = new Vector3(-0.6f, data.flipped ? -2.0f : 2.0f, -7.8f);
         cameraFollow.lookOffset = new Vector3(2f, data.flipped ? -0.7f : 0.7f, 0f);
+        ApplyTheme(data.theme);
         levelRoot = LevelBuilder.Build(data, this).transform;
         DrawingsRoot = new GameObject("Drawings").transform;
         Rowaida = levelRoot.GetComponentInChildren<RowaidaController>();
@@ -264,6 +265,20 @@ public class GameManager : MonoBehaviour
         ui.SetLevel(index + 1);
         weather.Apply(data);
         ui.ShowMessage(data.title, data.subtitle != null ? 4f : 1.5f, data.subtitle);
+    }
+
+    // شكل المرحلة: ألوان القلم والحلقات، السما، الإضاءة، والأشياء الطايرة
+    void ApplyTheme(LevelTheme theme)
+    {
+        pencilMaterial.SetColor("_BaseColor", theme.pencil);
+        metalMaterial.SetColor("_BaseColor", theme.ringColor);
+        pageEdgeMaterial.SetColor("_BaseColor", theme.pageEdge);
+        cameraFollow.GetComponent<Camera>().backgroundColor = theme.fog;
+        weather.SetBaseline(theme);
+        var sky = FindAnyObjectByType<NightSky>();
+        if (sky != null) sky.ApplyTheme(theme);
+        var floating = FindAnyObjectByType<FloatingPapers>();
+        if (floating != null) floating.ApplyTheme(theme);
     }
 
     public void RestartLevel()

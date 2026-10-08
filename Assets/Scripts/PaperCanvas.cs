@@ -13,7 +13,10 @@ public class PaperCanvas
     readonly Color[] px;
     readonly System.Random rng;
 
-    public PaperCanvas(Vector2 worldSize, int seed, float pixelsPerUnit = 80f)
+    readonly LevelTheme theme;
+    Color ink = Graphite;   // لون القلم الحالي (رصاص، أو شمع ملون حسب شكل المرحلة)
+
+    public PaperCanvas(Vector2 worldSize, int seed, float pixelsPerUnit = 80f, LevelTheme levelTheme = null, int pageIndex = 0)
     {
         size = worldSize;
         PixelsPerUnit = pixelsPerUnit;
@@ -21,6 +24,9 @@ public class PaperCanvas
         h = Mathf.Clamp(Mathf.RoundToInt(worldSize.y * PixelsPerUnit), 16, 2048);
         px = new Color[w * h];
         rng = new System.Random(seed);
+        theme = levelTheme;
+        Color paper = theme != null ? theme.PaperFor(pageIndex) : new Color(1f, 0.99f, 0.965f);
+        if (theme != null) ink = theme.doodleColor;
 
         // ورق بحبيبات خفيفة
         float ox = (float)rng.NextDouble() * 100f;
@@ -29,7 +35,105 @@ public class PaperCanvas
             {
                 float fibers = Mathf.PerlinNoise(ox + x * 0.08f, y * 0.02f) * 0.5f + Mathf.PerlinNoise(ox + x * 0.3f, y * 0.3f + 50f) * 0.5f;
                 float v = 0.945f + fibers * 0.045f - (float)rng.NextDouble() * 0.025f;
-                px[y * w + x] = new Color(v, v * 0.99f, v * 0.965f);
+                px[y * w + x] = paper * v;
+            }
+
+        if (theme != null) DrawPattern(theme.pattern, theme.patternColor);
+    }
+
+    // نقشة الورق حسب شكل المرحلة
+    void DrawPattern(PaperPattern pattern, Color c)
+    {
+        float spacing = 0.45f * PixelsPerUnit;
+        switch (pattern)
+        {
+            case PaperPattern.Ruled:
+                // خطوط دفتر بالطول، وخط هامش أحمر
+                for (float y = spacing * 0.6f; y < h; y += spacing) BandRow((int)y, c, 0.55f);
+                for (int y = 0; y < h; y++) for (int dx = 0; dx < 2; dx++) BlendPx((int)(w * 0.06f) + dx, y, new Color(0.95f, 0.45f, 0.45f), 0.6f);
+                break;
+            case PaperPattern.Grid:
+                for (float y = 0; y < h; y += spacing * 0.75f) BandRow((int)y, c, 0.45f);
+                for (float x = 0; x < w; x += spacing * 0.75f) for (int y = 0; y < h; y++) BlendPx((int)x, y, c, 0.45f);
+                break;
+            case PaperPattern.Dots:
+                for (float y = spacing * 0.5f; y < h; y += spacing * 0.7f)
+                    for (float x = spacing * 0.5f; x < w; x += spacing * 0.7f)
+                        for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) BlendPx((int)x + dx, (int)y + dy, c, 0.6f);
+                break;
+            case PaperPattern.Kraft:
+                // ألياف غامقة متفرقة
+                for (int i = 0; i < w * h / 60; i++)
+                {
+                    int x = rng.Next(w), y = rng.Next(h), len = 2 + rng.Next(6);
+                    for (int k = 0; k < len; k++) BlendPx(x + k, y, c, 0.35f);
+                }
+                break;
+            case PaperPattern.Watercolor:
+                for (int i = 0; i < Mathf.Max(3, (int)(size.x * 1.2f)); i++)
+                {
+                    Color blot = Color.Lerp(c, new Color(0.45f, 0.75f, 0.5f), (float)rng.NextDouble());
+                    Blot(new Vector2(R(-size.x * 0.5f, size.x * 0.5f), R(-size.y * 0.5f, size.y * 0.5f)), R(0.4f, 1.1f), blot, 0.35f);
+                }
+                break;
+            case PaperPattern.Splats:
+                Color[] paints = { new Color(0.95f, 0.4f, 0.45f), new Color(0.4f, 0.65f, 1f), new Color(1f, 0.8f, 0.3f), new Color(0.45f, 0.8f, 0.5f), new Color(0.7f, 0.5f, 0.95f) };
+                for (int i = 0; i < Mathf.Max(3, (int)(size.x * 0.9f)); i++)
+                {
+                    Vector2 p = new Vector2(R(-size.x * 0.5f, size.x * 0.5f), R(-size.y * 0.5f, size.y * 0.5f));
+                    Color paint = paints[rng.Next(paints.Length)];
+                    Blot(p, R(0.15f, 0.4f), paint, 0.75f);
+                    for (int d = 0; d < 5; d++) Blot(p + new Vector2(R(-0.5f, 0.5f), R(-0.4f, 0.4f)), R(0.03f, 0.08f), paint, 0.8f);
+                }
+                break;
+            case PaperPattern.Parchment:
+                // بقع قديمة وحواف أغمق
+                for (int i = 0; i < Mathf.Max(2, (int)(size.x * 0.6f)); i++)
+                    Blot(new Vector2(R(-size.x * 0.5f, size.x * 0.5f), R(-size.y * 0.5f, size.y * 0.5f)), R(0.3f, 0.9f), c, 0.2f);
+                for (int y = 0; y < h; y++)
+                    for (int x = 0; x < w; x++)
+                    {
+                        float ex = Mathf.Min(x, w - 1 - x) / (0.3f * PixelsPerUnit), ey = Mathf.Min(y, h - 1 - y) / (0.3f * PixelsPerUnit);
+                        float edge = 1f - Mathf.Clamp01(Mathf.Min(ex, ey));
+                        BlendPx(x, y, c, edge * 0.35f);
+                    }
+                break;
+            case PaperPattern.Origami:
+                // خطوط طي خفيفة بالقطر
+                Color crease = new Color(1f, 1f, 1f);
+                for (int y = 0; y < h; y++)
+                {
+                    int x1 = (int)(y * (float)w / h), x2 = w - 1 - x1;
+                    for (int d = 0; d < 2; d++) { BlendPx(x1 + d, y, crease, 0.25f); BlendPx(x2 + d, y, crease, 0.25f); }
+                }
+                break;
+        }
+    }
+
+    void BandRow(int y, Color c, float a)
+    {
+        for (int x = 0; x < w; x++) BlendPx(x, y, c, a);
+    }
+
+    void BlendPx(int x, int y, Color c, float a)
+    {
+        if (x < 0 || y < 0 || x >= w || y >= h) return;
+        int i = y * w + x;
+        px[i] = Color.Lerp(px[i], c, Mathf.Clamp01(a));
+    }
+
+    // بقعة لون ناعمة الأطراف
+    void Blot(Vector2 center, float radius, Color c, float strength)
+    {
+        Vector2 cp = ToPixels(center);
+        float r = radius * PixelsPerUnit;
+        for (int y = Mathf.Max(0, (int)(cp.y - r)); y < Mathf.Min(h, (int)(cp.y + r)); y++)
+            for (int x = Mathf.Max(0, (int)(cp.x - r)); x < Mathf.Min(w, (int)(cp.x + r)); x++)
+            {
+                float n = Mathf.PerlinNoise(x * 0.06f + center.x, y * 0.06f + center.y) * 0.4f;
+                float d = Vector2.Distance(new Vector2(x, y), cp) / r + n - 0.2f;
+                if (d >= 1f) continue;
+                BlendPx(x, y, c, strength * Mathf.Clamp01((1f - d) * 3f));
             }
     }
 
@@ -101,14 +205,14 @@ public class PaperCanvas
         {
             float prev = strokeAlpha[i];
             if (a <= prev) return;
-            Blend(x, y, Graphite, (a - prev) / Mathf.Max(1e-3f, 1f - prev));
+            Blend(x, y, ink, (a - prev) / Mathf.Max(1e-3f, 1f - prev));
             strokeAlpha[i] = a;
         }
         else
         {
             strokeStamp[i] = currentStroke;
             strokeAlpha[i] = a;
-            Blend(x, y, Graphite, a);
+            Blend(x, y, ink, a);
         }
     }
 
@@ -123,7 +227,7 @@ public class PaperCanvas
                 float d = Vector2.Distance(new Vector2(x, y), c) / r;
                 if (d >= 1f) continue;
                 float n = Mathf.PerlinNoise(x * 0.05f + center.x, y * 0.05f);
-                Blend(x, y, Graphite, (1f - d) * (1f - d) * strength * (0.5f + n));
+                Blend(x, y, ink, (1f - d) * (1f - d) * strength * (0.5f + n));
             }
     }
 
@@ -144,7 +248,7 @@ public class PaperCanvas
                 float d = Vector2.Distance(p, pa + ab * t) / wpx;
                 if (d >= 1f) continue;
                 Blend(x, y, new Color(0.99f, 0.985f, 0.97f), 0.5f * (1f - d));
-                if (rng.NextDouble() < 0.004) Blend(x, y, Graphite, 0.5f);
+                if (rng.NextDouble() < 0.004) Blend(x, y, ink, 0.5f);
             }
     }
 
@@ -213,6 +317,9 @@ public class PaperCanvas
     {
         float c = Mathf.Cos(angleDeg * Mathf.Deg2Rad), s = Mathf.Sin(angleDeg * Mathf.Deg2Rad);
         float strength = R(0.7f, 0.95f);
+        // كل رسمة بلون (رصاص أو شمع ملون حسب شكل المرحلة)
+        Color previous = ink;
+        if (theme != null) ink = theme.RandomDoodleColor(rng);
         foreach (var stroke in shape)
         {
             var pts = new List<Vector2>(stroke.Count);
@@ -225,6 +332,7 @@ public class PaperCanvas
             // الخط أعرض شوي في الأوراق الصغيرة اللي دقتها عالية
             Polyline(pts, R(1.6f, 2.2f) * Mathf.Max(1f, PixelsPerUnit / 200f), strength);
         }
+        ink = previous;
     }
 }
 

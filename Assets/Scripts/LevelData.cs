@@ -82,6 +82,7 @@ public class LevelData
     public float windSwitchPeriod; // كل كم ثانية تعكس الريح اتجاهها (0 = ثابتة)
     public bool Windy => windSpeed != 0f;
     public List<MonsterSpawn> monsters = new List<MonsterSpawn>();   // وحوش الشخابيط
+    public LevelTheme theme = LevelTheme.Classic();       // شكل المرحلة (ورق، سما، إضاءة، أغراض)
     public bool Scribbly => monsters.Count > 0;
     public bool monsterHint;       // أول وحش فوقه تلميح شخبطة
 
@@ -133,6 +134,7 @@ public static class Levels
         return new LevelData
         {
             title = "صفحة الألوان",
+            theme = LevelTheme.PastelPaint(),
             subtitle = "٢ أحمر ينطط  •  ٣ أزرق يزلّق  •  ٤ أخضر يطول",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(42f, 0f, 0f),
@@ -160,6 +162,7 @@ public static class Levels
         return new LevelData
         {
             title = "صفحة الممحاة",
+            theme = LevelTheme.EraserAfternoon(),
             subtitle = "ممحاة عملاقة تمسح الأرض قدامك... ارسمي قبل ما توصلين!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(50f, 0f, 0f),
@@ -188,6 +191,7 @@ public static class Levels
         return new LevelData
         {
             title = "الصفحة المقلوبة",
+            theme = LevelTheme.Cosmic(),
             subtitle = "الجاذبية انقلبت! ارسمي طرق تعدي البروزات... وامسحي الوحوش",
             spawn = new Vector3(-5f, -1f, 0f),
             door = new Vector3(43f, 0f, 0f),
@@ -220,6 +224,7 @@ public static class Levels
         var level = new LevelData
         {
             title = "صفحة الحبر المنسكب",
+            theme = LevelTheme.InkParchment(),
             subtitle = "الحبر يرتفع! ارسمي سلم تطلع عليه... وقارب كبير يطفو فيها",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(23f, 2.3f, 0f),
@@ -257,6 +262,7 @@ public static class Levels
         return new LevelData
         {
             title = "صفحة الطيّة",
+            theme = LevelTheme.Origami(),
             subtitle = "الصفحات تنطوي وتمسح الرسم اللي يعترضها... انتبهي للتوقيت!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(37f, 0f, 0f),
@@ -287,6 +293,7 @@ public static class Levels
         return new LevelData
         {
             title = "صفحات الشخابيط",
+            theme = LevelTheme.CrayonDay(),
             subtitle = "رسوماتي القديمة صحت! شخبطي عليها عشان تنمسح",
             monsterHint = true,
             spawn = new Vector3(-5f, 1f, 0f),
@@ -313,6 +320,7 @@ public static class Levels
         return new LevelData
         {
             title = "شخابيط أكثر",
+            theme = LevelTheme.CandySunset(),
             subtitle = "الوحوش تاكل الجسور... امسحيها قبل ما ترسمين!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(36f, 0f, 0f),
@@ -340,6 +348,7 @@ public static class Levels
         return new LevelData
         {
             title = "صفحات الريح",
+            theme = LevelTheme.KraftDawn(),
             subtitle = "الريح تدفع الرسمات لورا... ارسمي الجسر أطول من قدام!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(35f, 0f, 0f),
@@ -361,6 +370,7 @@ public static class Levels
         return new LevelData
         {
             title = "العاصفة",
+            theme = LevelTheme.GraphDusk(),
             subtitle = "الريح تغيّر اتجاهها... انتبهي للسهم فوق!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(33f, 0f, 0f),
@@ -390,6 +400,7 @@ public static class Levels
         return new LevelData
         {
             title = "صفحات المطر",
+            theme = LevelTheme.RuledRain(),
             subtitle = "المطر يمسح الرسم بعد شوي... لازم تكونين سريعة!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(35f, 0f, 0f),
@@ -411,6 +422,7 @@ public static class Levels
         return new LevelData
         {
             title = "تحت المطر",
+            theme = LevelTheme.Watercolor(),
             subtitle = "الصفحة اللي قدام أعلى... ارسمي لها طريق مايل يطلّعها فوق!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(34f, 0f, 0f),

@@ -117,6 +117,18 @@ public class Weather : MonoBehaviour
         return ps;
     }
 
+    // الإضاءة الصافية تختلف من مرحلة لمرحلة (فجر، غروب، ليل، ظهر...)
+    public void SetBaseline(LevelTheme theme)
+    {
+        clearSunIntensity = theme.sunIntensity;
+        clearSunColor = theme.sunLight;
+        clearSky = theme.ambientSky;
+        clearEquator = theme.ambientEquator;
+        clearGround = theme.ambientGround;
+        clearFog = theme.fog;
+        sun.transform.rotation = Quaternion.Euler(theme.sunAngles);
+    }
+
     public void Apply(LevelData level)
     {
         windLevel = level;

@@ -153,6 +153,105 @@ public static class Props
         LevelBuilder.OutlineBox(go.transform, Vector3.one * size, gm, rng);
     }
 
+    // قلم تلوين شمع: جسم ملون، ورقة ملفوفة عليه، وراس مدبب
+    public static void Crayon(Transform parent, Vector3 pos, float yaw, Color color, GameManager gm)
+    {
+        var root = new GameObject("Crayon");
+        root.transform.SetParent(parent, false);
+        root.transform.localPosition = pos + Vector3.up * 0.12f;
+        root.transform.localRotation = Quaternion.Euler(0f, yaw, 90f);
+        Material wax = gm.Mat("Crayon " + ColorUtility.ToHtmlStringRGB(color), color, 0.45f);
+        Material wrap = gm.Mat("Crayon Wrap " + ColorUtility.ToHtmlStringRGB(color), Color.Lerp(color, Color.white, 0.35f), 0.2f);
+        LevelBuilder.Visual("Wax", PrimitiveType.Cylinder, root.transform, Vector3.zero, new Vector3(0.24f, 0.7f, 0.24f), wax);
+        LevelBuilder.Visual("Wrap", PrimitiveType.Cylinder, root.transform, new Vector3(0f, -0.1f, 0f), new Vector3(0.25f, 0.45f, 0.25f), wrap);
+        LevelBuilder.Visual("Tip", PrimitiveType.Sphere, root.transform, new Vector3(0f, 0.72f, 0f), new Vector3(0.2f, 0.22f, 0.2f), wax);
+    }
+
+    // أنبوب ألوان مضغوط وبقعة لون جنبه
+    public static void PaintTube(Transform parent, Vector3 pos, float yaw, Color color, GameManager gm)
+    {
+        var root = new GameObject("Paint Tube");
+        root.transform.SetParent(parent, false);
+        root.transform.localPosition = pos + Vector3.up * 0.13f;
+        root.transform.localRotation = Quaternion.Euler(0f, yaw, 90f);
+        Material metal = gm.Mat("Tube Metal", new Color(0.85f, 0.85f, 0.88f), 0.7f, 0.6f);
+        Material paint = gm.Mat("Paint " + ColorUtility.ToHtmlStringRGB(color), color, 0.75f);
+        LevelBuilder.Visual("Tube", PrimitiveType.Capsule, root.transform, Vector3.zero, new Vector3(0.28f, 0.42f, 0.18f), metal);
+        LevelBuilder.Visual("Label", PrimitiveType.Capsule, root.transform, new Vector3(0f, -0.05f, 0f), new Vector3(0.29f, 0.25f, 0.19f), paint);
+        LevelBuilder.Visual("Cap", PrimitiveType.Cylinder, root.transform, new Vector3(0f, 0.5f, 0f), new Vector3(0.12f, 0.08f, 0.12f), gm.Mat("Tube Cap", new Color(0.15f, 0.15f, 0.18f), 0.4f));
+        var splat = LevelBuilder.Visual("Paint Splat", PrimitiveType.Cylinder, parent, pos + new Vector3(0.6f, 0.005f, 0.1f), new Vector3(0.5f, 0.004f, 0.35f), paint, false);
+        splat.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+    }
+
+    // قنينة حبر وريشة كتابة
+    public static void InkBottle(Transform parent, Vector3 pos, float yaw, GameManager gm)
+    {
+        var root = new GameObject("Ink Bottle");
+        root.transform.SetParent(parent, false);
+        root.transform.localPosition = pos;
+        root.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        Material glass = gm.Mat("Ink Glass", new Color(0.1f, 0.1f, 0.22f), 0.95f, 0.1f);
+        Material cork = gm.Mat("Cork", new Color(0.7f, 0.52f, 0.32f), 0.2f);
+        var bottle = CharacterMeshes.Lathe(new[]
+        {
+            new Vector2(0f, 0f), new Vector2(0.32f, 0f), new Vector2(0.34f, 0.08f), new Vector2(0.33f, 0.45f),
+            new Vector2(0.15f, 0.6f), new Vector2(0.12f, 0.75f), new Vector2(0f, 0.75f),
+        }, 18);
+        var b = new GameObject("Bottle");
+        b.transform.SetParent(root.transform, false);
+        b.AddComponent<MeshFilter>().sharedMesh = bottle;
+        b.AddComponent<MeshRenderer>().sharedMaterial = glass;
+        LevelBuilder.Visual("Cork", PrimitiveType.Cylinder, root.transform, new Vector3(0f, 0.8f, 0f), new Vector3(0.2f, 0.07f, 0.2f), cork);
+        // ريشة طويلة مايلة
+        var quill = new GameObject("Quill").transform;
+        quill.SetParent(root.transform, false);
+        quill.localPosition = new Vector3(0.05f, 0.7f, 0f);
+        quill.localRotation = Quaternion.Euler(0f, 0f, -30f);
+        LevelBuilder.Visual("Feather", PrimitiveType.Sphere, quill, new Vector3(0f, 0.6f, 0f), new Vector3(0.18f, 0.7f, 0.04f), gm.Mat("Feather", new Color(0.95f, 0.93f, 0.88f), 0.2f));
+        LevelBuilder.Visual("Shaft", PrimitiveType.Cylinder, quill, new Vector3(0f, 0.4f, 0f), new Vector3(0.02f, 0.55f, 0.02f), cork);
+    }
+
+    // طير ورق (أوريغامي): جسم وجناحين وراس، كلها مثلثات ورق
+    public static GameObject OrigamiCrane(Transform parent, Vector3 pos, float yaw, Color color, GameManager gm, float scale = 1f)
+    {
+        var root = new GameObject("Origami Crane");
+        root.transform.SetParent(parent, false);
+        root.transform.localPosition = pos;
+        root.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        root.transform.localScale = Vector3.one * scale;
+        Material paper = gm.Mat("Origami " + ColorUtility.ToHtmlStringRGB(color), color, 0.15f);
+        Material shade = gm.Mat("Origami Shade " + ColorUtility.ToHtmlStringRGB(color), color * 0.8f, 0.15f);
+        var body = LevelBuilder.Visual("Body", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.2f, 0f), new Vector3(0.5f, 0.22f, 0.16f), paper);
+        body.transform.localRotation = Quaternion.Euler(0f, 0f, 45f) * Quaternion.Euler(45f, 0f, 0f);
+        for (int s = -1; s <= 1; s += 2)
+        {
+            var wing = LevelBuilder.Visual("Wing", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.32f, s * 0.25f), new Vector3(0.45f, 0.01f, 0.4f), s < 0 ? paper : shade);
+            wing.transform.localRotation = Quaternion.Euler(s * 25f, 0f, 0f);
+        }
+        var neck = LevelBuilder.Visual("Neck", PrimitiveType.Cube, root.transform, new Vector3(0.32f, 0.38f, 0f), new Vector3(0.05f, 0.35f, 0.05f), paper);
+        neck.transform.localRotation = Quaternion.Euler(0f, 0f, -30f);
+        var tail = LevelBuilder.Visual("Tail", PrimitiveType.Cube, root.transform, new Vector3(-0.32f, 0.36f, 0f), new Vector3(0.05f, 0.32f, 0.05f), shade);
+        tail.transform.localRotation = Quaternion.Euler(0f, 0f, 35f);
+        return root;
+    }
+
+    // قارب ورق
+    public static void OrigamiBoat(Transform parent, Vector3 pos, float yaw, Color color, GameManager gm)
+    {
+        var root = new GameObject("Origami Boat");
+        root.transform.SetParent(parent, false);
+        root.transform.localPosition = pos;
+        root.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        Material paper = gm.Mat("Origami " + ColorUtility.ToHtmlStringRGB(color), color, 0.15f);
+        for (int s = -1; s <= 1; s += 2)
+        {
+            var side = LevelBuilder.Visual("Hull", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.12f, s * 0.1f), new Vector3(0.8f, 0.22f, 0.01f), paper);
+            side.transform.localRotation = Quaternion.Euler(-s * 25f, 0f, 0f);
+        }
+        var sail = LevelBuilder.Visual("Sail", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.38f, 0f), new Vector3(0.3f, 0.3f, 0.01f), paper);
+        sail.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+    }
+
     static Vector2[] Profile(float y0, float y1, float r0, float r1)
     {
         return new[] { new Vector2(0f, y0), new Vector2(r0, y0), new Vector2(r0, y0), new Vector2(r1, y1), new Vector2(r1, y1), new Vector2(0f, y1) };

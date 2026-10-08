@@ -15,8 +15,14 @@ public class NightSky : MonoBehaviour
     readonly List<float> cloudDrift = new List<float>();
     readonly List<Material> cloudMats = new List<Material>();
     readonly List<Color> cloudColors = new List<Color>();
+    readonly List<float> cloudBright = new List<float>();
+    readonly List<float> cloudBaseAlpha = new List<float>();
+    readonly Dictionary<string, Texture2D> skyCache = new Dictionary<string, Texture2D>();
     Transform moonT, haloT;
-    Material skyMat;
+    Material skyMat, moonMat, haloMat;
+    Texture2D crescentTex, sunTex;
+    float starAmount = 1f;
+    bool showOrb = true, stormyNow;
     Vector3 farBase, cloudBase;
 
     const float FarFollow = 0.92f;    // الطبقة البعيدة (النجوم والهلال) تمشي تقريبًا مع الكاميرا
@@ -58,10 +64,12 @@ public class NightSky : MonoBehaviour
         }
 
         // الهلال مع هالة ضوء
-        Material moon = Transparent("Moon", CrescentTexture(), new Color(2.4f, 2.2f, 1.75f, 1f));
-        Material halo = Transparent("Moon Halo", DotTexture(), new Color(0.75f, 0.7f, 0.95f, 0.35f));
-        haloT = Quad("Moon Halo", farLayer, new Vector3(17f, 10f, 87f), new Vector2(26f, 26f), halo);
-        moonT = Quad("Moon", farLayer, new Vector3(17f, 10f, 85f), new Vector2(9f, 9f), moon);
+        crescentTex = CrescentTexture();
+        sunTex = SunTexture();
+        moonMat = Transparent("Moon", crescentTex, new Color(2.4f, 2.2f, 1.75f, 1f));
+        haloMat = Transparent("Moon Halo", DotTexture(), new Color(0.75f, 0.7f, 0.95f, 0.35f));
+        haloT = Quad("Moon Halo", farLayer, new Vector3(17f, 10f, 87f), new Vector2(26f, 26f), haloMat);
+        moonT = Quad("Moon", farLayer, new Vector3(17f, 10f, 85f), new Vector2(9f, 9f), moonMat);
         moonT.localRotation = Quaternion.Euler(0f, 0f, -20f);
 
         // غيوم ناعمة بنفسجية على أعماق مختلفة
@@ -78,6 +86,8 @@ public class NightSky : MonoBehaviour
             clouds.Add(cloud);
             cloudMats.Add(mat);
             cloudColors.Add(mat.GetColor("_BaseColor"));
+            cloudBright.Add(brightness);
+            cloudBaseAlpha.Add(mat.GetColor("_BaseColor").a);
             cloudDrift.Add(R(0.15f, 0.45f));
         }
 
@@ -86,13 +96,47 @@ public class NightSky : MonoBehaviour
     }
 
     // جو ممطر: الهلال والنجوم يختفون ورا الغيوم، والغيوم أغمق وأكثف، والسما أغمق
+    // لون السما والغيوم، شمس أو هلال، وكمية النجوم حسب المرحلة
+    public void ApplyTheme(LevelTheme theme)
+    {
+        if (moonT == null) return;
+        if (!skyCache.TryGetValue(theme.name, out Texture2D gradient))
+            skyCache[theme.name] = gradient = PaperMeshes.SkyGradient(theme.skyBottom, theme.skyMid, theme.skyTop);
+        skyMat.SetTexture("_BaseMap", gradient);
+
+        starAmount = theme.stars;
+        showOrb = theme.sun || theme.showMoon;
+        moonMat.SetTexture("_BaseMap", theme.sun ? sunTex : crescentTex);
+        // الشمس تتشبع أكثر عشان ما يغسلها الضباب وتبان دافية
+        Color orb = theme.sun ? new Color(theme.moonColor.r * 1.3f, theme.moonColor.g * 1.05f, theme.moonColor.b * 0.6f, 1f) : theme.moonColor;
+        moonMat.SetColor("_BaseColor", orb);
+        moonT.localScale = theme.sun ? new Vector3(7f, 7f, 1f) : new Vector3(9f, 9f, 1f);
+        Color glow = theme.sun ? new Color(theme.moonColor.r * 0.45f, theme.moonColor.g * 0.4f, theme.moonColor.b * 0.3f, 0.45f)
+                               : new Color(theme.moonColor.r * 0.3f, theme.moonColor.g * 0.3f, theme.moonColor.b * 0.5f, 0.35f);
+        haloMat.SetColor("_BaseColor", glow);
+        haloT.localScale = theme.sun ? new Vector3(34f, 34f, 1f) : new Vector3(26f, 26f, 1f);
+
+        for (int i = 0; i < cloudColors.Count; i++)
+        {
+            // بالنهار الغيوم بيضا منفوخة، بالليل أغمق كل ما بعدت
+            float k = theme.sun ? Mathf.Lerp(1.25f, 1.05f, (0.55f - cloudBright[i]) / 0.2f) : cloudBright[i] / 0.55f;
+            cloudColors[i] = new Color(theme.cloudTint.r * k, theme.cloudTint.g * k, theme.cloudTint.b * k,
+                                       Mathf.Clamp01(cloudBaseAlpha[i] * theme.cloudAlpha / 0.5f));
+        }
+        SetStormy(stormyNow);
+    }
+
     public void SetStormy(bool stormy)
     {
         if (moonT == null) return;
-        moonT.gameObject.SetActive(!stormy);
-        haloT.gameObject.SetActive(!stormy);
+        stormyNow = stormy;
+        moonT.gameObject.SetActive(!stormy && showOrb);
+        haloT.gameObject.SetActive(!stormy && showOrb);
         for (int i = 0; i < stars.Count; i++)
-            stars[i].gameObject.SetActive(!stormy || i % 7 == 0);
+        {
+            bool visible = (i * 37 % 100) < starAmount * 100f;
+            stars[i].gameObject.SetActive(visible && (!stormy || i % 7 == 0));
+        }
         for (int i = 0; i < cloudMats.Count; i++)
         {
             Color c = cloudColors[i];
@@ -218,6 +262,27 @@ public class NightSky : MonoBehaviour
                 float a = outer * (1f - inner);
                 float shade = 0.88f + 0.12f * Mathf.PerlinNoise(x * 0.06f, y * 0.06f);
                 px[y * s + x] = new Color(shade, shade, shade * 0.97f, a);
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        return tex;
+    }
+
+    // شمس: قرص ناعم مع حافة دافية
+    static Texture2D SunTexture()
+    {
+        const int s = 256;
+        var tex = NewTex(s, s, "Sun");
+        var px = new Color[s * s];
+        float aa = 2f / s;
+        for (int y = 0; y < s; y++)
+            for (int x = 0; x < s; x++)
+            {
+                float u = (x + 0.5f) / s - 0.5f, v = (y + 0.5f) / s - 0.5f;
+                float r = Mathf.Sqrt(u * u + v * v);
+                float a = Mathf.Clamp01((0.4f - r) / aa);
+                float shade = 0.9f + 0.1f * Mathf.PerlinNoise(x * 0.04f, y * 0.04f) - r * 0.2f;
+                px[y * s + x] = new Color(shade, shade, shade, a);
             }
         tex.SetPixels(px);
         tex.Apply();

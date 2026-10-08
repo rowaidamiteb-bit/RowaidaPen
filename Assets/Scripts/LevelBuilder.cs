@@ -18,7 +18,7 @@ public static class LevelBuilder
         if (data.eraserSpeed > 0f) BuildErasablePages(root.transform, data, gm, rng);
         else
             for (int i = 0; i < data.blocks.Count; i++)
-                CreatePaperBlock(root.transform, data.blocks[i], gm, rng, data, i == 0);
+                CreatePaperBlock(root.transform, data.blocks[i], gm, rng, data, i == 0, i);
         if (data.bridgeHint && data.blocks.Count > 1) BridgeHint(root.transform, data.blocks[0], data.blocks[1], gm);
         foreach (HintLine h in data.hints) DashedHint(root.transform, h, gm);
         CreateDoor(root.transform, data.door, gm, data.flipped);
@@ -83,7 +83,9 @@ public static class LevelBuilder
     }
 
     // صفحة ورق سميكة: سطح ورق، جوانب صفحات مكدسة، خطوط رصاص على الحواف، شقوق، وسلك الدفتر
-    static GameObject CreatePaperBlock(Transform parent, Block b, GameManager gm, System.Random rng, LevelData data, bool first)
+    static int pageCounter;
+
+    static GameObject CreatePaperBlock(Transform parent, Block b, GameManager gm, System.Random rng, LevelData data, bool first, int index = -1)
     {
         var go = new GameObject("Paper Page");
         go.transform.SetParent(parent, false);
@@ -92,7 +94,8 @@ public static class LevelBuilder
         if (data.flipped) go.transform.rotation = Quaternion.Euler(180f, 0f, 0f);
         go.AddComponent<MeshFilter>().sharedMesh = PaperMeshes.PaperSlab(b.size);
         var top = new Material(gm.paperMaterial) { name = "Page Drawing" };
-        top.SetTexture("_BaseMap", DrawPageArt(b, rng, data, first));
+        if (index < 0) index = pageCounter++;
+        top.SetTexture("_BaseMap", DrawPageArt(b, rng, data, first, index));
         if (data.Rain)
         {
             // ورق مبلول: أغمق شوي ولامع
@@ -121,6 +124,7 @@ public static class LevelBuilder
         }
 
         // سلك الدفتر الحلزوني على الحافة الخلفية
+        if (!data.theme.rings) return go;
         if (ringMesh == null) ringMesh = PaperMeshes.Ring(0.26f, 0.03f);
         for (float x = -h.x + 0.5f; x <= h.x - 0.4f; x += 0.55f)
         {
@@ -150,10 +154,10 @@ public static class LevelBuilder
     }
 
     // رسومات الرصاص على سطح الصفحة: رسومات صغيرة، تظليل عند الحفر، لطخات، وآثار مساحة
-    static Texture2D DrawPageArt(Block b, System.Random rng, LevelData data, bool first)
+    static Texture2D DrawPageArt(Block b, System.Random rng, LevelData data, bool first, int index)
     {
         Vector2 size = new Vector2(b.size.x, b.size.z);
-        var canvas = new PaperCanvas(size, rng.Next());
+        var canvas = new PaperCanvas(size, rng.Next(), 80f, data.theme, index);
         float hx = size.x * 0.5f, hz = size.y * 0.5f;
         float R(float a, float c) => a + (float)rng.NextDouble() * (c - a);
 
@@ -196,14 +200,27 @@ public static class LevelBuilder
     {
         float hx = b.size.x * 0.5f, hz = b.size.z * 0.5f, top = b.size.y * 0.5f;
         float R(float a, float c) => a + (float)rng.NextDouble() * (c - a);
-        bool NearDoor(float x) => Mathf.Abs(b.center.x + x - data.door.x) < 2f;
+        bool NearDoor(float x) => Mathf.Abs(b.center.x + x - data.door.x) < 2f || Mathf.Abs(b.center.x + x - data.spawn.x) < 1.5f;
+        LevelTheme theme = data.theme;
+        Color RandomColor() => theme.floatColors[rng.Next(theme.floatColors.Length)];
 
-        // قلم كبير ورا على الصفحة
+        // غرض كبير ورا على الصفحة حسب شكل المرحلة
         if (b.size.x > 8f && rng.Next(2) == 0)
         {
             float x = R(-hx + 1.5f, hx - 5f);
             if (!NearDoor(x) && !NearDoor(x + 3.5f))
-                Props.GiantPencil(t, new Vector3(x, top, R(1.1f, 1.4f)), R(-8f, 8f), gm);
+            {
+                Vector3 p = new Vector3(x, top, R(1.1f, 1.4f));
+                switch (theme.props)
+                {
+                    case PropSet.Ink: Props.InkBottle(t, p, R(0f, 360f), gm); break;
+                    case PropSet.Origami: Props.OrigamiCrane(t, p + new Vector3(0f, 0f, 0.8f), R(-30f, 30f), RandomColor(), gm, 2.2f); break;
+                    case PropSet.Crayons: Props.Crayon(t, p, R(-15f, 15f), RandomColor(), gm); break;
+                    case PropSet.Paint: Props.PaintTube(t, p, R(-20f, 20f), RandomColor(), gm); break;
+                    case PropSet.Erasers: Props.Eraser(t, p, R(-30f, 30f), gm, rng); break;
+                    default: Props.GiantPencil(t, p, R(-8f, 8f), gm); break;
+                }
+            }
         }
 
         // أغراض صغيرة متفرقة
@@ -214,19 +231,45 @@ public static class LevelBuilder
             bool back = kind != 3 && kind != 4 || rng.Next(2) == 0;
             float z = back ? R(0.9f, hz - 0.35f) : R(-hz + 0.3f, -0.8f);
             Vector3 p = new Vector3(x, top, z);
-            switch (kind)
+            switch (theme.props)
             {
-                case 0: Props.PaperBall(t, p, R(0.35f, 0.55f), gm, rng.Next(1000)); break;
-                case 1: Props.Eraser(t, p, R(-40f, 40f), gm, rng); break;
-                case 2: Props.PaperCube(t, p, R(0.35f, 0.6f), R(-30f, 30f), gm, rng); break;
-                case 3: Props.PaperClip(t, p, R(0f, 360f), gm); break;
-                case 4:
-                    for (int i = 0; i < 3; i++)
-                        Props.Shaving(t, p + new Vector3(R(-0.3f, 0.3f), 0f, R(-0.2f, 0.2f)), R(0f, 360f), gm, rng);
+                case PropSet.Crayons:
+                    if (kind < 4) Props.Crayon(t, p, R(0f, 360f), RandomColor(), gm);
+                    else Props.PaperBall(t, p, R(0.35f, 0.55f), gm, rng.Next(1000));
+                    break;
+                case PropSet.Paint:
+                    if (kind < 3) Props.PaintTube(t, p, R(0f, 360f), RandomColor(), gm);
+                    else Props.Crayon(t, p, R(0f, 360f), RandomColor(), gm);
+                    break;
+                case PropSet.Erasers:
+                    if (kind < 4) Props.Eraser(t, p, R(-40f, 40f), gm, rng);
+                    else Props.PaperBall(t, p, R(0.35f, 0.55f), gm, rng.Next(1000));
+                    break;
+                case PropSet.Ink:
+                    if (kind < 2) Props.InkBottle(t, p, R(0f, 360f), gm);
+                    else if (kind < 4) Props.PaperBall(t, p, R(0.35f, 0.5f), gm, rng.Next(1000));
+                    else Props.PaperClip(t, p, R(0f, 360f), gm);
+                    break;
+                case PropSet.Origami:
+                    if (kind < 3) Props.OrigamiCrane(t, new Vector3(p.x, p.y, Mathf.Abs(p.z) + 0.4f), R(0f, 360f), RandomColor(), gm, R(0.9f, 1.3f));
+                    else Props.OrigamiBoat(t, p, R(0f, 360f), RandomColor(), gm);
                     break;
                 default:
-                    Props.PaperCube(t, p, R(0.4f, 0.55f), R(-20f, 20f), gm, rng);
-                    Props.PaperCube(t, p + new Vector3(0.55f, 0f, R(-0.1f, 0.1f)), R(0.3f, 0.4f), R(-30f, 30f), gm, rng);
+                    switch (kind)
+                    {
+                        case 0: Props.PaperBall(t, p, R(0.35f, 0.55f), gm, rng.Next(1000)); break;
+                        case 1: Props.Eraser(t, p, R(-40f, 40f), gm, rng); break;
+                        case 2: Props.PaperCube(t, p, R(0.35f, 0.6f), R(-30f, 30f), gm, rng); break;
+                        case 3: Props.PaperClip(t, p, R(0f, 360f), gm); break;
+                        case 4:
+                            for (int i = 0; i < 3; i++)
+                                Props.Shaving(t, p + new Vector3(R(-0.3f, 0.3f), 0f, R(-0.2f, 0.2f)), R(0f, 360f), gm, rng);
+                            break;
+                        default:
+                            Props.PaperCube(t, p, R(0.4f, 0.55f), R(-20f, 20f), gm, rng);
+                            Props.PaperCube(t, p + new Vector3(0.55f, 0f, R(-0.1f, 0.1f)), R(0.3f, 0.4f), R(-30f, 30f), gm, rng);
+                            break;
+                    }
                     break;
             }
         }
