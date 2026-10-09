@@ -34,6 +34,7 @@ public static class LevelBuilder
         BuildFloaters(root.transform, data, gm, rng);
         SnowFeatures.Build(root.transform, data, gm, rng);
         SpaceFeatures.Build(root.transform, data, gm);
+        MemoryClouds.Build(root.transform, data, gm);
         return root;
     }
 
@@ -142,6 +143,11 @@ public static class LevelBuilder
         }
 
         if (data.theme.snowCaps) SnowCap(t, b.size, gm, rng);
+        if (data.theme.glitter)
+        {
+            top.SetFloat("_Smoothness", 0.6f);
+            go.AddComponent<PageGlitter>();
+        }
 
         // سلك الدفتر الحلزوني على الحافة الخلفية
         if (!data.theme.rings) return go;

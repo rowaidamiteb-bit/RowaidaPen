@@ -130,6 +130,7 @@ public class LevelData
     public float gravityScale = 1f;                         // الفضاء: جاذبية خفيفة (أقل من 1)
     public bool planets;                                    // الفضاء: كواكب كبيرة بالخلفية
     public bool drawDoor;                                   // الصفحة الأخيرة: ما فيه باب، اللاعبة ترسمه
+    public bool memoryClouds;                               // الصفحة الأخيرة: غيوم فيها ذكريات (صور ورسومات)
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
     public bool HasMeteors => meteorZone.y > meteorZone.x;
     public Vector3? blackHole;                              // الفضاء: مكان الثقب الأسود (null = ما فيه)
@@ -381,23 +382,33 @@ public static class Levels
         };
     }
 
-    // الصفحة الأخيرة: صفحة فاضية في الفجر، ما فيها باب... ترسمين الباب فوق الإطار المنقط، ينفتح، ورويدا ترجع لغرفتها
+    // الصفحة الأخيرة: وردية وتلمع بقليتر، وفوقها غيوم فيها ذكريات رويدا (صور المراحل ورسوماتك).
+    // فيها شوي من كل شي: حفرة، أرض تختفي، صفحات طايرة تتحرك، طلعة، وفي الآخر ترسمين باب البيت
     static LevelData LastPage()
     {
         return new LevelData
         {
             title = "الصفحة الأخيرة",
             theme = LevelTheme.LastPage(),
-            subtitle = "صفحة فاضية... ارسمي باب البيت عشان ترجع رويدا!",
+            subtitle = "آخر صفحة في الدفتر... عدّي كل شي وارسمي باب البيت!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(22f, 0f, 0f),
-            ink = 26f,
+            door = new Vector3(48f, 0f, 0f),
+            ink = 34f,
             drawDoor = true,
+            memoryClouds = true,
             bridgeHint = true,
             blocks =
             {
-                Page(-7f, 8f),          // حفرة 3
-                Page(11f, 28f),
+                Page(-7f, 6f),              // حفرة 3
+                Page(9f, 16f),              // فيها قطعة تختفي، وبعدها صفحات طايرة
+                Page(30f, 36f, 0.8f),       // طلعة (ارسمي منحدر)، وبعدها حفرة 3
+                Page(39f, 53f),
+            },
+            vanishTiles = { new Vector3(12f, 14.5f, 4f) },
+            floaters =
+            {
+                new FloaterSpec(19.5f, 3f, 1.2f, 4f, 0f),
+                new FloaterSpec(25.5f, 3f, 1.3f, 4.4f, 1.5f),
             },
         };
     }

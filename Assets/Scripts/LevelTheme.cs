@@ -20,6 +20,7 @@ public class LevelTheme
     public Color pencil = new Color(0.33f, 0.33f, 0.36f);
     public bool rings = true;
     public bool snowCaps;                 // طبقة ثلج فوق الصفحات
+    public bool glitter;                  // الصفحات تلمع بقليتر
     public Color ringColor = new Color(0.2f, 0.2f, 0.22f);
 
     // السما
@@ -232,17 +233,19 @@ public class LevelTheme
         ringColor = new Color(0.75f, 0.78f, 0.95f),
     };
 
-    // الصفحة الأخيرة: ورق أبيض فاضي، وفجر هادي (السما وردية ذهبية) لأن رويدا قربت تصحى
+    // الصفحة الأخيرة: وردي وسعيد، ورق يلمع بقليتر، سما وردية بنفسجية، ولمعات طايرة
     public static LevelTheme LastPage() => new LevelTheme
     {
         name = "LastPage",
-        paper = new Color(0.99f, 0.98f, 0.96f), pattern = PaperPattern.Blank,
-        skyTop = new Color(0.55f, 0.68f, 0.95f), skyMid = new Color(1f, 0.78f, 0.68f), skyBottom = new Color(1f, 0.92f, 0.72f),
-        sun = true, moonColor = new Color(2.8f, 2.2f, 1.5f), stars = 0.1f, cloudTint = new Color(1.1f, 0.95f, 0.95f), cloudAlpha = 0.7f,
-        sunLight = new Color(1f, 0.88f, 0.75f), sunIntensity = 1.45f, sunAngles = new Vector3(20f, -50f, 0f),
-        ambientSky = new Color(0.9f, 0.8f, 0.82f), ambientEquator = new Color(0.75f, 0.65f, 0.68f), ambientGround = new Color(0.38f, 0.32f, 0.35f),
-        fog = new Color(1f, 0.88f, 0.8f), floating = FloatKind.Paper,
-        floatColors = new[] { Color.white, new Color(1f, 0.92f, 0.85f) },
+        paper = new Color(1f, 0.9f, 0.94f), pattern = PaperPattern.Dots, patternColor = new Color(1f, 0.62f, 0.78f), colorfulDoodles = true,
+        pageEdge = new Color(1f, 0.85f, 0.9f), pencil = new Color(0.85f, 0.4f, 0.6f), doodleColor = new Color(0.9f, 0.5f, 0.7f),
+        skyTop = new Color(0.88f, 0.62f, 0.92f), skyMid = new Color(1f, 0.78f, 0.9f), skyBottom = new Color(1f, 0.92f, 0.84f),
+        sun = true, moonColor = new Color(2.8f, 2.3f, 2.1f), stars = 0.35f, cloudTint = new Color(1.15f, 1.02f, 1.12f), cloudAlpha = 0.8f,
+        sunLight = new Color(1f, 0.92f, 0.95f), sunIntensity = 1.5f, sunAngles = new Vector3(30f, -40f, 0f),
+        ambientSky = new Color(1f, 0.85f, 0.93f), ambientEquator = new Color(0.86f, 0.7f, 0.8f), ambientGround = new Color(0.45f, 0.35f, 0.42f),
+        fog = new Color(1f, 0.86f, 0.93f), props = PropSet.Crayons, floating = FloatKind.Sparkles,
+        floatColors = new[] { new Color(1f, 0.6f, 0.8f), new Color(1f, 0.85f, 0.4f), Color.white, new Color(0.8f, 0.65f, 1f) },
+        ringColor = new Color(0.95f, 0.75f, 0.4f), glitter = true,
     };
 
     public Color PaperFor(int index)
