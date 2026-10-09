@@ -342,41 +342,37 @@ public static class Levels
         };
     }
 
-    // صفحة الفضاء: جاذبية خفيفة ونط طويل يطفو، صفحات طايرة تتحرك بين الكواكب،
-    // وفضائيين على صحون طايرة يطلقون ليزر (ارسمي درع، أو شخبطي عليهم)
+    // صفحة الفضاء: صفحات طايرة بين الكواكب على ارتفاعات مختلفة (ارسمي جسور ومنحدرات)،
+    // وفضائيين على صحون طايرة يطلقون ليزر (ارسمي درع، أو شخبطي عليهم). الجاذبية خفيفة: الدفة تطيّرك بعيد
     static LevelData SpaceLevel()
     {
         return new LevelData
         {
             title = "صفحة الفضاء",
             theme = LevelTheme.Space(),
-            subtitle = "جاذبية خفيفة! نطّي بزر المسافة، وارسمي درع يصد ليزر الفضائيين",
+            subtitle = "ارسمي جسور بين الصفحات الطايرة، ودرع يصد ليزر الفضائيين!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(55f, 0f, 0f),
-            ink = 16f,
-            allowJump = true,
-            gravityScale = 0.45f,
+            door = new Vector3(51f, 0.4f, 0f),
+            ink = 26f,
+            gravityScale = 0.75f,
             planets = true,
             blocks =
             {
-                Page(-7f, 5f),
-                Page(22f, 31f),
-                Page(47f, 58f),
-            },
-            floaters =
-            {
-                new FloaterSpec(10f, 3f, 1.2f, 4f, 0f),
-                new FloaterSpec(17f, 3f, 1.5f, 5f, 1f),
-                new FloaterSpec(36f, 2.6f, 1.4f, 3.6f, 2f),
-                new FloaterSpec(42f, 3f, 1.2f, 4.4f, 0.5f),
+                Page(-7f, 5f),              // حفرة 3 وطلعة
+                Page(8f, 13f, 0.8f),        // حفرة 3.5 ونزلة
+                Page(16.5f, 22f, -0.4f),    // حفرة 3 وطلعة كبيرة
+                Page(25f, 31f, 0.6f),       // حفرة 3.5
+                Page(34.5f, 40f, -0.2f),    // حفرة 3
+                Page(43f, 54f, 0.4f),
             },
             monsters =
             {
-                Monster(ScribbleMonster.Kind.Alien, 12f, 12f, 12f),
-                Monster(ScribbleMonster.Kind.Alien, 27f, 27f, 27f),
-                Monster(ScribbleMonster.Kind.Alien, 39f, 39f, 39f),
-                Monster(ScribbleMonster.Kind.Alien, 51f, 51f, 51f),
+                Monster(ScribbleMonster.Kind.Alien, 11f, 11f, 11f),
+                Monster(ScribbleMonster.Kind.Alien, 23.5f, 23.5f, 23.5f),
+                Monster(ScribbleMonster.Kind.Alien, 33f, 33f, 33f),
+                Monster(ScribbleMonster.Kind.Alien, 46f, 46f, 46f),
             },
+            bridgeHint = true,
         };
     }
 
