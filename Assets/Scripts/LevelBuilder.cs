@@ -18,7 +18,11 @@ public static class LevelBuilder
         if (data.vanishTiles.Count > 0) BuildVanishingPages(root.transform, data, gm, rng);
         else
             for (int i = 0; i < data.blocks.Count; i++)
-                CreatePaperBlock(root.transform, data.blocks[i], gm, rng, data, i == 0, i);
+            {
+                // صفحات مطر النيازك تنبني قطع صغيرة عشان النيزك يكسر قطعة
+                if (SpaceFeatures.InMeteorZone(data, data.blocks[i])) SpaceFeatures.TiledPage(root.transform, data.blocks[i], data, gm, rng);
+                else CreatePaperBlock(root.transform, data.blocks[i], gm, rng, data, i == 0, i);
+            }
         if (data.bridgeHint && data.blocks.Count > 1) BridgeHint(root.transform, data.blocks[0], data.blocks[1], gm);
         foreach (HintLine h in data.hints) DashedHint(root.transform, h, gm);
         CreateDoor(root.transform, data.door, gm, data.flipped);

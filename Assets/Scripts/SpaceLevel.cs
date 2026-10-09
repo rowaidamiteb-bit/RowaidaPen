@@ -5,6 +5,8 @@ public static class SpaceFeatures
 {
     public static void Build(Transform root, LevelData data, GameManager gm)
     {
+        if (data.HasMeteors) MeteorShower.Create(root, data);
+        if (data.blackHole.HasValue) BlackHole.Create(root, data.blackHole.Value, gm);
         if (!data.planets) return;
         // كواكب ضخمة بعيدة: تمشي مع الكاميرا تقريبًا (مثل السما) وتبقى على أطراف الشاشة
         var far = new GameObject("Planets").transform;
@@ -14,6 +16,27 @@ public static class SpaceFeatures
         Planet(far, new Vector3(30f, -40f, 76f), 24f, new Color(0.35f, 0.55f, 0.95f), false, gm);
         Planet(far, new Vector3(38f, 11f, 66f), 7f, new Color(0.75f, 0.45f, 0.9f), true, gm);
         Planet(far, new Vector3(-22f, -36f, 70f), 11f, new Color(0.45f, 0.85f, 0.65f), false, gm);
+    }
+
+    public static bool InMeteorZone(LevelData data, Block b)
+    {
+        if (!data.HasMeteors) return false;
+        float left = b.center.x - b.size.x * 0.5f, right = b.center.x + b.size.x * 0.5f;
+        return left >= data.meteorZone.x - 0.01f && right <= data.meteorZone.y + 0.01f;
+    }
+
+    // صفحة مقسومة قطع (كل قطعة متر ونص تقريبًا) عشان النيزك يكسر القطعة اللي يطيح عليها
+    public static void TiledPage(Transform root, Block b, LevelData data, GameManager gm, System.Random rng)
+    {
+        float left = b.center.x - b.size.x * 0.5f, right = b.center.x + b.size.x * 0.5f;
+        int n = Mathf.Max(1, Mathf.RoundToInt(b.size.x / 1.6f));
+        float w = (right - left) / n;
+        for (int i = 0; i < n; i++)
+        {
+            float a = left + i * w;
+            var tile = LevelBuilder.CreatePaperBlock(root, new Block(new Vector3(a + w * 0.5f, b.center.y, 0f), new Vector3(w, b.size.y, b.size.z)), gm, rng, data, false);
+            tile.AddComponent<BreakableTile>();
+        }
     }
 
     static void Planet(Transform root, Vector3 pos, float size, Color color, bool ring, GameManager gm)

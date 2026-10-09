@@ -129,6 +129,9 @@ public class LevelData
     public bool allowJump;                                  // تقدر رويدا تنط (زر المسافة)
     public float gravityScale = 1f;                         // الفضاء: جاذبية خفيفة (أقل من 1)
     public bool planets;                                    // الفضاء: كواكب كبيرة بالخلفية
+    public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
+    public bool HasMeteors => meteorZone.y > meteorZone.x;
+    public Vector3? blackHole;                              // الفضاء: مكان الثقب الأسود (null = ما فيه)
     public bool avalanche;                                  // زيزو: انهيار ثلجي يلحقها من ورا
     public SledSpec sled;                                   // زيزو: محطة الزلاجة والمنحدر (null = ما فيه)
     public float timeLimit;                               // وقت محدود للمرحلة بالثواني (0 = بدون وقت)
@@ -342,37 +345,37 @@ public static class Levels
         };
     }
 
-    // صفحة الفضاء: صفحات طايرة بين الكواكب على ارتفاعات مختلفة (ارسمي جسور ومنحدرات)،
-    // وفضائيين على صحون طايرة يطلقون ليزر (ارسمي درع، أو شخبطي عليهم). الجاذبية خفيفة: الدفة تطيّرك بعيد
+    // صفحة الفضاء: مطر نيازك (دوائر حمرا توري وين بتطيح، تكسر الصفحة وتصيبك: ارسمي مظلة)،
+    // بعدين ثقب أسود يسحبك لفوق ويبلعك (ارسمي سقف يمسكك)، وفضائيين يطلقون ليزر
     static LevelData SpaceLevel()
     {
         return new LevelData
         {
             title = "صفحة الفضاء",
             theme = LevelTheme.Space(),
-            subtitle = "ارسمي جسور بين الصفحات الطايرة، ودرع يصد ليزر الفضائيين!",
+            subtitle = "انتبهي للدوائر الحمرا! ارسمي مظلة من النيازك، وسقف يحميك من الثقب الأسود",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(51f, 0.4f, 0f),
-            ink = 26f,
+            door = new Vector3(57f, 0f, 0f),
+            ink = 30f,
             gravityScale = 0.75f,
             planets = true,
             blocks =
             {
-                Page(-7f, 5f),              // حفرة 3 وطلعة
-                Page(8f, 13f, 0.8f),        // حفرة 3.5 ونزلة
-                Page(16.5f, 22f, -0.4f),    // حفرة 3 وطلعة كبيرة
-                Page(25f, 31f, 0.6f),       // حفرة 3.5
-                Page(34.5f, 40f, -0.2f),    // حفرة 3
-                Page(43f, 54f, 0.4f),
+                Page(-7f, 3f),          // حفرة 3
+                Page(6f, 26f),          // مطر النيازك: الصفحة تتكسر قطع
+                Page(29f, 47f),         // الثقب الأسود فوقها
+                Page(50f, 60f),
             },
+            meteorZone = new Vector2(6f, 26f),
+            blackHole = new Vector3(38f, 3.4f, 0f),
             monsters =
             {
-                Monster(ScribbleMonster.Kind.Alien, 11f, 11f, 11f),
-                Monster(ScribbleMonster.Kind.Alien, 23.5f, 23.5f, 23.5f),
-                Monster(ScribbleMonster.Kind.Alien, 33f, 33f, 33f),
-                Monster(ScribbleMonster.Kind.Alien, 46f, 46f, 46f),
+                Monster(ScribbleMonster.Kind.Alien, 27.5f, 27.5f, 27.5f),
+                Monster(ScribbleMonster.Kind.Alien, 53f, 53f, 53f),
             },
             bridgeHint = true,
+            // تلميح: سقف تحت الثقب الأسود
+            hints = { new HintLine(new Vector3(35.6f, 1.8f, 0f), new Vector3(40.6f, 1.8f, 0f), new Color(0.75f, 0.45f, 1f)) },
         };
     }
 
