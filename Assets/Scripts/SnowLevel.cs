@@ -11,7 +11,7 @@ public static class SnowFeatures
             CrackingIce.Create(root, plank.x, plank.y, plank.z, gm);
         if (data.sled != null) SledStation.Create(root, data, gm, rng);
         if (data.avalanche)
-            Avalanche.Create(root, data.spawn.x - 9f, data.sled != null ? data.sled.spotX + 0.4f : data.door.x - 2f, gm);
+            Avalanche.Create(root, data.spawn.x - 10f, data.sled != null ? data.sled.spotX + 0.4f : data.door.x - 2f, gm);
     }
 
     // صفحة مايلة (للمنحدر والقفزة): نلف أب فاضي ونبني الصفحة داخله
@@ -149,7 +149,9 @@ public class CrackingIce : MonoBehaviour
 // انهيار ثلجي: جدار ثلج ضخم يتدحرج ورا رويدا. أبطأ منها شوي، بس إذا وقفت أو انصدت يمسكها
 public class Avalanche : MonoBehaviour
 {
-    const float Speed = 2.7f;   // تقريبًا بسرعة رويدا: أي وقفة أو دفة تقربه منها
+    const float RushSpeed = 3.6f;    // يندفع بسرعة لين يقرب
+    const float CloseSpeed = 2.6f;   // لما يصير ورا رويدا بأربعة متر يمشي أبطأ منها شوي (أي دفة = يمسكها)
+    const float WaitSpeed = 0.9f;    // لما تستنى الزلاجة يبطّي عشان تلحقين ترسمين
 
     float endX, delay = 2.2f, nextRumble, nextPuff, nextShake;
     bool stopped;
@@ -191,10 +193,19 @@ public class Avalanche : MonoBehaviour
     void OnRespawned(Vector3 pos)
     {
         if (pos.x > endX) return;
-        transform.position = new Vector3(pos.x - 9f, 0f, 0f);
-        delay = 1.8f;
+        transform.position = new Vector3(pos.x - 12f, 0f, 0f);
+        delay = 2.5f;
         stopped = false;
         gameObject.SetActive(true);
+    }
+
+    float CurrentSpeed(GameManager gm)
+    {
+        RowaidaController rowaida = gm.Rowaida;
+        if (rowaida == null) return RushSpeed;
+        float gap = rowaida.transform.position.x - Front;
+        if (rowaida.Held) return gap < 6f ? WaitSpeed : RushSpeed;
+        return gap < 4f ? CloseSpeed : RushSpeed;
     }
 
     public void Dissolve()
@@ -224,7 +235,7 @@ public class Avalanche : MonoBehaviour
 
         // يوقف عند محطة الزلاجة (ما ينزل المنحدر)
         if (transform.position.x + 1.2f < endX)
-            transform.position += new Vector3(Speed * Time.deltaTime, 0f, 0f);
+            transform.position += new Vector3(CurrentSpeed(gm) * Time.deltaTime, 0f, 0f);
 
         // غبار ثلج يطير من قدامه
         if (t >= nextPuff)
