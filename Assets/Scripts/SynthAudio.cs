@@ -357,6 +357,59 @@ public static class SynthAudio
         return Make("Squeak", buf);
     }
 
+    // ضغطة زر: نقرة قلم خفيفة على الورق
+    public static AudioClip Click()
+    {
+        int n = Mathf.RoundToInt(0.07f * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(5);
+        float ph = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            ph += 2f * Mathf.PI * Mathf.Lerp(1400f, 700f, t / 0.07f) / Rate;
+            float env = Mathf.Exp(-t * 70f);
+            buf[i] = (Mathf.Sin(ph) * 0.7f + ((float)rng.NextDouble() * 2f - 1f) * 0.3f) * env;
+        }
+        Normalize(buf, 0.5f);
+        return Make("Click", buf);
+    }
+
+    // نجمة: رنة جرس صافية (pitch يعلى مع كل نجمة)
+    public static AudioClip Ding(float pitch)
+    {
+        int n = Mathf.RoundToInt(0.9f * Rate);
+        var buf = new float[n];
+        float f = 880f * pitch;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float env = Mathf.Clamp01(t / 0.004f) * Mathf.Exp(-t * 5f);
+            buf[i] = (Mathf.Sin(2f * Mathf.PI * f * t) + 0.45f * Mathf.Sin(2f * Mathf.PI * f * 2.01f * t) * Mathf.Exp(-t * 6f)
+                    + 0.2f * Mathf.Sin(2f * Mathf.PI * f * 3f * t) * Mathf.Exp(-t * 12f)) * env;
+        }
+        Normalize(buf, 0.55f);
+        return Make("Ding", buf);
+    }
+
+    // صفحة تنقلب (للانتقال بين المراحل): خشخشة ورق تطلع وتنزل
+    public static AudioClip PageTurn()
+    {
+        int n = Mathf.RoundToInt(0.5f * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(23);
+        var bp = Biquad.BandPass(2400f, 0.7f);
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float k = t / 0.5f;
+            float env = Mathf.Sin(k * Mathf.PI) * (0.6f + 0.4f * Mathf.PerlinNoise(t * 60f, 0.3f));
+            buf[i] = bp.Process((float)rng.NextDouble() * 2f - 1f) * env;
+        }
+        Normalize(buf, 0.5f);
+        return Make("Page Turn", buf);
+    }
+
     // قضمة: خبطة قصيرة
     public static AudioClip Chomp()
     {

@@ -241,6 +241,24 @@ public static class ClaudeCapture
                         if (mk.closed) line += " boat=" + mk.GetComponent<MeshRenderer>().bounds.ToString();
                     File.AppendAllText(Path.Combine(OutDir, "probe.txt"), line);
                     break;
+                case "levels":
+                    Object.FindAnyObjectByType<MenuUI>().ShowLevels(false);
+                    break;
+                case "pause":
+                    typeof(GameManager).GetMethod("Pause", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(GameManager.Instance, null);
+                    Time.timeScale = 1f;   // عشان وقت التصوير يكمل
+                    break;
+                case "win":
+                    GameManager.Instance.OnRowaidaReachedDoor();
+                    break;
+                case "stars":
+                    // يعطي نجوم وهمية للتجربة: stars:عدد المراحل المفتوحة
+                    for (int k = 0; k < int.Parse(arg); k++) { PlayerPrefs.SetInt("stars" + k, 1 + k % 3); }
+                    PlayerPrefs.SetInt("unlocked", int.Parse(arg));
+                    break;
+                case "reset":
+                    PlayerPrefs.DeleteAll();
+                    break;
                 case "skip":
                     var intro = Object.FindAnyObjectByType<IntroCutscene>();
                     if (intro != null) intro.Skip();

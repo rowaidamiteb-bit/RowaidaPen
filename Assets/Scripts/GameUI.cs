@@ -42,6 +42,8 @@ public class GameUI : MonoBehaviour
         Image area = Panel(inner.transform, "Fill Area", Color.clear);
         Stretch(area.rectTransform, 4f);
         Image fill = Panel(area.transform, "Fill", Color.black);
+        inkFillImage = fill;
+        inkFrame = frame.rectTransform;
         inkFill = fill.rectTransform;
         inkFill.anchorMin = Vector2.zero;
         inkFill.anchorMax = Vector2.one;
@@ -58,13 +60,25 @@ public class GameUI : MonoBehaviour
         subtitleText.color = Color.white;
         subtitleText.gameObject.AddComponent<Outline>().effectColor = new Color(0.05f, 0.03f, 0.1f, 0.9f);
         messageText.gameObject.AddComponent<Outline>().effectColor = Color.white;
-        Label(root, ArabicText.Fix("ارسمي بالماوس   •   زر R يعيد المرحلة"), 28, TextAnchor.MiddleCenter, new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1200f, 40f))
+        Label(root, ArabicText.Fix("استراحة") + " Esc   •   " + ArabicText.Fix("ارسمي بالماوس   •   R تعيد المرحلة"), 28, TextAnchor.MiddleCenter, new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1200f, 40f))
             .color = new Color(0f, 0f, 0f, 0.6f);
     }
 
+    Image inkFillImage;
+    RectTransform inkFrame;
+    float shownInk = 1f;
+
+    // الشريط ينزل بنعومة، ولما يقل الحبر يصير أحمر وينبض
     public void SetInk(float fraction)
     {
-        if (inkFill != null) inkFill.anchorMax = new Vector2(Mathf.Clamp01(fraction), 1f);
+        if (inkFill == null) return;
+        fraction = Mathf.Clamp01(fraction);
+        shownInk = fraction > shownInk ? fraction : Mathf.Lerp(shownInk, fraction, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 12f));
+        inkFill.anchorMax = new Vector2(shownInk, 1f);
+        bool low = fraction < 0.2f;
+        float pulse = low ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f) : 0f;
+        inkFillImage.color = low ? Color.Lerp(new Color(0.55f, 0.08f, 0.12f), new Color(0.9f, 0.2f, 0.25f), pulse) : Color.black;
+        inkFrame.localScale = Vector3.one * (1f + pulse * 0.03f);
     }
 
     public void SetLevel(int number)
@@ -79,6 +93,24 @@ public class GameUI : MonoBehaviour
         subtitleText.text = ArabicText.Fix(subtitle ?? "");
         subtitleText.enabled = true;
         messageTimer = duration;
+        messageAge = 0f;
+        messageLength = duration;
+    }
+
+    float messageAge, messageLength;
+
+    // العنوان ينط لداخل ويختفي بهدوء
+    void AnimateMessage()
+    {
+        if (!messageText.enabled) return;
+        messageAge += Time.deltaTime;
+        float t = Mathf.Clamp01(messageAge / 0.35f);
+        float pop = t < 1f ? Mathf.LerpUnclamped(0.7f, 1f, 1f - Mathf.Pow(1f - t, 3f) + Mathf.Sin(t * Mathf.PI) * 0.12f) : 1f;
+        float fade = Mathf.Clamp01(messageTimer / 0.4f) * Mathf.Clamp01(messageAge / 0.2f);
+        messageText.rectTransform.localScale = Vector3.one * pop;
+        Color c = messageText.color; c.a = fade; messageText.color = c;
+        Color s = subtitleText.color; s.a = Mathf.Clamp01(messageTimer / 0.4f) * Mathf.Clamp01((messageAge - 0.15f) / 0.3f); subtitleText.color = s;
+        subtitleText.rectTransform.anchoredPosition = new Vector2(0f, 60f - (1f - Mathf.Clamp01((messageAge - 0.15f) / 0.3f)) * 20f);
     }
 
     // ---------- الوقت ----------
@@ -300,6 +332,7 @@ public class GameUI : MonoBehaviour
     void Update()
     {
         AnimateHearts();
+        AnimateMessage();
         if (messageTimer <= 0f) return;
         messageTimer -= Time.deltaTime;
         if (messageTimer <= 0f) messageText.enabled = subtitleText.enabled = false;

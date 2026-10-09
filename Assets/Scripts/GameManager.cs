@@ -69,22 +69,100 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        int first = Mathf.Clamp(startLevel, 0, Levels.All.Count - 1);
+        menu = gameObject.AddComponent<MenuUI>();
+        menu.Build(this);
+
+        // للتجربة من المحرر: نبدأ المرحلة على طول بدون القائمة
         if (!playIntro)
         {
-            LoadLevel(first);
+            LoadLevel(Mathf.Clamp(startLevel, 0, Levels.All.Count - 1));
             return;
         }
+        ShowMainMenu();
+    }
 
-        // المشهد الافتتاحي أول، وبعده المرحلة الأولى
+    // ---------- القوائم ----------
+
+    MenuUI menu;
+    public bool Paused { get; private set; }
+
+    // القائمة الرئيسية وورها آخر مرحلة وصلتها (واقفة كخلفية)
+    void ShowMainMenu()
+    {
+        LoadLevel(SaveData.Unlocked, true);
+        ui.SetVisible(false);
+        menu.ShowMain();
+    }
+
+    public void BackToMain()
+    {
+        ui.SetVisible(false);
+        menu.ShowMain();
+    }
+
+    public void GoToMainMenu()
+    {
+        menu.Transition(ShowMainMenu);
+    }
+
+    // "ابدئي": أول مرة تشوف البداية في غرفتها، بعدين تكمل من آخر مرحلة وصلتها
+    public void PlayFromMenu()
+    {
+        if (menu.Transitioning) return;
+        if (!SaveData.IntroSeen) menu.Transition(StartIntro);
+        else StartLevelFromMenu(SaveData.Unlocked);
+    }
+
+    public void StartLevelFromMenu(int index)
+    {
+        menu.Transition(() => LoadLevel(index));
+    }
+
+    void StartIntro()
+    {
+        menu.HideAll();
+        ClearLevel();
+        ApplyTheme(LevelTheme.Classic());
         IntroActive = true;
         ui.SetVisible(false);
         gameObject.AddComponent<IntroCutscene>().Play(this, () =>
         {
             IntroActive = false;
-            ui.SetVisible(true);
-            LoadLevel(first);
+            SaveData.IntroSeen = true;
+            LoadLevel(0);
         });
+    }
+
+    void ClearLevel()
+    {
+        StopAllCoroutines();
+        drawer.CancelStroke();
+        if (levelRoot != null) Destroy(levelRoot.gameObject);
+        if (DrawingsRoot != null) Destroy(DrawingsRoot.gameObject);
+        levelRoot = null;
+        Rowaida = null;
+        IsPlaying = false;
+        cameraFollow.SetTarget(null, false);
+        weather.Apply(null);
+    }
+
+    void Pause()
+    {
+        if (!IsPlaying || menu.AnyOpen || menu.Transitioning) return;
+        Paused = true;
+        IsPlaying = false;
+        Time.timeScale = 0f;
+        Sound.SetPencil(false, 0f);
+        menu.ShowPause();
+    }
+
+    public void Resume()
+    {
+        if (!Paused) return;
+        Paused = false;
+        IsPlaying = true;
+        Time.timeScale = 1f;
+        menu.HideAll();
     }
 
     void Update()
@@ -92,7 +170,12 @@ public class GameManager : MonoBehaviour
         if (IntroActive) return;
 
         Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+        {
+            if (Paused && menu.PauseOpen) Resume();
+            else Pause();
+        }
+        if (keyboard != null && keyboard.rKey.wasPressedThisFrame && (IsPlaying || Paused))
             RestartLevel();
         else if (IsPlaying && Rowaida != null)
         {
@@ -191,9 +274,12 @@ public class GameManager : MonoBehaviour
     {
         hearts--;
         ui.SetHearts(hearts, true);
+        cameraFollow.Shake(0.22f, 0.35f);
         if (hearts > 0)
         {
             RespawnAtCheckpoint();
+            menu.Flash();
+            Fx.Sparkle(Rowaida.transform.position, new Color(1f, 0.9f, 0.6f), 16);
             ui.ShowMessage("", 1.6f, hearts == 1 ? "باقي لك قلب واحد!" : "باقي لك قلبين");
         }
         else
@@ -230,13 +316,22 @@ public class GameManager : MonoBehaviour
         IsPlaying = false;
         Rowaida.Stop();
         ui.ShowMessage("خسرتي كل القلوب!", 2.2f, "نعيد المرحلة من البداية");
-        yield return new WaitForSeconds(2.2f);
-        LoadLevel(levelIndex);
+        yield return new WaitForSeconds(2f);
+        int index = levelIndex;
+        menu.Transition(() => LoadLevel(index));
     }
 
-    public void LoadLevel(int index)
+    // showcase = المرحلة واقفة كخلفية للقائمة الرئيسية (رويدا ما تمشي)
+    public void LoadLevel(int index, bool showcase = false)
     {
         StopAllCoroutines();
+        Time.timeScale = 1f;
+        Paused = false;
+        if (!showcase)
+        {
+            menu.HideAll();
+            ui.SetVisible(true);
+        }
         drawer.CancelStroke();
         if (levelRoot != null) Destroy(levelRoot.gameObject);
         if (DrawingsRoot != null) Destroy(DrawingsRoot.gameObject);
@@ -261,9 +356,14 @@ public class GameManager : MonoBehaviour
         checkpointInk = data.ink;
         timeLeft = data.timeLimit;
         ui.SetHearts(hearts, false);
-        IsPlaying = true;
+        IsPlaying = !showcase;
         ui.SetLevel(index + 1);
         weather.Apply(data);
+        if (showcase)
+        {
+            Rowaida.enabled = false;   // تنزل على الأرض وتوقف بدون ما تمشي
+            return;
+        }
         ui.ShowMessage(data.title, data.subtitle != null ? 4f : 1.5f, data.subtitle);
     }
 
@@ -283,7 +383,8 @@ public class GameManager : MonoBehaviour
 
     public void RestartLevel()
     {
-        LoadLevel(levelIndex);
+        int index = levelIndex;
+        menu.Transition(() => LoadLevel(index));
     }
 
     // يستهلك حبر ويرجع الكمية اللي فعلاً انصرفت
@@ -304,16 +405,40 @@ public class GameManager : MonoBehaviour
         if (!IsPlaying) return;
         IsPlaying = false;
         Rowaida.Stop();
+        drawer.CancelStroke();
         Sound.PlayWin();
-        StartCoroutine(NextLevelRoutine());
+        // احتفال: قصاصات ورق ملونة وهزة خفيفة
+        Fx.Confetti(Rowaida.transform.position + Vector3.up * Up * 1.2f, 70);
+        cameraFollow.Shake(0.12f, 0.3f);
+        StartCoroutine(LevelCompleteRoutine());
     }
 
-    IEnumerator NextLevelRoutine()
+    IEnumerator LevelCompleteRoutine()
     {
-        bool last = levelIndex + 1 >= Levels.All.Count;
-        ui.ShowMessage(last ? "خلصتي كل المراحل!" : "أحسنتِ! خلصتي المرحلة", 2f);
-        yield return new WaitForSeconds(2f);
-        LoadLevel(last ? 0 : levelIndex + 1);
+        int index = levelIndex;
+        bool last = index + 1 >= Levels.All.Count;
+
+        // النجوم: خلصتيها + بدون ما تخسرين قلب + باقي حبر 15% أو أكثر
+        bool[] earned = { true, hearts == MaxHearts, InkMax > 0f && Ink / InkMax >= 0.15f };
+        int stars = 0;
+        foreach (bool e in earned) if (e) stars++;
+        SaveData.SetStars(index, stars);
+        if (!last) SaveData.Unlock(index + 1);
+
+        yield return new WaitForSeconds(1.4f);
+
+        // اللاعب الآلي (للتجربة) يكمل على طول
+        if (FindAnyObjectByType<DebugAutoPlayer>() != null)
+        {
+            LoadLevel(last ? 0 : index + 1);
+            yield break;
+        }
+        ui.SetVisible(false);
+        menu.ShowComplete(index, earned, last, () =>
+        {
+            if (last) GoToMainMenu();
+            else StartLevelFromMenu(index + 1);
+        });
     }
 
     // ---------- المواد ----------

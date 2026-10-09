@@ -117,6 +117,21 @@ public class RowaidaController : MonoBehaviour
         return false;
     }
 
+    // نزلت من طيحة: غبار تحت رجولها (وهزة خفيفة لو الطيحة قوية)
+    void OnCollisionEnter(Collision c)
+    {
+        float fall = Mathf.Abs(c.relativeVelocity.y);
+        if (fall < 4.5f || c.contactCount == 0) return;
+        ContactPoint contact = c.GetContact(0);
+        if (Vector3.Dot(contact.normal, -Physics.gravity.normalized) < 0.6f) return;
+        Fx.Dust(contact.point, Mathf.InverseLerp(4.5f, 11f, fall));
+        if (fall > 8f)
+        {
+            var cam = Camera.main != null ? Camera.main.GetComponent<CameraFollow>() : null;
+            if (cam != null) cam.Shake(0.08f, 0.2f);
+        }
+    }
+
     void OnCollisionStay(Collision c)
     {
         var mark = c.collider.GetComponentInParent<InkMark>();

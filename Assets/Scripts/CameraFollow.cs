@@ -11,6 +11,7 @@ public class CameraFollow : MonoBehaviour
     Transform target;
     Vector3 focus;
     Vector3 velocity;
+    float shake, shakeTime;
 
     public void SetTarget(Transform newTarget, bool snap)
     {
@@ -22,6 +23,14 @@ public class CameraFollow : MonoBehaviour
             velocity = Vector3.zero;
             Apply();
         }
+    }
+
+    // هزة للكاميرا (قوتها بالمتر ومدتها بالثواني)
+    public void Shake(float strength, float duration)
+    {
+        if (strength < shake * shakeTime) return;
+        shake = strength;
+        shakeTime = duration;
     }
 
     void LateUpdate()
@@ -41,7 +50,15 @@ public class CameraFollow : MonoBehaviour
 
     void Apply()
     {
-        transform.position = focus + offset;
-        transform.LookAt(focus + lookOffset);
+        Vector3 jitter = Vector3.zero;
+        if (shakeTime > 0f)
+        {
+            shakeTime -= Time.unscaledDeltaTime;
+            float t = Time.unscaledTime * 38f;
+            float k = shake * Mathf.Clamp01(shakeTime * 4f);
+            jitter = new Vector3(Mathf.PerlinNoise(t, 0.3f) - 0.5f, Mathf.PerlinNoise(0.7f, t) - 0.5f, 0f) * 2f * k;
+        }
+        transform.position = focus + offset + jitter;
+        transform.LookAt(focus + lookOffset + jitter * 0.5f);
     }
 }

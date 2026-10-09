@@ -130,6 +130,8 @@ public class InkDrawer : MonoBehaviour
         stroke.AddComponent<MeshRenderer>().sharedMaterial = erasing ? Game.pencilMaterial : ColorsAllowed ? ColorMaterial(CurrentColor) : Game.inkMaterial;
     }
 
+    float nextGraphite;
+
     void ContinueStroke(Vector2 screen)
     {
         if (ScreenToWorld(screen, out Vector3 target)) ExtendTo(target);
@@ -183,7 +185,16 @@ public class InkDrawer : MonoBehaviour
             changed = true;
         }
 
-        if (changed) RebuildMesh();
+        if (changed)
+        {
+            RebuildMesh();
+            // فتات رصاص يطيح من رأس القلم وهو يرسم
+            if (Time.time >= nextGraphite)
+            {
+                nextGraphite = Time.time + 0.045f;
+                Fx.Graphite(points[points.Count - 1]);
+            }
+        }
     }
 
     bool TouchesRowaida(Vector3 p)
