@@ -18,7 +18,7 @@ public class ScribbleMonster : MonoBehaviour
 
     // ---------- رجل الثلج اللي يرمي ----------
 
-    const float ThrowRange = 9f, ThrowEvery = 1.7f, FlightTime = 0.95f;
+    const float ThrowRange = 10f, ThrowEvery = 1.05f, FlightTime = 0.9f;
     float nextThrow, throwAnim;
 
     // يرمي كرة ثلج على المكان اللي بتوصله رويدا (ترسمين درع فوقها يصد الكور)
@@ -38,7 +38,8 @@ public class ScribbleMonster : MonoBehaviour
         nextThrow = Time.time + ThrowEvery;
 
         Vector3 from = transform.position + new Vector3(-0.55f, 1.1f, 0f);
-        Vector3 target = r + new Vector3(gm.Rowaida.walkSpeed * FlightTime, 0.25f, 0f);
+        float vx = gm.Rowaida.GetComponent<Rigidbody>().linearVelocity.x;
+        Vector3 target = r + new Vector3(vx * FlightTime, 0.25f, 0f);
         Vector3 v = (target - from - 0.5f * Physics.gravity * FlightTime * FlightTime) / FlightTime;
         v.z = 0f;
         Snowball.Throw(from, v, GetComponent<Collider>());

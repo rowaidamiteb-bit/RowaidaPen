@@ -7,12 +7,11 @@ public static class SnowFeatures
 {
     public static void Build(Transform root, LevelData data, GameManager gm, System.Random rng)
     {
-        foreach (Vector2 ice in data.iceSheets)
-            for (float x = ice.x; x < ice.y - 0.01f; x += 2f)
-                CrackingIce.Create(root, x, Mathf.Min(x + 2f, ice.y), gm);
+        foreach (Vector3 plank in data.icePlanks)
+            CrackingIce.Create(root, plank.x, plank.y, plank.z, gm);
         if (data.sled != null) SledStation.Create(root, data, gm, rng);
         if (data.avalanche)
-            Avalanche.Create(root, data.spawn.x - 7f, data.sled != null ? data.sled.spotX + 0.4f : data.door.x - 2f, gm);
+            Avalanche.Create(root, data.spawn.x - 9f, data.sled != null ? data.sled.spotX + 0.4f : data.door.x - 2f, gm);
     }
 
     // صفحة مايلة (للمنحدر والقفزة): نلف أب فاضي ونبني الصفحة داخله
@@ -35,21 +34,22 @@ public static class SnowFeatures
 // جليد يتشقق: لما توقف عليه رويدا تطلع شقوق وبعد شوي ينكسر ويطيح (ويرجع لما ترجع رويدا)
 public class CrackingIce : MonoBehaviour
 {
-    const float BreakTime = 0.8f;
+    const float BreakTime = 0.9f;
     const float Thickness = 0.45f;
 
-    float from, to, timer = -1f;
+    float from, to, top, timer = -1f;
     bool broken;
     Collider col;
     Renderer[] renderers;
     readonly List<Transform> cracks = new List<Transform>();
 
-    public static void Create(Transform root, float from, float to, GameManager gm)
+    public static void Create(Transform root, float from, float to, float top, GameManager gm)
     {
         var go = new GameObject("Ice");
         go.transform.SetParent(root, false);
-        go.transform.position = new Vector3((from + to) * 0.5f, -Thickness * 0.5f, 0f);
+        go.transform.position = new Vector3((from + to) * 0.5f, top - Thickness * 0.5f, 0f);
         var ice = go.AddComponent<CrackingIce>();
+        ice.top = top;
         ice.from = from;
         ice.to = to;
         Vector3 size = new Vector3(to - from - 0.04f, Thickness, 3.6f);
@@ -59,6 +59,12 @@ public class CrackingIce : MonoBehaviour
         Material iceMat = gm.Mat("Ice", new Color(0.68f, 0.86f, 0.98f), 0.96f, 0.1f);
         Material frost = gm.Mat("Frost", new Color(0.9f, 0.96f, 1f), 0.5f);
         LevelBuilder.Visual("Ice Slab", PrimitiveType.Cube, go.transform, Vector3.zero, size, iceMat);
+        // رقاقات جليد معلقة تحت اللوح
+        for (float ix = -size.x * 0.5f + 0.25f; ix < size.x * 0.5f - 0.1f; ix += 0.45f)
+        {
+            float len = 0.25f + Mathf.PerlinNoise(from * 3f, ix * 2f) * 0.35f;
+            LevelBuilder.Visual("Icicle", PrimitiveType.Capsule, go.transform, new Vector3(ix, -Thickness * 0.5f - len * 0.5f, -1.2f + Mathf.PerlinNoise(ix, from) * 2.4f), new Vector3(0.09f, len * 0.5f, 0.09f), iceMat, false);
+        }
         // لمعات وخطوط ثلج خفيفة فوق الجليد
         var rng = new System.Random((int)(from * 100f));
         for (int i = 0; i < 4; i++)
@@ -103,7 +109,7 @@ public class CrackingIce : MonoBehaviour
         if (timer < 0f)
         {
             Vector3 p = gm.Rowaida.transform.position;
-            bool onTop = p.x > from - 0.1f && p.x < to + 0.1f && p.y > 0.2f && p.y < 1.3f;
+            bool onTop = p.x > from - 0.1f && p.x < to + 0.1f && p.y > top + 0.2f && p.y < top + 1.3f;
             if (!onTop) return;
             timer = 0f;
             gm.Sound.PlaySqueak(Random.Range(0.4f, 0.5f));
@@ -143,7 +149,7 @@ public class CrackingIce : MonoBehaviour
 // انهيار ثلجي: جدار ثلج ضخم يتدحرج ورا رويدا. أبطأ منها شوي، بس إذا وقفت أو انصدت يمسكها
 public class Avalanche : MonoBehaviour
 {
-    const float Speed = 2.5f;
+    const float Speed = 2.7f;   // تقريبًا بسرعة رويدا: أي وقفة أو دفة تقربه منها
 
     float endX, delay = 2.2f, nextRumble, nextPuff, nextShake;
     bool stopped;

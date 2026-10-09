@@ -26,7 +26,45 @@ public class RowaidaController : MonoBehaviour
         // نثبت السرعة الأفقية ونخلي السرعة العمودية للجاذبية
         Vector3 v = rb.linearVelocity;
         v.x = Held || WaitOnBoat() || WaitAtFold() ? 0f : walkSpeed * (boosted ? 2.2f : 1f);
+        if (jumpRequested)
+        {
+            jumpRequested = false;
+            v.y = -Mathf.Sign(Physics.gravity.y) * JumpSpeed;
+        }
         rb.linearVelocity = v;
+    }
+
+    // ---------- النطة (بس في المراحل اللي فيها نط) ----------
+
+    const float JumpSpeed = 6.5f;
+    bool jumpRequested;
+
+    void Update()
+    {
+        var gm = GameManager.Instance;
+        if (gm == null || !gm.IsPlaying || gm.CurrentLevel == null || !gm.CurrentLevel.allowJump) return;
+        var keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (keyboard == null) return;
+        if (keyboard.spaceKey.wasPressedThisFrame || keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame)
+            Jump();
+    }
+
+    // تنط إذا كانت واقفة على شي
+    public void Jump()
+    {
+        if (stopped || Held || IsKnocked || timer < startDelay || !Grounded()) return;
+        jumpRequested = true;
+        var gm = GameManager.Instance;
+        gm.Sound.PlaySqueak(Random.Range(1.25f, 1.4f));
+        Fx.Dust(transform.position + Physics.gravity.normalized * 0.7f, 0.3f);
+    }
+
+    bool Grounded()
+    {
+        Vector3 feet = transform.position + Physics.gravity.normalized * 0.55f;
+        foreach (Collider c in Physics.OverlapSphere(feet, 0.26f, ~0, QueryTriggerInteraction.Ignore))
+            if (c.attachedRigidbody != rb) return true;
+        return false;
     }
 
     // توقف مكانها وتستنى (مثل لما تستنى الزلاجة)

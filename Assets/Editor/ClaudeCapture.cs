@@ -241,6 +241,9 @@ public static class ClaudeCapture
                         if (mk.closed) line += " boat=" + mk.GetComponent<MeshRenderer>().bounds.ToString();
                     File.AppendAllText(Path.Combine(OutDir, "probe.txt"), line);
                     break;
+                case "jump":
+                    GameManager.Instance.Rowaida.Jump();
+                    break;
                 case "levels":
                     Object.FindAnyObjectByType<MenuUI>().ShowLevels(false);
                     break;
