@@ -249,6 +249,9 @@ public class InkDrawer : MonoBehaviour
         bool closed = strokeLength >= minClosedLength
                       && Vector3.Distance(points[0], points[points.Count - 1]) <= closeDistance;
 
+        // نحفظ الرسمة عشان تطلع في دفتر رويدا بالنهاية
+        DrawingMemory.Record(Game.LevelIndex, points);
+
         if (closed) MakeFallingShape();
         else MakePlatform();
 

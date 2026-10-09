@@ -25,7 +25,8 @@ public static class LevelBuilder
             }
         if (data.bridgeHint && data.blocks.Count > 1) BridgeHint(root.transform, data.blocks[0], data.blocks[1], gm);
         foreach (HintLine h in data.hints) DashedHint(root.transform, h, gm);
-        CreateDoor(root.transform, data.door, gm, data.flipped);
+        if (data.drawDoor) FinalDoor.Create(root.transform, data.door, gm);   // الصفحة الأخيرة: الباب ترسمينه أنتِ
+        else CreateDoor(root.transform, data.door, gm, data.flipped);
         CreateRowaida(root.transform, data.spawn, gm, data.flipped);
         SpawnMonsters(root.transform, data, gm);
         if (data.Flood) InkFlood.Spawn(root.transform, data, gm);
@@ -418,7 +419,7 @@ public static class LevelBuilder
     }
 
     // خط تلميح منقط مستقيم بلون معين (فاتح شوي)
-    static void DashedHint(Transform parent, HintLine h, GameManager gm)
+    public static void DashedHint(Transform parent, HintLine h, GameManager gm)
     {
         Color c = Color.Lerp(h.color, Color.white, 0.35f);
         Material mat = gm.Mat("Hint " + ColorUtility.ToHtmlStringRGB(c), c, 0.2f);

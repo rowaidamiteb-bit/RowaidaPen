@@ -129,6 +129,7 @@ public class LevelData
     public bool allowJump;                                  // تقدر رويدا تنط (زر المسافة)
     public float gravityScale = 1f;                         // الفضاء: جاذبية خفيفة (أقل من 1)
     public bool planets;                                    // الفضاء: كواكب كبيرة بالخلفية
+    public bool drawDoor;                                   // الصفحة الأخيرة: ما فيه باب، اللاعبة ترسمه
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
     public bool HasMeteors => meteorZone.y > meteorZone.x;
     public Vector3? blackHole;                              // الفضاء: مكان الثقب الأسود (null = ما فيه)
@@ -157,6 +158,7 @@ public static class Levels
         FoldingPage(),
         SnowLevel(),
         SpaceLevel(),
+        LastPage(),
     };
 
 
@@ -376,6 +378,27 @@ public static class Levels
             bridgeHint = true,
             // تلميح: سقف تحت الثقب الأسود
             hints = { new HintLine(new Vector3(35.6f, 1.8f, 0f), new Vector3(40.6f, 1.8f, 0f), new Color(0.75f, 0.45f, 1f)) },
+        };
+    }
+
+    // الصفحة الأخيرة: صفحة فاضية في الفجر، ما فيها باب... ترسمين الباب فوق الإطار المنقط، ينفتح، ورويدا ترجع لغرفتها
+    static LevelData LastPage()
+    {
+        return new LevelData
+        {
+            title = "الصفحة الأخيرة",
+            theme = LevelTheme.LastPage(),
+            subtitle = "صفحة فاضية... ارسمي باب البيت عشان ترجع رويدا!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(22f, 0f, 0f),
+            ink = 26f,
+            drawDoor = true,
+            bridgeHint = true,
+            blocks =
+            {
+                Page(-7f, 8f),          // حفرة 3
+                Page(11f, 28f),
+            },
         };
     }
 

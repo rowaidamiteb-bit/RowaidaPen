@@ -410,7 +410,38 @@ public class GameManager : MonoBehaviour
         // احتفال: قصاصات ورق ملونة وهزة خفيفة
         Fx.Confetti(Rowaida.transform.position + Vector3.up * Up * 1.2f, 70);
         cameraFollow.Shake(0.12f, 0.3f);
-        StartCoroutine(LevelCompleteRoutine());
+        if (CurrentLevel.drawDoor) StartCoroutine(FinalRoutine());
+        else StartCoroutine(LevelCompleteRoutine());
+    }
+
+    // الصفحة الأخيرة: رويدا تدخل الباب اللي رسمتيه، الشاشة تبيض، وتبدأ النهاية في غرفتها
+    IEnumerator FinalRoutine()
+    {
+        int index = levelIndex;
+        bool[] earned = { true, hearts == MaxHearts, InkMax > 0f && Ink / InkMax >= 0.15f };
+        int stars = 0;
+        foreach (bool e in earned) if (e) stars++;
+        SaveData.SetStars(index, stars);
+
+        // تمشي لداخل النور وتختفي
+        Transform r = Rowaida.transform;
+        Vector3 from = r.position;
+        for (float t = 0f; t < 1f; t += Time.deltaTime / 1.1f)
+        {
+            r.position = from + new Vector3(t * 0.6f, 0f, t * 1.2f);
+            r.localScale = Vector3.one * (1f - t * 0.7f);
+            yield return null;
+        }
+        if (FindAnyObjectByType<DebugAutoPlayer>() != null) { LoadLevel(0); yield break; }
+
+        ui.SetVisible(false);
+        IntroActive = true;
+        gameObject.AddComponent<EndingCutscene>().Play(this, () =>
+        {
+            IntroActive = false;
+            ClearLevel();
+            ShowMainMenu();
+        });
     }
 
     IEnumerator LevelCompleteRoutine()
