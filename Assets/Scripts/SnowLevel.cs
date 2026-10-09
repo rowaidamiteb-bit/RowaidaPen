@@ -11,7 +11,7 @@ public static class SnowFeatures
             CrackingIce.Create(root, plank.x, plank.y, plank.z, gm);
         if (data.sled != null) SledStation.Create(root, data, gm, rng);
         if (data.avalanche)
-            Avalanche.Create(root, data.spawn.x - 10f, data.sled != null ? data.sled.spotX + 0.4f : data.door.x - 2f, gm);
+            Avalanche.Create(root, data.spawn.x - 8f, data.sled != null ? data.sled.spotX + 0.4f : data.door.x - 2f, gm);
     }
 
     // صفحة مايلة (للمنحدر والقفزة): نلف أب فاضي ونبني الصفحة داخله
@@ -149,9 +149,9 @@ public class CrackingIce : MonoBehaviour
 // انهيار ثلجي: جدار ثلج ضخم يتدحرج ورا رويدا. أبطأ منها شوي، بس إذا وقفت أو انصدت يمسكها
 public class Avalanche : MonoBehaviour
 {
-    const float RushSpeed = 3.6f;    // يندفع بسرعة لين يقرب
-    const float CloseSpeed = 2.6f;   // لما يصير ورا رويدا بأربعة متر يمشي أبطأ منها شوي (أي دفة = يمسكها)
-    const float WaitSpeed = 0.9f;    // لما تستنى الزلاجة يبطّي عشان تلحقين ترسمين
+    const float RushSpeed = 4.6f;    // يندفع بسرعة لين يقرب
+    const float CloseSpeed = 2.75f;  // لما يصير ورا رويدا بثلاثة متر يمشي أبطأ منها بشوي بسيط (أي دفة = يمسكها)
+    const float WaitSpeed = 1.3f;    // لما تستنى الزلاجة يبطّي عشان تلحقين ترسمين
 
     float endX, delay = 2.2f, nextRumble, nextPuff, nextShake;
     bool stopped;
@@ -205,7 +205,7 @@ public class Avalanche : MonoBehaviour
         if (rowaida == null) return RushSpeed;
         float gap = rowaida.transform.position.x - Front;
         if (rowaida.Held) return gap < 6f ? WaitSpeed : RushSpeed;
-        return gap < 4f ? CloseSpeed : RushSpeed;
+        return gap < 3f ? CloseSpeed : RushSpeed;
     }
 
     public void Dissolve()
