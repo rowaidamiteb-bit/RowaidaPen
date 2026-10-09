@@ -233,6 +233,8 @@ public static class ClaudeCapture
                     var gmp = GameManager.Instance;
                     string line = "\nt=" + Time.timeSinceLevelLoad.ToString("0.00");
                     if (gmp.Rowaida != null) line += " rowaida=" + gmp.Rowaida.transform.position.ToString("F2") + " v=" + gmp.Rowaida.GetComponent<Rigidbody>().linearVelocity.ToString("F1") + " hearts=" + gmp.Hearts;
+                    foreach (var mon in Object.FindObjectsByType<ScribbleMonster>(FindObjectsSortMode.None))
+                        line += " monster=" + mon.transform.position.ToString("F1");
                     var flood = Object.FindAnyObjectByType<InkFlood>();
                     if (flood != null) line += " ink=" + flood.Level.ToString("F2");
                     foreach (var mk in Object.FindObjectsByType<InkMark>(FindObjectsSortMode.None))

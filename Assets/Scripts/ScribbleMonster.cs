@@ -10,7 +10,9 @@ public class ScribbleMonster : MonoBehaviour
     enum State { Wander, EatInk }
 
     const float Radius = 0.45f;
-    const float WanderSpeed = 1.1f, ChaseSpeed = 1.8f;
+    const float WanderSpeed = 1.1f, ChaseSpeed = 1.8f, HuntSpeed = 2.1f;
+    const float SightRange = 7f;            // من وين يشوف رويدا ويركض لها
+    bool hunting;
     const float FoodSight = 3.5f;
     const float EraseNeeded = 3.2f;         // كم متر شخبطة لازم عشان ينمسح
     public const float EraseReach = 0.75f;  // الشخبطة لازم تكون قريبة من الوحش بهالمسافة
@@ -277,6 +279,24 @@ public class ScribbleMonster : MonoBehaviour
 
     bool Stunned => Time.time < stunnedUntil;
 
+    bool SeesRowaida(Vector3 p, out float dx)
+    {
+        dx = 0f;
+        GameManager gm = GameManager.Instance;
+        if (gm == null || !gm.IsPlaying || gm.Rowaida == null) return false;
+        Vector3 rp = gm.Rowaida.transform.position;
+        dx = rp.x - p.x;
+        return Mathf.Abs(dx) < SightRange && Mathf.Abs(dx) > 0.2f && Mathf.Abs(rp.y - p.y) < 2.2f;
+    }
+
+    // فيه أرض (صفحة أو جسر) قدامه؟
+    bool GroundAhead(Vector3 p, int direction)
+    {
+        Vector3 down = Physics.gravity.y > 0f ? Vector3.up : Vector3.down;
+        Vector3 from = p + new Vector3(direction * (Radius + 0.2f), 0f, 0f);
+        return Physics.Raycast(from, down, Radius + 0.9f, ~0, QueryTriggerInteraction.Ignore);
+    }
+
     void FixedUpdate()
     {
         if (dead) return;
@@ -284,6 +304,7 @@ public class ScribbleMonster : MonoBehaviour
         Vector3 p = transform.position;
         float speed = 0f;
 
+        bool sawHer = false;
         if (!Stunned && state == State.Wander)
         {
             if (p.x < patrolMin) dir = 1;
@@ -295,7 +316,23 @@ public class ScribbleMonster : MonoBehaviour
                 dir = ClosestPoint(target, p).x > p.x ? 1 : -1;
                 speed = ChaseSpeed * dir;
             }
+            // شاف رويدا قريبة على نفس المستوى؟ يركض لها
+            else if (SeesRowaida(p, out float dx))
+            {
+                sawHer = true;
+                dir = dx > 0f ? 1 : -1;
+                speed = HuntSpeed * dir;
+            }
+            // ما يطيح من طرف الصفحة: يوقف ويستنى
+            if (speed != 0f && !GroundAhead(p, dir)) speed = 0f;
         }
+        if (sawHer && !hunting)
+        {
+            // أول ما يشوفها: يصرخ وينط نطة صغيرة
+            GameManager.Instance.Sound.PlaySqueak(Random.Range(1.1f, 1.3f));
+            v.y = -Mathf.Sign(Physics.gravity.y) * 3f;
+        }
+        hunting = sawHer;
         v.x = speed;
         rb.linearVelocity = v;
     }
