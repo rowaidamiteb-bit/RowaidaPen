@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 // ويسكر الطريق على رويدا. اللاعب يشخبط عليه عشان يمسحه: كل ما شخبط أكثر يبهت ويصغر لين يختفي.
 public class ScribbleMonster : MonoBehaviour
 {
-    public enum Kind { PurpleBlob, FuzzyBall, GreenEye, SnowChaser, SnowGuard, SnowThrower }
+    public enum Kind { PurpleBlob, FuzzyBall, GreenEye, SnowChaser, SnowGuard, SnowThrower, Alien }
     enum State { Wander, EatInk }
 
     const float Radius = 0.45f;
@@ -163,6 +163,15 @@ public class ScribbleMonster : MonoBehaviour
             m.chaseFrom = Time.time + 2.5f;   // يعطيها فرصة تمشي شوي أول
             gm.Respawned += m.OnRespawned;
         }
+        if (kind == Kind.Alien)
+        {
+            // الفضائي يطير على صحنه: ما يطيح، ويحوم فوق الصفحة
+            rb.isKinematic = true;
+            rb.useGravity = false;
+            col.isTrigger = true;
+            go.transform.position += Vector3.up * AlienHeight;
+            m.hoverHome = go.transform.position;
+        }
         m.CollectRenderers();
         if (showHint) m.BuildHint(gm);
         return m;
@@ -182,6 +191,9 @@ public class ScribbleMonster : MonoBehaviour
             case Kind.SnowGuard:
             case Kind.SnowThrower:
                 BuildSnowman(gm, white, black);
+                break;
+            case Kind.Alien:
+                BuildAlien(gm, white, black);
                 break;
             case Kind.PurpleBlob:
             {
@@ -313,10 +325,103 @@ public class ScribbleMonster : MonoBehaviour
     }
 
     public bool IsSnowman => kind == Kind.SnowChaser || kind == Kind.SnowGuard || kind == Kind.SnowThrower;
+    public bool IsAlien => kind == Kind.Alien;
 
     // وين تنحسب الشخبطة (رجل الثلج أطول فنحسب من نصه)
     public Vector3 EraseCenter => transform.position + transform.up * (IsSnowman ? 0.5f : 0f);
-    public float EraseRadius => IsSnowman ? 1f : EraseReach;
+    public float EraseRadius => IsSnowman ? 1f : IsAlien ? 0.95f : EraseReach;
+
+    // ---------- الفضائي ----------
+
+    const float AlienHeight = 3.4f;          // كم يطير فوق الصفحة
+    const float ShootRange = 11f, ShootEvery = 1.35f, LaserSpeed = 8.5f;
+    Vector3 hoverHome;
+    float nextShot, recoil;
+    Transform gun;
+
+    // فضائي أخضر براس كبير وعيون سودا ولواقط، راكب صحن طاير، وماسك مسدس ليزر
+    void BuildAlien(GameManager gm, Material white, Material black)
+    {
+        Material skin = gm.Mat("Alien Skin", new Color(0.45f, 0.9f, 0.4f), 0.45f);
+        Material saucer = gm.Mat("Saucer", new Color(0.72f, 0.75f, 0.82f), 0.85f, 0.7f);
+        Material glass = gm.Mat("Saucer Glass", new Color(0.55f, 0.85f, 1f), 0.95f);
+        Material glow = gm.Mat("Alien Glow", new Color(2.4f, 0.5f, 2f), 0.9f);
+        Material lamp = gm.Mat("Saucer Lamp", new Color(2.5f, 2.2f, 0.6f), 0.9f);
+        Material gunMat = gm.Mat("Ray Gun", new Color(0.25f, 0.25f, 0.32f), 0.8f, 0.6f);
+
+        // الصحن
+        Part(PrimitiveType.Sphere, new Vector3(0f, -0.25f, 0f), new Vector3(1.5f, 0.32f, 1.5f), saucer, true);
+        Part(PrimitiveType.Sphere, new Vector3(0f, -0.36f, 0f), new Vector3(0.7f, 0.18f, 0.7f), glass);
+        for (int i = 0; i < 8; i++)
+        {
+            float a = i / 8f * Mathf.PI * 2f;
+            Part(PrimitiveType.Sphere, new Vector3(Mathf.Cos(a) * 0.68f, -0.24f, Mathf.Sin(a) * 0.68f), Vector3.one * 0.1f, lamp);
+        }
+        // الفضائي
+        Part(PrimitiveType.Capsule, new Vector3(0f, 0.02f, 0f), new Vector3(0.32f, 0.22f, 0.3f), skin, true);
+        Part(PrimitiveType.Sphere, new Vector3(0f, 0.42f, 0f), new Vector3(0.62f, 0.55f, 0.55f), skin, true);
+        for (int s = -1; s <= 1; s += 2)
+        {
+            var eye = Part(PrimitiveType.Sphere, new Vector3(s * 0.14f, 0.45f, 0.22f), new Vector3(0.17f, 0.24f, 0.1f), black);
+            eye.localRotation = Quaternion.Euler(0f, 0f, s * 25f);
+            pupils.Add(Part(PrimitiveType.Sphere, new Vector3(s * 0.15f, 0.5f, 0.27f), Vector3.one * 0.05f, white));
+            var antenna = Part(PrimitiveType.Cylinder, new Vector3(s * 0.12f, 0.8f, 0f), new Vector3(0.025f, 0.13f, 0.025f), skin);
+            antenna.localRotation = Quaternion.Euler(0f, 0f, -s * 20f);
+            Part(PrimitiveType.Sphere, new Vector3(s * 0.17f, 0.93f, 0f), Vector3.one * 0.08f, glow);
+        }
+        mouth = Part(PrimitiveType.Sphere, new Vector3(0f, 0.27f, 0.26f), new Vector3(0.1f, 0.025f, 0.02f), black);
+        // قبة زجاج شفافة شوي (بس الحافة) حول الفضائي
+        Part(PrimitiveType.Cylinder, new Vector3(0f, -0.08f, 0f), new Vector3(0.75f, 0.04f, 0.75f), glass);
+
+        // مسدس الليزر (يلف ويأشر على رويدا)
+        gun = new GameObject("Ray Gun").transform;
+        gun.SetParent(transform, false);
+        gun.localPosition = new Vector3(0f, 0.1f, -0.25f);
+        LevelBuilder.Visual("Gun Body", PrimitiveType.Cube, gun, new Vector3(0.3f, 0f, 0f), new Vector3(0.3f, 0.12f, 0.1f), gunMat);
+        var barrel = LevelBuilder.Visual("Barrel", PrimitiveType.Cylinder, gun, new Vector3(0.52f, 0.02f, 0f), new Vector3(0.06f, 0.14f, 0.06f), gunMat);
+        barrel.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        LevelBuilder.Visual("Muzzle", PrimitiveType.Sphere, gun, new Vector3(0.68f, 0.02f, 0f), Vector3.one * 0.09f, glow, false);
+        LevelBuilder.Visual("Hand", PrimitiveType.Sphere, gun, new Vector3(0.18f, -0.02f, 0f), Vector3.one * 0.11f, skin);
+    }
+
+    // يحوم يمين ويسار ويطفو فوق وتحت
+    void Hover()
+    {
+        float t = Time.time + phase;
+        rb.MovePosition(hoverHome + new Vector3(Mathf.Sin(t * 0.7f) * 1.1f, Mathf.Sin(t * 1.6f) * 0.3f, 0f));
+        GameManager gm = GameManager.Instance;
+        if (gm != null && gm.Rowaida != null) dir = gm.Rowaida.transform.position.x > transform.position.x ? 1 : -1;
+    }
+
+    // يأشر على رويدا ويطلق ليزر على المكان اللي بتوصله
+    void UpdateShooting()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null || gm.Rowaida == null) return;
+        Vector3 r = gm.Rowaida.transform.position;
+        Vector3 aimFrom = gun.position;
+        Vector3 to = r - aimFrom;
+        to.z = 0f;
+        float ang = Mathf.Atan2(to.y, to.x) * Mathf.Rad2Deg;
+        recoil = Mathf.Max(0f, recoil - Time.deltaTime * 6f);
+        gun.rotation = Quaternion.Euler(0f, 0f, ang);
+        gun.position = transform.position + new Vector3(0f, 0.1f, -0.25f) - gun.right * recoil * 0.12f;
+
+        if (!gm.IsPlaying || Stunned) return;
+        float dx = r.x - transform.position.x;
+        if (Mathf.Abs(dx) > ShootRange || dx > 4f) { nextShot = Mathf.Max(nextShot, Time.time + 0.6f); return; }
+        if (Time.time < nextShot) return;
+        nextShot = Time.time + ShootEvery * Random.Range(0.85f, 1.15f);
+
+        Vector3 muzzle = gun.position + gun.right * 0.7f;
+        Vector3 vel = gm.Rowaida.GetComponent<Rigidbody>().linearVelocity;
+        float time = Vector3.Distance(muzzle, r) / LaserSpeed;
+        Vector3 aim = r + new Vector3(vel.x * time, 0.15f, 0f) - muzzle;
+        aim.z = 0f;
+        LaserBolt.Fire(muzzle, aim.normalized * LaserSpeed);
+        gm.Sound.PlayLaser();
+        recoil = 1f;
+    }
 
     void Eyes(Material white, Material black, float x, float y, float z, float size)
     {
@@ -399,6 +504,7 @@ public class ScribbleMonster : MonoBehaviour
         if (state == State.EatInk) UpdateEating();
         if (kind == Kind.SnowChaser && hunting) FreezeInkBehind();
         if (kind == Kind.SnowThrower) UpdateThrowing();
+        if (kind == Kind.Alien) UpdateShooting();
 
         // لو وقفت الشخبطة يرجع لونه شوي شوي
         if (Time.time > stunnedUntil + 0.6f) erased = Mathf.Max(0f, erased - Time.deltaTime * 0.12f);
@@ -412,7 +518,7 @@ public class ScribbleMonster : MonoBehaviour
     void Think()
     {
         if (state == State.EatInk || Stunned) return;
-        if (IsSnowman) { target = null; return; }   // رجال الثلج ما ياكلون الجسور
+        if (IsSnowman || IsAlien) { target = null; return; }   // رجال الثلج والفضائيين ما ياكلون الجسور
 
         // يدور على جسر قريب ياكله
         InkMark food = null;
@@ -471,6 +577,7 @@ public class ScribbleMonster : MonoBehaviour
     void FixedUpdate()
     {
         if (dead) return;
+        if (kind == Kind.Alien) { Hover(); return; }
         Vector3 v = rb.linearVelocity;
         Vector3 p = transform.position;
         float speed = 0f;

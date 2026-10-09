@@ -165,6 +165,17 @@ public class SoundManager : MonoBehaviour
         effects.PlayOneShot(thunderClip, effectsVolume * Random.Range(0.6f, 1f));
     }
 
+    AudioClip laserClip;
+
+    // طلقة ليزر من مسدس فضائي (كل طلقة بنغمة مختلفة شوي)
+    public void PlayLaser()
+    {
+        if (laserClip == null) laserClip = SynthAudio.Laser();
+        var s = MonsterSource();
+        s.pitch = Random.Range(0.9f, 1.15f);
+        s.PlayOneShot(laserClip, effectsVolume * 0.55f);
+    }
+
     // هدير الانهيار الثلجي (نفس صوت الرعد بس أخف)
     public void PlayRumble(float volume)
     {

@@ -28,6 +28,7 @@ public static class LevelBuilder
         foreach (FoldSpec f in data.folds) FoldingFlap.Spawn(root.transform, f, gm);
         BuildFloaters(root.transform, data, gm, rng);
         SnowFeatures.Build(root.transform, data, gm, rng);
+        SpaceFeatures.Build(root.transform, data, gm);
         return root;
     }
 
@@ -229,6 +230,7 @@ public static class LevelBuilder
                 {
                     case PropSet.Ink: Props.InkBottle(t, p, R(0f, 360f), gm); break;
                     case PropSet.Snow: Props.PineTree(t, p + new Vector3(0f, 0f, 0.4f), R(1.5f, 2.1f), gm); break;
+                    case PropSet.Space: Props.Rocket(t, p + new Vector3(0f, 0f, 0.3f), R(1.3f, 1.8f), gm); break;
                     case PropSet.Origami: Props.OrigamiCrane(t, p + new Vector3(0f, 0f, 0.8f), R(-30f, 30f), RandomColor(), gm, 2.2f); break;
                     case PropSet.Crayons: Props.Crayon(t, p, R(-15f, 15f), RandomColor(), gm); break;
                     case PropSet.Paint: Props.PaintTube(t, p, R(-20f, 20f), RandomColor(), gm); break;
@@ -259,6 +261,11 @@ public static class LevelBuilder
                 case PropSet.Erasers:
                     if (kind < 4) Props.Eraser(t, p, R(-40f, 40f), gm, rng);
                     else Props.PaperBall(t, p, R(0.35f, 0.55f), gm, rng.Next(1000));
+                    break;
+                case PropSet.Space:
+                    if (kind < 2) Props.MiniPlanet(t, new Vector3(p.x, p.y, Mathf.Abs(p.z) + 0.3f), R(0.35f, 0.55f), RandomColor(), gm);
+                    else if (kind < 4) Props.Crystal(t, p, RandomColor(), gm, rng);
+                    else Props.Rocket(t, new Vector3(p.x, p.y, Mathf.Abs(p.z) + 0.3f), R(0.45f, 0.65f), gm);
                     break;
                 case PropSet.Snow:
                     if (kind < 2) Props.PineTree(t, new Vector3(p.x, p.y, Mathf.Abs(p.z) + 0.3f), R(0.6f, 0.95f), gm);

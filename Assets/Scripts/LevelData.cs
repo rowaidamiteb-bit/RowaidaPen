@@ -127,6 +127,8 @@ public class LevelData
     public List<FloaterSpec> floaters = new List<FloaterSpec>(); // الأرض الطايرة: صفحات تتحرك في السما
     public List<Vector3> icePlanks = new List<Vector3>();   // زيزو: ألواح جليد طايرة تتكسر بعد ما تنطين عليها (من x، لـ x، ارتفاع السطح)
     public bool allowJump;                                  // تقدر رويدا تنط (زر المسافة)
+    public float gravityScale = 1f;                         // الفضاء: جاذبية خفيفة (أقل من 1)
+    public bool planets;                                    // الفضاء: كواكب كبيرة بالخلفية
     public bool avalanche;                                  // زيزو: انهيار ثلجي يلحقها من ورا
     public SledSpec sled;                                   // زيزو: محطة الزلاجة والمنحدر (null = ما فيه)
     public float timeLimit;                               // وقت محدود للمرحلة بالثواني (0 = بدون وقت)
@@ -151,6 +153,7 @@ public static class Levels
         SpilledInkPage(),
         FoldingPage(),
         SnowLevel(),
+        SpaceLevel(),
     };
 
 
@@ -335,6 +338,44 @@ public static class Levels
             {
                 new HintLine(new Vector3(33.2f, 0.25f, 0f), new Vector3(35.1f, 0.25f, 0f), new Color(0.85f, 0.3f, 0.35f)),
                 new HintLine(new Vector3(35.1f, 0.25f, 0f), new Vector3(35.45f, 0.65f, 0f), new Color(0.85f, 0.3f, 0.35f)),
+            },
+        };
+    }
+
+    // صفحة الفضاء: جاذبية خفيفة ونط طويل يطفو، صفحات طايرة تتحرك بين الكواكب،
+    // وفضائيين على صحون طايرة يطلقون ليزر (ارسمي درع، أو شخبطي عليهم)
+    static LevelData SpaceLevel()
+    {
+        return new LevelData
+        {
+            title = "صفحة الفضاء",
+            theme = LevelTheme.Space(),
+            subtitle = "جاذبية خفيفة! نطّي بزر المسافة، وارسمي درع يصد ليزر الفضائيين",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(55f, 0f, 0f),
+            ink = 16f,
+            allowJump = true,
+            gravityScale = 0.45f,
+            planets = true,
+            blocks =
+            {
+                Page(-7f, 5f),
+                Page(22f, 31f),
+                Page(47f, 58f),
+            },
+            floaters =
+            {
+                new FloaterSpec(10f, 3f, 1.2f, 4f, 0f),
+                new FloaterSpec(17f, 3f, 1.5f, 5f, 1f),
+                new FloaterSpec(36f, 2.6f, 1.4f, 3.6f, 2f),
+                new FloaterSpec(42f, 3f, 1.2f, 4.4f, 0.5f),
+            },
+            monsters =
+            {
+                Monster(ScribbleMonster.Kind.Alien, 12f, 12f, 12f),
+                Monster(ScribbleMonster.Kind.Alien, 27f, 27f, 27f),
+                Monster(ScribbleMonster.Kind.Alien, 39f, 39f, 39f),
+                Monster(ScribbleMonster.Kind.Alien, 51f, 51f, 51f),
             },
         };
     }

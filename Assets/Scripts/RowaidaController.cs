@@ -29,14 +29,17 @@ public class RowaidaController : MonoBehaviour
         if (jumpRequested)
         {
             jumpRequested = false;
-            v.y = -Mathf.Sign(Physics.gravity.y) * JumpSpeed;
+            // ارتفاع النطة ثابت (2.15 متر)، وفي الجاذبية الخفيفة أعلى وتطفو أطول
+            var level = GameManager.Instance.CurrentLevel;
+            float height = level != null && level.gravityScale < 1f ? 3.2f : 2.15f;
+            v.y = -Mathf.Sign(Physics.gravity.y) * Mathf.Sqrt(2f * Physics.gravity.magnitude * height);
         }
         rb.linearVelocity = v;
     }
 
     // ---------- النطة (بس في المراحل اللي فيها نط) ----------
 
-    const float JumpSpeed = 6.5f;
+
     bool jumpRequested;
 
     void Update()

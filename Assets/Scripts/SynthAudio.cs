@@ -357,6 +357,27 @@ public static class SynthAudio
         return Make("Squeak", buf);
     }
 
+    // مسدس ليزر فضائي: "بيو" نغمة تنزل بسرعة
+    public static AudioClip Laser()
+    {
+        int n = Mathf.RoundToInt(0.22f * Rate);
+        var buf = new float[n];
+        float ph = 0f, ph2 = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float k = t / 0.22f;
+            float f = Mathf.Lerp(2200f, 260f, Mathf.Pow(k, 0.55f));
+            ph += 2f * Mathf.PI * f / Rate;
+            ph2 += 2f * Mathf.PI * f * 1.5f / Rate;
+            float square = Mathf.Sign(Mathf.Sin(ph)) * 0.35f + Mathf.Sin(ph) * 0.5f + Mathf.Sin(ph2) * 0.2f;
+            float env = Mathf.Clamp01(t / 0.004f) * Mathf.Pow(1f - k, 1.5f);
+            buf[i] = square * env;
+        }
+        Normalize(buf, 0.5f);
+        return Make("Laser", buf);
+    }
+
     // ضغطة زر: نقرة قلم خفيفة على الورق
     public static AudioClip Click()
     {

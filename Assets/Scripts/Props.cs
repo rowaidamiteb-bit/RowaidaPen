@@ -283,6 +283,60 @@ public static class Props
         }
     }
 
+    static Mesh rocketNose;
+
+    // صاروخ لعبة واقف على الصفحة
+    public static void Rocket(Transform parent, Vector3 pos, float scale, GameManager gm)
+    {
+        if (rocketNose == null)
+            rocketNose = CharacterMeshes.Lathe(new[] { new Vector2(0f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.35f, 0.4f), new Vector2(0f, 0.9f) }, 16);
+        var root = new GameObject("Rocket");
+        root.transform.SetParent(parent, false);
+        root.transform.localPosition = pos;
+        root.transform.localScale = Vector3.one * scale;
+        Material body = gm.Mat("Rocket Body", new Color(0.95f, 0.95f, 0.97f), 0.6f);
+        Material red = gm.Mat("Rocket Red", new Color(0.95f, 0.3f, 0.35f), 0.5f);
+        Material glass = gm.Mat("Saucer Glass", new Color(0.55f, 0.85f, 1f), 0.95f);
+        LevelBuilder.Visual("Body", PrimitiveType.Cylinder, root.transform, new Vector3(0f, 0.55f, 0f), new Vector3(0.36f, 0.4f, 0.36f), body);
+        var nose = new GameObject("Nose");
+        nose.transform.SetParent(root.transform, false);
+        nose.transform.localPosition = new Vector3(0f, 0.95f, 0f);
+        nose.transform.localScale = Vector3.one * 0.36f;
+        Part(nose.transform, rocketNose, red);
+        LevelBuilder.Visual("Window", PrimitiveType.Sphere, root.transform, new Vector3(0f, 0.65f, -0.17f), new Vector3(0.16f, 0.16f, 0.05f), glass);
+        for (int i = 0; i < 3; i++)
+        {
+            var fin = LevelBuilder.Visual("Fin", PrimitiveType.Cube, root.transform, Quaternion.Euler(0f, i * 120f, 0f) * new Vector3(0f, 0.25f, 0.22f), new Vector3(0.04f, 0.3f, 0.2f), red);
+            fin.transform.localRotation = Quaternion.Euler(0f, i * 120f, 0f);
+        }
+    }
+
+    // كوكب صغير بحلقة (زينة)
+    public static void MiniPlanet(Transform parent, Vector3 pos, float size, Color color, GameManager gm)
+    {
+        Material body = gm.Mat("Planet " + ColorUtility.ToHtmlStringRGB(color), color, 0.3f);
+        Material ring = gm.Mat("Planet Ring", new Color(0.95f, 0.88f, 0.7f), 0.4f);
+        var p = LevelBuilder.Visual("Mini Planet", PrimitiveType.Sphere, parent, pos + Vector3.up * size * 0.5f, Vector3.one * size, body);
+        var r = new GameObject("Ring");
+        r.transform.SetParent(p.transform, false);
+        r.transform.localRotation = Quaternion.Euler(70f, 0f, 20f);
+        r.AddComponent<MeshFilter>().sharedMesh = PaperMeshes.Ring(0.85f, 0.05f, 32, 6);
+        r.AddComponent<MeshRenderer>().sharedMaterial = ring;
+    }
+
+    // كريستالة فضائية تلمع
+    public static void Crystal(Transform parent, Vector3 pos, Color color, GameManager gm, System.Random rng)
+    {
+        Material glow = gm.Mat("Crystal " + ColorUtility.ToHtmlStringRGB(color), color * 1.8f, 0.95f);
+        int n = 2 + rng.Next(3);
+        for (int i = 0; i < n; i++)
+        {
+            float h = 0.25f + (float)rng.NextDouble() * 0.35f;
+            var c = LevelBuilder.Visual("Crystal", PrimitiveType.Cube, parent, pos + new Vector3(((float)rng.NextDouble() - 0.5f) * 0.3f, h * 0.4f, ((float)rng.NextDouble() - 0.5f) * 0.3f), new Vector3(0.1f, h, 0.1f), glow, false);
+            c.transform.localRotation = Quaternion.Euler(((float)rng.NextDouble() - 0.5f) * 40f, 45f, ((float)rng.NextDouble() - 0.5f) * 40f);
+        }
+    }
+
     // رجل ثلج صغير (زينة)
     public static void MiniSnowman(Transform parent, Vector3 pos, float yaw, GameManager gm)
     {

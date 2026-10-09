@@ -3,7 +3,7 @@ using UnityEngine;
 // شكل المرحلة: لون الورق ونقشته، السما، الإضاءة، الأغراض، والأشياء الطايرة. كل مرحلة لها عالم مختلف
 public enum PaperPattern { Blank, Ruled, Grid, Dots, Kraft, Watercolor, Parchment, Origami, Splats }
 public enum FloatKind { Paper, Leaves, Crayons, Petals, Sparkles, Cranes, EraserBits, InkDrops, Snow }
-public enum PropSet { Stationery, Crayons, Paint, Erasers, Ink, Origami, Snow }
+public enum PropSet { Stationery, Crayons, Paint, Erasers, Ink, Origami, Snow, Space }
 
 public class LevelTheme
 {
@@ -215,6 +215,21 @@ public class LevelTheme
         fog = new Color(0.82f, 0.9f, 1f), props = PropSet.Snow, floating = FloatKind.Snow,
         floatColors = new[] { Color.white, new Color(0.92f, 0.96f, 1f) },
         ringColor = new Color(0.62f, 0.7f, 0.82f), snowCaps = true,
+    };
+
+    // الفضاء: ورق كحلي بنقاط بيضا مثل النجوم، خطوط بيضا مثل الطباشير، سما بنفسجية وسحب سديم وردية
+    public static LevelTheme Space() => new LevelTheme
+    {
+        name = "Space",
+        paper = new Color(0.17f, 0.18f, 0.33f), pattern = PaperPattern.Dots, patternColor = new Color(0.85f, 0.88f, 1f),
+        pageEdge = new Color(0.35f, 0.37f, 0.58f), pencil = new Color(0.88f, 0.9f, 1f), doodleColor = new Color(0.78f, 0.82f, 1f),
+        skyTop = new Color(0.01f, 0.01f, 0.05f), skyMid = new Color(0.07f, 0.03f, 0.15f), skyBottom = new Color(0.2f, 0.06f, 0.28f),
+        showMoon = false, stars = 1f, cloudTint = new Color(0.85f, 0.3f, 0.9f), cloudAlpha = 0.45f,
+        sunLight = new Color(0.85f, 0.88f, 1f), sunIntensity = 1.35f, sunAngles = new Vector3(35f, -30f, 0f),
+        ambientSky = new Color(0.5f, 0.45f, 0.75f), ambientEquator = new Color(0.32f, 0.26f, 0.52f), ambientGround = new Color(0.1f, 0.08f, 0.2f),
+        fog = new Color(0.04f, 0.02f, 0.09f), props = PropSet.Space, floating = FloatKind.Sparkles,
+        floatColors = new[] { new Color(1f, 0.9f, 0.6f), new Color(0.6f, 0.85f, 1f), new Color(1f, 0.6f, 0.9f), Color.white },
+        ringColor = new Color(0.75f, 0.78f, 0.95f),
     };
 
     public Color PaperFor(int index)

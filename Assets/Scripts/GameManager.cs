@@ -340,7 +340,7 @@ public class GameManager : MonoBehaviour
         LevelData data = Levels.All[index];
 
         // الجاذبية والكاميرا: في الصفحة المقلوبة الجاذبية لفوق والكاميرا تطالع من تحت
-        Physics.gravity = new Vector3(0f, data.flipped ? 9.81f : -9.81f, 0f);
+        Physics.gravity = new Vector3(0f, (data.flipped ? 9.81f : -9.81f) * data.gravityScale, 0f);
         cameraFollow.offset = new Vector3(-0.6f, data.flipped ? -2.0f : 2.0f, -7.8f);
         cameraFollow.lookOffset = new Vector3(2f, data.flipped ? -0.7f : 0.7f, 0f);
         ApplyTheme(data.theme);

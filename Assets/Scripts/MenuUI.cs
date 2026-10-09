@@ -372,6 +372,7 @@ public class MenuUI : MonoBehaviour
 
     void Update()
     {
+        if (mainPanel == null || completePanel == null) return;   // القوائم انحذفت (وقفنا اللعب)
         // العنوان يتمايل بهدوء
         if (mainPanel.gameObject.activeSelf)
         {
