@@ -154,6 +154,7 @@ public class GameUI : MonoBehaviour
 
     public void SetPalette(bool visible, InkColor selected)
     {
+        if (swatches[0] == null) return;
         for (int i = 0; i < 4; i++)
         {
             swatches[i].enabled = visible;
@@ -331,6 +332,7 @@ public class GameUI : MonoBehaviour
 
     void Update()
     {
+        if (hearts[0] == null) return;   // الواجهة انحذفت (وقفنا اللعب)
         AnimateHearts();
         AnimateMessage();
         if (messageTimer <= 0f) return;

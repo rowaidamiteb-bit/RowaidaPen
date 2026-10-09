@@ -6,13 +6,72 @@ using UnityEngine.Rendering;
 // ويسكر الطريق على رويدا. اللاعب يشخبط عليه عشان يمسحه: كل ما شخبط أكثر يبهت ويصغر لين يختفي.
 public class ScribbleMonster : MonoBehaviour
 {
-    public enum Kind { PurpleBlob, FuzzyBall, GreenEye }
+    public enum Kind { PurpleBlob, FuzzyBall, GreenEye, SnowChaser, SnowGuard }
     enum State { Wander, EatInk }
 
     const float Radius = 0.45f;
     const float WanderSpeed = 1.1f, ChaseSpeed = 1.8f, HuntSpeed = 2.1f;
     const float SightRange = 7f;            // من وين يشوف رويدا ويركض لها
+    const float SnowChaseSpeed = 2.4f;      // رجل الثلج أبطأ من رويدا: يمسكها بس إذا وقفت أو انصدت
     bool hunting;
+    float chaseFrom;
+
+    // ---------- رجل الثلج اللي يلحق ----------
+
+    // يمسح (يجمد ويكسر) الحبر اللي عدّاه وصار وراه
+    void FreezeInkBehind()
+    {
+        Vector3 p = transform.position;
+        foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+        {
+            var r = mark.GetComponent<MeshRenderer>();
+            if (r == null) continue;
+            Bounds b = r.bounds;
+            bool behind = dir > 0 ? b.max.x < p.x - 0.6f : b.min.x > p.x + 0.6f;
+            // بس الحبر اللي مشى عليه أو قريب منه (مو كل رسمة في المرحلة)
+            if (behind && Mathf.Abs(b.center.y - p.y) < 2.5f && Mathf.Abs(b.center.x - p.x) < 4f) Shatter(mark);
+        }
+    }
+
+    void Shatter(InkMark mark)
+    {
+        Bounds b = mark.GetComponent<MeshRenderer>().bounds;
+        Material ice = GameManager.Instance.Mat("Ice Shard", new Color(0.75f, 0.9f, 1f), 0.9f);
+        int n = Mathf.Clamp(Mathf.RoundToInt(b.size.x * 4f), 4, 14);
+        for (int i = 0; i < n; i++)
+        {
+            Vector3 q = new Vector3(Random.Range(b.min.x, b.max.x), Random.Range(b.min.y, b.max.y), 0f);
+            var shard = LevelBuilder.Visual("Ice Shard", PrimitiveType.Cube, null, q, Vector3.one * Random.Range(0.06f, 0.12f), ice, false);
+            shard.transform.rotation = Random.rotation;
+            shard.AddComponent<PoofPuff>().shrinkOnly = true;
+        }
+        GameManager.Instance.Sound.PlayPoof();
+        Destroy(mark.gameObject);
+    }
+
+    static void SnowPuff(Vector3 pos)
+    {
+        Material snow = GameManager.Instance.Mat("Snow Puff", new Color(0.97f, 0.98f, 1f), 0.2f);
+        var puff = LevelBuilder.Visual("Snow Puff", PrimitiveType.Sphere, null, pos, Vector3.one * Random.Range(0.15f, 0.3f), snow, false);
+        puff.AddComponent<PoofPuff>();
+    }
+
+    // رويدا خسرت قلب: يرجع وراها شوي ويصحى بعد ثانيتين
+    void OnRespawned(Vector3 pos)
+    {
+        if (dead) return;
+        Vector3 back = pos + new Vector3(-1.6f, 0f, 0f);
+        rb.position = back;
+        transform.position = back;
+        rb.linearVelocity = Vector3.zero;
+        chaseFrom = Time.time + 2.2f;
+        hunting = false;
+    }
+
+    void OnDestroy()
+    {
+        if (kind == Kind.SnowChaser && GameManager.Instance != null) GameManager.Instance.Respawned -= OnRespawned;
+    }
     const float FoodSight = 3.5f;
     const float EraseNeeded = 3.2f;         // كم متر شخبطة لازم عشان ينمسح
     public const float EraseReach = 0.75f;  // الشخبطة لازم تكون قريبة من الوحش بهالمسافة
@@ -68,6 +127,11 @@ public class ScribbleMonster : MonoBehaviour
         m.dir = Random.value < 0.5f ? -1 : 1;
         m.phase = Random.value * 10f;
         m.BuildVisual(gm);
+        if (kind == Kind.SnowChaser)
+        {
+            m.chaseFrom = Time.time + 2.5f;   // يعطيها فرصة تمشي شوي أول
+            gm.Respawned += m.OnRespawned;
+        }
         m.CollectRenderers();
         if (showHint) m.BuildHint(gm);
         return m;
@@ -83,6 +147,10 @@ public class ScribbleMonster : MonoBehaviour
 
         switch (kind)
         {
+            case Kind.SnowChaser:
+            case Kind.SnowGuard:
+                BuildSnowman(gm, white, black);
+                break;
             case Kind.PurpleBlob:
             {
                 Material body = gm.Mat("Monster Purple", new Color(0.62f, 0.45f, 0.92f), 0.35f);
@@ -149,6 +217,74 @@ public class ScribbleMonster : MonoBehaviour
             }
         }
     }
+
+    // رجل ثلج: ثلاث كور ثلج، عيون فحم، أنف جزر، يدين أعواد، وشال.
+    // اللي يلحق: قبعة سودا وحواجب غاضبة. الحارس: طاقية حمرا
+    void BuildSnowman(GameManager gm, Material white, Material black)
+    {
+        bool chaser = kind == Kind.SnowChaser;
+        Material snow = gm.Mat("Snow Body", new Color(0.96f, 0.98f, 1f), 0.35f);
+        Material coal = gm.Mat("Coal", new Color(0.08f, 0.08f, 0.1f), 0.6f);
+        Material carrot = gm.Mat("Carrot", new Color(1f, 0.5f, 0.15f), 0.4f);
+        Material stick = gm.Mat("Stick", new Color(0.4f, 0.26f, 0.14f), 0.2f);
+        Material scarf = chaser ? gm.Mat("Scarf Blue", new Color(0.25f, 0.45f, 0.85f), 0.3f) : gm.Mat("Scarf Green", new Color(0.3f, 0.7f, 0.4f), 0.3f);
+
+        Part(PrimitiveType.Sphere, new Vector3(0f, 0.03f, 0f), new Vector3(1f, 0.92f, 0.95f), snow, true);
+        Part(PrimitiveType.Sphere, new Vector3(0f, 0.62f, 0f), Vector3.one * 0.72f, snow, true);
+        Part(PrimitiveType.Sphere, new Vector3(0f, 1.1f, 0f), Vector3.one * 0.52f, snow, true);
+
+        // عيون فحم (تتحرك وتطالع) وأنف جزر وابتسامة نقاط
+        for (int s = -1; s <= 1; s += 2)
+            pupils.Add(Part(PrimitiveType.Sphere, new Vector3(s * 0.1f, 1.17f, 0.22f), Vector3.one * 0.08f, coal));
+        var nose = Part(PrimitiveType.Capsule, new Vector3(0f, 1.09f, 0.33f), new Vector3(0.07f, 0.14f, 0.07f), carrot);
+        nose.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        for (int i = -2; i <= 2; i++)
+            Part(PrimitiveType.Sphere, new Vector3(i * 0.055f, 0.99f - (2 - Mathf.Abs(i)) * 0.02f, 0.23f), Vector3.one * 0.04f, coal);
+        mouth = Part(PrimitiveType.Sphere, new Vector3(0f, 0.97f, 0.2f), new Vector3(0.12f, 0.02f, 0.02f), coal);
+
+        // أزرار فحم
+        for (int i = 0; i < 3; i++) Part(PrimitiveType.Sphere, new Vector3(0f, 0.75f - i * 0.13f, 0.34f - Mathf.Abs(i - 1) * 0.02f), Vector3.one * 0.07f, coal);
+
+        // يدين أعواد
+        for (int s = -1; s <= 1; s += 2)
+        {
+            var arm = Part(PrimitiveType.Cylinder, new Vector3(s * 0.5f, 0.75f, 0f), new Vector3(0.035f, 0.26f, 0.035f), stick);
+            arm.localRotation = Quaternion.Euler(0f, 0f, s * (chaser ? 110f : 60f));
+            var twig = Part(PrimitiveType.Cylinder, new Vector3(s * 0.68f, chaser ? 0.8f : 0.92f, 0f), new Vector3(0.025f, 0.08f, 0.025f), stick);
+            twig.localRotation = Quaternion.Euler(0f, 0f, s * 20f);
+        }
+
+        // شال حول الرقبة وطرفه نازل
+        Part(PrimitiveType.Cylinder, new Vector3(0f, 0.88f, 0f), new Vector3(0.52f, 0.05f, 0.52f), scarf);
+        var tail = Part(PrimitiveType.Cube, new Vector3(0.14f, 0.74f, 0.27f), new Vector3(0.1f, 0.26f, 0.04f), scarf);
+        tail.localRotation = Quaternion.Euler(0f, 0f, -12f);
+
+        if (chaser)
+        {
+            Material hat = gm.Mat("Top Hat", new Color(0.1f, 0.1f, 0.12f), 0.5f);
+            Part(PrimitiveType.Cylinder, new Vector3(0f, 1.34f, 0f), new Vector3(0.5f, 0.02f, 0.5f), hat);
+            Part(PrimitiveType.Cylinder, new Vector3(0f, 1.47f, 0f), new Vector3(0.32f, 0.13f, 0.32f), hat);
+            Part(PrimitiveType.Cylinder, new Vector3(0f, 1.38f, 0f), new Vector3(0.33f, 0.03f, 0.33f), scarf);
+            for (int s = -1; s <= 1; s += 2)
+            {
+                var brow = Part(PrimitiveType.Cube, new Vector3(s * 0.1f, 1.25f, 0.22f), new Vector3(0.12f, 0.025f, 0.02f), coal);
+                brow.localRotation = Quaternion.Euler(0f, 0f, -s * 22f);
+            }
+        }
+        else
+        {
+            Material beanie = gm.Mat("Beanie", new Color(0.9f, 0.25f, 0.3f), 0.3f);
+            var cap = Part(PrimitiveType.Sphere, new Vector3(0f, 1.26f, 0f), new Vector3(0.5f, 0.3f, 0.5f), beanie);
+            Part(PrimitiveType.Sphere, new Vector3(0f, 1.43f, 0f), Vector3.one * 0.13f, white);
+            Part(PrimitiveType.Cylinder, new Vector3(0f, 1.2f, 0f), new Vector3(0.53f, 0.04f, 0.53f), white);
+        }
+    }
+
+    public bool IsSnowman => kind == Kind.SnowChaser || kind == Kind.SnowGuard;
+
+    // وين تنحسب الشخبطة (رجل الثلج أطول فنحسب من نصه)
+    public Vector3 EraseCenter => transform.position + transform.up * (IsSnowman ? 0.5f : 0f);
+    public float EraseRadius => IsSnowman ? 1f : EraseReach;
 
     void Eyes(Material white, Material black, float x, float y, float z, float size)
     {
@@ -229,6 +365,7 @@ public class ScribbleMonster : MonoBehaviour
         }
 
         if (state == State.EatInk) UpdateEating();
+        if (kind == Kind.SnowChaser && hunting) FreezeInkBehind();
 
         // لو وقفت الشخبطة يرجع لونه شوي شوي
         if (Time.time > stunnedUntil + 0.6f) erased = Mathf.Max(0f, erased - Time.deltaTime * 0.12f);
@@ -242,6 +379,7 @@ public class ScribbleMonster : MonoBehaviour
     void Think()
     {
         if (state == State.EatInk || Stunned) return;
+        if (IsSnowman) { target = null; return; }   // رجال الثلج ما ياكلون الجسور
 
         // يدور على جسر قريب ياكله
         InkMark food = null;
@@ -309,12 +447,28 @@ public class ScribbleMonster : MonoBehaviour
         {
             if (p.x < patrolMin) dir = 1;
             else if (p.x > patrolMax) dir = -1;
-            speed = WanderSpeed * dir;
+            speed = kind == Kind.SnowGuard ? 0f : WanderSpeed * dir;   // الحارس واقف مكانه
             // جسر قريب؟ نمشي له
             if (target != null)
             {
                 dir = ClosestPoint(target, p).x > p.x ? 1 : -1;
                 speed = ChaseSpeed * dir;
+            }
+            // رجل الثلج اللي يلحق: يمشي ورا رويدا على طول (بعد ما يصحى)
+            else if (kind == Kind.SnowChaser)
+            {
+                speed = 0f;
+                GameManager gm = GameManager.Instance;
+                if (Time.time > chaseFrom && gm.IsPlaying && gm.Rowaida != null)
+                {
+                    float dx = gm.Rowaida.transform.position.x - p.x;
+                    if (Mathf.Abs(dx) > 0.2f)
+                    {
+                        dir = dx > 0f ? 1 : -1;
+                        speed = SnowChaseSpeed * dir;
+                        sawHer = true;
+                    }
+                }
             }
             // شاف رويدا قريبة على نفس المستوى؟ يركض لها
             else if (SeesRowaida(p, out float dx))
@@ -391,8 +545,22 @@ public class ScribbleMonster : MonoBehaviour
 
     void OnCollisionEnter(Collision c)
     {
+        if (dead) return;
+        // رجل الثلج اللي يلحق: أي حبر يصدمه من قدام يتجمد ويتكسر
+        if (kind == Kind.SnowChaser)
+        {
+            var mark = c.collider.GetComponentInParent<InkMark>();
+            if (mark != null && c.contactCount > 0 && Mathf.Abs(c.GetContact(0).normal.x) > 0.6f) { Shatter(mark); return; }
+        }
         var rowaida = c.collider.GetComponentInParent<RowaidaController>();
-        if (rowaida == null || dead) return;
+        if (rowaida == null) return;
+        if (kind == Kind.SnowChaser)
+        {
+            // لحقها: تخسر قلب
+            for (int i = 0; i < 8; i++) SnowPuff(rowaida.transform.position + Random.insideUnitSphere * 0.5f);
+            GameManager.Instance.KillRowaida();
+            return;
+        }
         float push = rowaida.transform.position.x < transform.position.x ? -1f : 1f;
         rowaida.Knockback(push);
         rb.AddForce(new Vector3(-push * 2f, 1.5f, 0f), ForceMode.VelocityChange);

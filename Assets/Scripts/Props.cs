@@ -252,6 +252,68 @@ public static class Props
         sail.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
     }
 
+    static Mesh pineCone;
+
+    // شجرة صنوبر: ثلاث طبقات مخروطية خضرا فوقها ثلج
+    public static void PineTree(Transform parent, Vector3 pos, float scale, GameManager gm)
+    {
+        if (pineCone == null)
+            pineCone = CharacterMeshes.Lathe(new[] { new Vector2(0f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 0.75f) }, 10);
+        var root = new GameObject("Pine Tree");
+        root.transform.SetParent(parent, false);
+        root.transform.localPosition = pos;
+        root.transform.localScale = Vector3.one * scale;
+        Material trunk = gm.Mat("Pine Trunk", new Color(0.45f, 0.3f, 0.18f), 0.2f);
+        Material green = gm.Mat("Pine Green", new Color(0.18f, 0.48f, 0.35f), 0.25f);
+        Material snow = gm.Mat("Snow Body", new Color(0.96f, 0.98f, 1f), 0.35f);
+        LevelBuilder.Visual("Trunk", PrimitiveType.Cylinder, root.transform, new Vector3(0f, 0.15f, 0f), new Vector3(0.14f, 0.15f, 0.14f), trunk);
+        for (int i = 0; i < 3; i++)
+        {
+            float s = 1f - i * 0.25f;
+            var layer = new GameObject("Layer");
+            layer.transform.SetParent(root.transform, false);
+            layer.transform.localPosition = new Vector3(0f, 0.25f + i * 0.38f, 0f);
+            layer.transform.localScale = Vector3.one * s;
+            Part(layer.transform, pineCone, green);
+            var cap = new GameObject("Snow Cap");
+            cap.transform.SetParent(layer.transform, false);
+            cap.transform.localPosition = new Vector3(0f, 0.38f, 0f);
+            cap.transform.localScale = Vector3.one * 0.5f;
+            Part(cap.transform, pineCone, snow);
+        }
+    }
+
+    // رجل ثلج صغير (زينة)
+    public static void MiniSnowman(Transform parent, Vector3 pos, float yaw, GameManager gm)
+    {
+        var root = new GameObject("Mini Snowman");
+        root.transform.SetParent(parent, false);
+        root.transform.localPosition = pos;
+        root.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        Material snow = gm.Mat("Snow Body", new Color(0.96f, 0.98f, 1f), 0.35f);
+        Material coal = gm.Mat("Coal", new Color(0.08f, 0.08f, 0.1f), 0.6f);
+        Material carrot = gm.Mat("Carrot", new Color(1f, 0.5f, 0.15f), 0.4f);
+        LevelBuilder.Visual("Base", PrimitiveType.Sphere, root.transform, new Vector3(0f, 0.17f, 0f), Vector3.one * 0.36f, snow);
+        LevelBuilder.Visual("Head", PrimitiveType.Sphere, root.transform, new Vector3(0f, 0.45f, 0f), Vector3.one * 0.24f, snow);
+        for (int s = -1; s <= 1; s += 2)
+            LevelBuilder.Visual("Eye", PrimitiveType.Sphere, root.transform, new Vector3(s * 0.045f, 0.49f, -0.1f), Vector3.one * 0.035f, coal);
+        var nose = LevelBuilder.Visual("Nose", PrimitiveType.Capsule, root.transform, new Vector3(0f, 0.45f, -0.15f), new Vector3(0.035f, 0.06f, 0.035f), carrot);
+        nose.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+    }
+
+    // كومة كور ثلج
+    public static void Snowballs(Transform parent, Vector3 pos, GameManager gm, System.Random rng)
+    {
+        Material snow = gm.Mat("Snow Body", new Color(0.96f, 0.98f, 1f), 0.35f);
+        int n = 2 + rng.Next(3);
+        for (int i = 0; i < n; i++)
+        {
+            float r = 0.12f + (float)rng.NextDouble() * 0.1f;
+            Vector3 p = pos + new Vector3(((float)rng.NextDouble() - 0.5f) * 0.6f, r * 0.8f, ((float)rng.NextDouble() - 0.5f) * 0.4f);
+            LevelBuilder.Visual("Snowball", PrimitiveType.Sphere, parent, p, Vector3.one * r * 2f, snow);
+        }
+    }
+
     static Vector2[] Profile(float y0, float y1, float r0, float r1)
     {
         return new[] { new Vector2(0f, y0), new Vector2(r0, y0), new Vector2(r0, y0), new Vector2(r1, y1), new Vector2(r1, y1), new Vector2(0f, y1) };

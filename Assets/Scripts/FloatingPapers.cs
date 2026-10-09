@@ -12,6 +12,7 @@ public class FloatingPapers : MonoBehaviour
     Vector3[] spin;
     float[] offset;
     string currentTheme;
+    bool snowing;
 
     public void Build(GameManager manager)
     {
@@ -25,18 +26,20 @@ public class FloatingPapers : MonoBehaviour
         currentTheme = theme.name;
         foreach (Transform child in transform) Destroy(child.gameObject);
 
-        papers = new Transform[count];
-        basePos = new Vector3[count];
-        spin = new Vector3[count];
-        offset = new float[count];
+        snowing = theme.floating == FloatKind.Snow;
+        int n = snowing ? 220 : count;   // الثلج: ندف كثيرة صغيرة
+        papers = new Transform[n];
+        basePos = new Vector3[n];
+        spin = new Vector3[n];
+        offset = new float[n];
         var rng = new System.Random(11);
         float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
         Camera cam = Camera.main;
         float cx = cam != null ? cam.transform.position.x : 0f;
 
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < n; i++)
         {
-            Vector3 pos = new Vector3(cx + R(-30f, 50f), R(-7f, 9f), R(4f, 28f));
+            Vector3 pos = new Vector3(cx + R(-30f, 50f), R(-7f, 9f), snowing ? R(-2.5f, 22f) : R(4f, 28f));
             Color color = theme.floatColors[rng.Next(theme.floatColors.Length)];
             Material mat = gm.Mat("Float " + ColorUtility.ToHtmlStringRGB(color), color, 0.2f);
             GameObject go = Make(theme.floating, pos, R(0.6f, 1.2f), color, mat);
@@ -60,6 +63,7 @@ public class FloatingPapers : MonoBehaviour
                 return LevelBuilder.Visual("Sparkle", PrimitiveType.Sphere, transform, pos, Vector3.one * 0.09f * s, glow, false);
             case FloatKind.Cranes: return Props.OrigamiCrane(transform, pos, 0f, color, gm, 0.6f * s);
             case FloatKind.EraserBits: return LevelBuilder.Visual("Eraser Bit", PrimitiveType.Cube, transform, pos, new Vector3(0.14f, 0.09f, 0.11f) * s, mat, false);
+            case FloatKind.Snow: return LevelBuilder.Visual("Snowflake", PrimitiveType.Sphere, transform, pos, Vector3.one * 0.07f * s, mat, false);
             case FloatKind.InkDrops: return LevelBuilder.Visual("Ink Drop", PrimitiveType.Sphere, transform, pos, new Vector3(0.12f, 0.18f, 0.12f) * s, mat, false);
             default: return LevelBuilder.Visual("Paper", PrimitiveType.Cube, transform, pos, new Vector3(0.4f, 0.52f, 0.01f) * s, mat, false);
         }
@@ -77,6 +81,13 @@ public class FloatingPapers : MonoBehaviour
             float o = offset[i];
             // الريح تطيّرها، ولما تبعد عن الكاميرا ترجع من الجهة الثانية
             basePos[i].x += Weather.Wind * 2.5f * Time.deltaTime;
+            if (snowing)
+            {
+                // الثلج ينزل ببطء ولما يوصل تحت يرجع فوق
+                basePos[i].y -= (0.5f + (o % 1f) * 0.6f) * Time.deltaTime;
+                float cy = cam != null ? cam.transform.position.y : 0f;
+                if (basePos[i].y < cy - 9f) basePos[i].y += 18f;
+            }
             if (basePos[i].x < cx - 35f) basePos[i].x += 85f;
             else if (basePos[i].x > cx + 50f) basePos[i].x -= 85f;
             papers[i].position = basePos[i] + new Vector3(Mathf.Sin(t * 0.2f + o) * 0.6f, Mathf.Sin(t * 0.35f + o * 1.7f) * 0.4f, 0f);

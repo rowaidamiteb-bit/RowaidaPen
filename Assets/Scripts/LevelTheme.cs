@@ -2,8 +2,8 @@ using UnityEngine;
 
 // شكل المرحلة: لون الورق ونقشته، السما، الإضاءة، الأغراض، والأشياء الطايرة. كل مرحلة لها عالم مختلف
 public enum PaperPattern { Blank, Ruled, Grid, Dots, Kraft, Watercolor, Parchment, Origami, Splats }
-public enum FloatKind { Paper, Leaves, Crayons, Petals, Sparkles, Cranes, EraserBits, InkDrops }
-public enum PropSet { Stationery, Crayons, Paint, Erasers, Ink, Origami }
+public enum FloatKind { Paper, Leaves, Crayons, Petals, Sparkles, Cranes, EraserBits, InkDrops, Snow }
+public enum PropSet { Stationery, Crayons, Paint, Erasers, Ink, Origami, Snow }
 
 public class LevelTheme
 {
@@ -19,6 +19,7 @@ public class LevelTheme
     public Color doodleColor = new Color(0.3f, 0.3f, 0.34f);
     public Color pencil = new Color(0.33f, 0.33f, 0.36f);
     public bool rings = true;
+    public bool snowCaps;                 // طبقة ثلج فوق الصفحات
     public Color ringColor = new Color(0.2f, 0.2f, 0.22f);
 
     // السما
@@ -201,6 +202,21 @@ public class LevelTheme
     }
 
     // لون الصفحة رقم i (للأوريغامي كل صفحة بلون)
+    // ثلج الصباح: سما زرقا صافية وشمس دافية، ورق أبيض مزرق، ثلج فوق الصفحات وندف تنزل
+    public static LevelTheme SnowMorning() => new LevelTheme
+    {
+        name = "SnowMorning",
+        paper = new Color(0.95f, 0.97f, 1f), pattern = PaperPattern.Dots, patternColor = new Color(0.65f, 0.78f, 0.95f),
+        pageEdge = new Color(0.9f, 0.95f, 1f), pencil = new Color(0.3f, 0.42f, 0.6f), doodleColor = new Color(0.4f, 0.55f, 0.75f),
+        skyTop = new Color(0.35f, 0.62f, 0.95f), skyMid = new Color(0.68f, 0.85f, 1f), skyBottom = new Color(1f, 0.93f, 0.85f),
+        sun = true, moonColor = new Color(2.8f, 2.5f, 1.9f), stars = 0f, cloudTint = new Color(1.1f, 1.12f, 1.15f), cloudAlpha = 0.85f,
+        sunLight = new Color(1f, 0.95f, 0.86f), sunIntensity = 1.55f, sunAngles = new Vector3(28f, -45f, 0f),
+        ambientSky = new Color(0.8f, 0.88f, 1f), ambientEquator = new Color(0.68f, 0.74f, 0.85f), ambientGround = new Color(0.42f, 0.47f, 0.58f),
+        fog = new Color(0.82f, 0.9f, 1f), props = PropSet.Snow, floating = FloatKind.Snow,
+        floatColors = new[] { Color.white, new Color(0.92f, 0.96f, 1f) },
+        ringColor = new Color(0.62f, 0.7f, 0.82f), snowCaps = true,
+    };
+
     public Color PaperFor(int index)
     {
         return pageColors != null && pageColors.Length > 0 ? pageColors[index % pageColors.Length] : paper;

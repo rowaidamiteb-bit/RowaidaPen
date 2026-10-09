@@ -134,6 +134,8 @@ public static class LevelBuilder
             }
         }
 
+        if (data.theme.snowCaps) SnowCap(t, b.size, gm, rng);
+
         // سلك الدفتر الحلزوني على الحافة الخلفية
         if (!data.theme.rings) return go;
         if (ringMesh == null) ringMesh = PaperMeshes.Ring(0.26f, 0.03f);
@@ -225,6 +227,7 @@ public static class LevelBuilder
                 switch (theme.props)
                 {
                     case PropSet.Ink: Props.InkBottle(t, p, R(0f, 360f), gm); break;
+                    case PropSet.Snow: Props.PineTree(t, p + new Vector3(0f, 0f, 0.4f), R(1.5f, 2.1f), gm); break;
                     case PropSet.Origami: Props.OrigamiCrane(t, p + new Vector3(0f, 0f, 0.8f), R(-30f, 30f), RandomColor(), gm, 2.2f); break;
                     case PropSet.Crayons: Props.Crayon(t, p, R(-15f, 15f), RandomColor(), gm); break;
                     case PropSet.Paint: Props.PaintTube(t, p, R(-20f, 20f), RandomColor(), gm); break;
@@ -256,6 +259,11 @@ public static class LevelBuilder
                     if (kind < 4) Props.Eraser(t, p, R(-40f, 40f), gm, rng);
                     else Props.PaperBall(t, p, R(0.35f, 0.55f), gm, rng.Next(1000));
                     break;
+                case PropSet.Snow:
+                    if (kind < 2) Props.PineTree(t, new Vector3(p.x, p.y, Mathf.Abs(p.z) + 0.3f), R(0.6f, 0.95f), gm);
+                    else if (kind < 4) Props.Snowballs(t, p, gm, rng);
+                    else Props.Snowballs(t, p, gm, rng);
+                    break;
                 case PropSet.Ink:
                     if (kind < 2) Props.InkBottle(t, p, R(0f, 360f), gm);
                     else if (kind < 4) Props.PaperBall(t, p, R(0.35f, 0.5f), gm, rng.Next(1000));
@@ -284,6 +292,35 @@ public static class LevelBuilder
                     break;
             }
         }
+    }
+
+    // ثلج متراكم على أطراف الصفحة ونازل من الحافة، وبقع ثلج صغيرة فوقها (النص يظل باين عشان الرسومات)
+    static void SnowCap(Transform t, Vector3 size, GameManager gm, System.Random rng)
+    {
+        Material snow = gm.Mat("Snow Body", new Color(0.96f, 0.98f, 1f), 0.35f);
+        Vector3 h = size * 0.5f;
+        float R(float a, float c) => a + (float)rng.NextDouble() * (c - a);
+        for (int side = -1; side <= 1; side += 2)
+        {
+            float z = side * (h.z - 0.22f);
+            Visual("Snow Bank", PrimitiveType.Cube, t, new Vector3(0f, h.y + 0.04f, z), new Vector3(size.x + 0.06f, 0.1f, 0.48f), snow);
+            for (float x = -h.x + 0.2f; x <= h.x - 0.1f; x += R(0.35f, 0.6f))
+            {
+                // كتل ثلج على الطرف، اللي قدام تنزل شوي على جنب الصفحة
+                var lump = Visual("Snow Lump", PrimitiveType.Sphere, t, new Vector3(x, h.y + (side < 0 ? 0f : 0.05f), side * (h.z - 0.02f)),
+                    new Vector3(R(0.4f, 0.65f), R(0.16f, 0.26f), R(0.25f, 0.4f)), snow);
+                lump.transform.localRotation = Quaternion.Euler(0f, R(-15f, 15f), 0f);
+            }
+        }
+        // كتل على الجوانب (عند الحفر)
+        for (int side = -1; side <= 1; side += 2)
+            for (float z = -h.z + 0.3f; z < h.z - 0.2f; z += 0.5f)
+                Visual("Snow Lump", PrimitiveType.Sphere, t, new Vector3(side * (h.x - 0.02f), h.y, z), new Vector3(0.3f, R(0.14f, 0.22f), R(0.4f, 0.55f)), snow);
+        // بقع ثلج متفرقة فوق الصفحة
+        int patches = Mathf.RoundToInt(size.x / 2.5f);
+        for (int i = 0; i < patches; i++)
+            Visual("Snow Patch", PrimitiveType.Sphere, t, new Vector3(R(-h.x + 0.5f, h.x - 0.5f), h.y, R(-h.z + 0.8f, h.z - 0.8f)),
+                new Vector3(R(0.5f, 1.1f), 0.05f, R(0.3f, 0.6f)), snow, false);
     }
 
     // برك مويه صغيرة لامعة على الصفحة (للزينة)

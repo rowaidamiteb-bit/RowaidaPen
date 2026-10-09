@@ -6,7 +6,17 @@ public static class SaveData
     public const int MaxStars = 3;
 
     // أبعد مرحلة مفتوحة (رقمها من 0)
-    public static int Unlocked => Mathf.Clamp(PlayerPrefs.GetInt("unlocked", 0), 0, Levels.All.Count - 1);
+    // (أي مرحلة خلصتيها تفتح اللي بعدها، حتى لو انضافت مراحل جديدة بعدين)
+    public static int Unlocked
+    {
+        get
+        {
+            int unlocked = PlayerPrefs.GetInt("unlocked", 0);
+            for (int i = 0; i < Levels.All.Count; i++)
+                if (Stars(i) > 0) unlocked = Mathf.Max(unlocked, i + 1);
+            return Mathf.Clamp(unlocked, 0, Levels.All.Count - 1);
+        }
+    }
 
     public static void Unlock(int index)
     {

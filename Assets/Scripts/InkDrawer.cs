@@ -115,7 +115,7 @@ public class InkDrawer : MonoBehaviour
     void BeginStrokeAt(Vector3 p)
     {
         // لو بدأ الرسم فوق وحش: هذي شخبطة تمسحه (ما تصرف حبر وما تصير جسر)
-        erasing = MonsterNear(p, ScribbleMonster.EraseReach + 0.25f);
+        erasing = MonsterNear(p, 0.25f);
         if ((!erasing && Game.Ink <= 0.01f) || TouchesRowaida(p)) return;
 
         points.Clear();
@@ -213,14 +213,14 @@ public class InkDrawer : MonoBehaviour
     static bool MonsterNear(Vector3 p, float reach)
     {
         foreach (ScribbleMonster m in FindObjectsByType<ScribbleMonster>(FindObjectsSortMode.None))
-            if (Vector3.Distance(m.transform.position, p) < reach) return true;
+            if (Vector3.Distance(m.EraseCenter, p) < m.EraseRadius + reach) return true;
         return false;
     }
 
     static void EraseMonstersAt(Vector3 p, float amount)
     {
         foreach (ScribbleMonster m in FindObjectsByType<ScribbleMonster>(FindObjectsSortMode.None))
-            if (Vector3.Distance(m.transform.position, p) < ScribbleMonster.EraseReach) m.Erase(amount);
+            if (Vector3.Distance(m.EraseCenter, p) < m.EraseRadius) m.Erase(amount);
     }
 
     void FinishStroke()

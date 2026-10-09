@@ -134,6 +134,7 @@ public static class Levels
         UpsideDownPage(),
         SpilledInkPage(),
         FoldingPage(),
+        SnowLevel(),
     };
 
 
@@ -275,6 +276,35 @@ public static class Levels
 
     // الصفحة المتلاشية: أجزاء من الأرض تهتز وتختفي لما تقربين منها، ارسمي خط فوقها عشان تعدين.
     // (تقدرين ترسمين الخط قبل لا تختفي، والخط يبقى)
+    // زيزو: صباح ثلجي. رجل ثلج يلحق رويدا من ورا ويكسر الحبر اللي يعديه (لو مسكها تخسر قلب)،
+    // ورجال ثلج واقفين يستنونها: لما تقرب يركضون لها ويدفونها لورا (لين الثاني يلحقها)
+    static LevelData SnowLevel()
+    {
+        return new LevelData
+        {
+            title = "زيزو",
+            theme = LevelTheme.SnowMorning(),
+            subtitle = "رجل ثلج يلحقك ويكسر الحبر، والباقين يستنونك... شخبطي عليهم!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(45f, 0f, 0f),
+            ink = 16f,
+            blocks =
+            {
+                Page(-7f, 6f),          // حفرة 3
+                Page(9f, 19f),          // حفرة 3.5
+                Page(22.5f, 31f),       // حفرة 3
+                Page(34f, 48f),
+            },
+            monsters =
+            {
+                Monster(ScribbleMonster.Kind.SnowChaser, -6.4f, -7f, 6f),
+                Monster(ScribbleMonster.Kind.SnowGuard, 15f, 15f, 15f),
+                Monster(ScribbleMonster.Kind.SnowGuard, 27.5f, 27.5f, 27.5f),
+                Monster(ScribbleMonster.Kind.SnowGuard, 40f, 40f, 40f),
+            },
+        };
+    }
+
     static LevelData FoldingPage()
     {
         return new LevelData

@@ -224,18 +224,18 @@ public class MenuUI : MonoBehaviour
         levelsPanel = NotebookPage(canvasRect, "Levels", new Vector2(1560f, 960f), 0.8f);
         Label(levelsPanel, ArabicText.Fix("المراحل"), 80, new Vector2(0f, 390f), new Vector2(800f, 110f));
 
-        int cols = 4;
+        int cols = 5;
         for (int i = 0; i < Levels.All.Count; i++)
         {
             int index = i;
             int row = i / cols, col = i % cols;
             // من اليمين لليسار مثل الكتابة العربية
-            Vector2 pos = new Vector2(510f - col * 340f, 215f - row * 225f);
+            Vector2 pos = new Vector2(520f - col * 280f, 215f - row * 225f);
             var card = Panel(levelsPanel, "Level " + (i + 1), Secondary);
             card.sprite = rounded;
             card.type = Image.Type.Sliced;
             card.raycastTarget = true;
-            Place(card.rectTransform, pos, new Vector2(310f, 200f));
+            Place(card.rectTransform, pos, new Vector2(260f, 200f));
             var button = card.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => { if (index <= SaveData.Unlocked) gm.StartLevelFromMenu(index); });

@@ -43,6 +43,7 @@ public class VanishingTile : MonoBehaviour
     {
         if (gone) return;
         GameManager gm = GameManager.Instance;
+        if (gm == null) return;
         RowaidaController rowaida = gm.Rowaida;
         if (rowaida == null) return;
 
