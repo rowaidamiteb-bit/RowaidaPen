@@ -20,6 +20,8 @@ public static class DrawingMemory
         if (list.Count > MaxPerLevel) list.RemoveAt(0);
     }
 
+    public static void Clear() => strokes.Clear();
+
     // المراحل اللي فيها رسومات بالترتيب
     public static List<int> Levels()
     {

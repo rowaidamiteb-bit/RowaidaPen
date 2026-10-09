@@ -51,5 +51,14 @@ public static class SaveData
         set { PlayerPrefs.SetInt("introSeen", value ? 1 : 0); PlayerPrefs.Save(); }
     }
 
+    // من جديد: نمسح المراحل المفتوحة والنجوم والبداية (لون وشكل القلم يظلون)
+    public static void ResetProgress()
+    {
+        PlayerPrefs.DeleteKey("unlocked");
+        PlayerPrefs.DeleteKey("introSeen");
+        for (int i = 0; i < 64; i++) PlayerPrefs.DeleteKey("stars" + i);
+        PlayerPrefs.Save();
+    }
+
     public static bool HasProgress => IntroSeen || PlayerPrefs.GetInt("unlocked", 0) > 0;
 }

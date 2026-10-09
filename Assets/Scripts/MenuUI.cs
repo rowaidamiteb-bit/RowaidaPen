@@ -30,7 +30,7 @@ public class MenuUI : MonoBehaviour
 
     public bool Transitioning { get; private set; }
     public bool PauseOpen => pausePanel.gameObject.activeSelf || (levelsPanel.gameObject.activeSelf && levelsFromPause);
-    public bool AnyOpen => mainPanel.gameObject.activeSelf || levelsPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf || completePanel.gameObject.activeSelf || pencilPanel.gameObject.activeSelf;
+    public bool AnyOpen => mainPanel.gameObject.activeSelf || levelsPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf || completePanel.gameObject.activeSelf || pencilPanel.gameObject.activeSelf || confirmPanel.gameObject.activeSelf;
 
     public void Build(GameManager manager)
     {
@@ -66,6 +66,7 @@ public class MenuUI : MonoBehaviour
         BuildPause();
         BuildComplete();
         BuildPencil();
+        BuildConfirm();
 
         flash = Panel(canvasRect, "Flash", new Color(1f, 1f, 1f, 0f));
         Stretch(flash.rectTransform);
@@ -83,6 +84,7 @@ public class MenuUI : MonoBehaviour
         pausePanel.gameObject.SetActive(false);
         completePanel.gameObject.SetActive(false);
         if (pencilPanel != null) pencilPanel.gameObject.SetActive(false);
+        if (confirmPanel != null) confirmPanel.gameObject.SetActive(false);
     }
 
     void Open(RectTransform panel)
@@ -200,7 +202,8 @@ public class MenuUI : MonoBehaviour
 
         playLabel = Button(mainPanel, "", new Vector2(0f, 60f), new Vector2(520f, 115f), Primary, () => gm.PlayFromMenu(), 52);
         Button(mainPanel, "المراحل", new Vector2(0f, -68f), new Vector2(520f, 100f), Secondary, () => ShowLevels(false), 46);
-        Button(mainPanel, "قلمي", new Vector2(0f, -180f), new Vector2(520f, 100f), Secondary, ShowPencil, 46);
+        Button(mainPanel, "قلمي", new Vector2(135f, -180f), new Vector2(250f, 100f), Secondary, ShowPencil, 44);
+        Button(mainPanel, "من جديد", new Vector2(-135f, -180f), new Vector2(250f, 100f), Secondary, ShowConfirm, 40);
         Button(mainPanel, "اطلعي من اللعبة", new Vector2(0f, -292f), new Vector2(520f, 90f), Secondary, Application.Quit, 38);
 
         var starIcon = Panel(mainPanel, "Star", Gold);
@@ -314,6 +317,28 @@ public class MenuUI : MonoBehaviour
                 levelStars[i][s].color = s < got ? Gold : StarOff;
             }
         }
+    }
+
+    // ---------- من جديد: نتأكد قبل ما نمسح التقدم ----------
+
+    RectTransform confirmPanel;
+
+    public void ShowConfirm() => Open(confirmPanel);
+
+    void BuildConfirm()
+    {
+        confirmPanel = NotebookPage(canvasRect, "Confirm Restart", new Vector2(820f, 560f), 1f);
+        Label(confirmPanel, ArabicText.Fix("تبين تبدين من جديد؟"), 64, new Vector2(0f, 160f), new Vector2(760f, 90f));
+        var warn = Label(confirmPanel, ArabicText.Fix("بتنمسح كل المراحل اللي فتحتيها والنجوم"), 34, new Vector2(0f, 70f), new Vector2(760f, 50f));
+        warn.color = new Color(0.75f, 0.25f, 0.3f);
+        // من اليمين: "إيه" وبعدها "لا"
+        Button(confirmPanel, "إيه، من جديد", new Vector2(150f, -90f), new Vector2(280f, 100f), new Color(1f, 0.62f, 0.62f), () =>
+        {
+            SaveData.ResetProgress();
+            DrawingMemory.Clear();
+            gm.PlayFromMenu();
+        }, 38);
+        Button(confirmPanel, "لا", new Vector2(-150f, -90f), new Vector2(240f, 100f), Primary, ShowMain, 42);
     }
 
     // ---------- قلمي: لون وشكل خط القلم ----------

@@ -247,6 +247,9 @@ public static class ClaudeCapture
                 case "hideui":
                     GameManager.Instance.UI.SetVisible(false);
                     break;
+                case "confirm":
+                    Object.FindAnyObjectByType<MenuUI>().ShowConfirm();
+                    break;
                 case "pencil":
                     Object.FindAnyObjectByType<MenuUI>().ShowPencil();
                     break;
