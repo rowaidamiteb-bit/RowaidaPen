@@ -9,6 +9,8 @@ public static class TubeMesh
     static readonly List<Vector3> verts = new List<Vector3>();
     static readonly List<Vector3> normals = new List<Vector3>();
     static readonly List<int> tris = new List<int>();
+    static readonly List<Vector2> uvs = new List<Vector2>();
+    static float ringU;   // المسافة على طول الخط (للنقش: منقط، قوس قزح)
     static int sides = 10;
 
     public static void Build(Mesh mesh, IList<Vector3> pts, float radius, bool closed, int sideCount = 10, IList<float> radii = null)
@@ -17,15 +19,18 @@ public static class TubeMesh
         verts.Clear();
         normals.Clear();
         tris.Clear();
+        uvs.Clear();
         sides = sideCount;
 
         int n = pts.Count;
         if (n < 2) return;
 
+        ringU = 0f;
         // حلقة دائرية حول كل نقطة
         for (int i = 0; i < n; i++)
         {
             Frame(Tangent(pts, i, closed), out Vector3 side, out Vector3 up);
+            if (i > 0) ringU += Vector3.Distance(pts[i - 1], pts[i]);
             AddRing(pts[i], side, up, Vector3.zero, R(radii, i, radius), 0f);
         }
 
@@ -39,7 +44,10 @@ public static class TubeMesh
         {
             Vector3 t0 = Tangent(pts, 0, false);
             Frame(t0, out Vector3 s0, out Vector3 u0);
+            float endU = ringU;
+            ringU = 0f;
             AddCap(pts[0], -t0, s0, u0, R(radii, 0, radius), 0, false);
+            ringU = endU;
 
             Vector3 t1 = Tangent(pts, n - 1, false);
             Frame(t1, out Vector3 s1, out Vector3 u1);
@@ -48,6 +56,7 @@ public static class TubeMesh
 
         mesh.SetVertices(verts);
         mesh.SetNormals(normals);
+        mesh.SetUVs(0, uvs);
         mesh.SetTriangles(tris, 0);
         mesh.RecalculateBounds();
     }
@@ -83,6 +92,7 @@ public static class TubeMesh
             Vector3 radial = side * Mathf.Cos(a) + up * Mathf.Sin(a);
             verts.Add(center + dir * (radius * sinT) + radial * (radius * cosT));
             normals.Add((radial * cosT + dir * sinT).normalized);
+            uvs.Add(new Vector2(ringU, (float)j / sides));
         }
     }
 
@@ -120,6 +130,7 @@ public static class TubeMesh
         int tip = verts.Count;
         verts.Add(center + dir * radius);
         normals.Add(dir);
+        uvs.Add(new Vector2(ringU, 0f));
         for (int j = 0; j < sides; j++)
         {
             int a = prev + j, b = prev + (j + 1) % sides;

@@ -21,7 +21,7 @@ public class GameUI : MonoBehaviour
     {
         font = ArabicText.Font;
 
-        var canvasGo = new GameObject("UI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+        var canvasGo = new GameObject("UI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         var canvas = canvasGo.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceCamera;
         canvas.worldCamera = Camera.main;
@@ -53,6 +53,7 @@ public class GameUI : MonoBehaviour
         BuildHearts(root);
         BuildWindArrow(root);
         BuildPalette(root);
+        BuildSideButtons(root);
         timerText = Label(root, "", 38, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0f, -45f), new Vector2(400f, 50f));
         timerText.gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.8f);
         messageText = Label(root, "", 80, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
@@ -111,6 +112,73 @@ public class GameUI : MonoBehaviour
         Color c = messageText.color; c.a = fade; messageText.color = c;
         Color s = subtitleText.color; s.a = Mathf.Clamp01(messageTimer / 0.4f) * Mathf.Clamp01((messageAge - 0.15f) / 0.3f); subtitleText.color = s;
         subtitleText.rectTransform.anchoredPosition = new Vector2(0f, 60f - (1f - Mathf.Clamp01((messageAge - 0.15f) / 0.3f)) * 20f);
+    }
+
+    // ---------- أزرار جنب الشاشة: إعادة واستراحة ----------
+
+    void BuildSideButtons(Transform root)
+    {
+        AudioClip click = SynthAudio.Click();
+        SideButton(root, "Pause Button", new Vector2(-70f, -125f), IconSprite(false), () => GameManager.Instance.TogglePause(), click);
+        SideButton(root, "Restart Button", new Vector2(-160f, -125f), IconSprite(true), () => GameManager.Instance.RestartLevel(), click);
+    }
+
+    void SideButton(Transform root, string name, Vector2 pos, Sprite icon, System.Action onClick, AudioClip click)
+    {
+        Image img = Panel(root, name, Color.white);
+        img.sprite = icon;
+        img.raycastTarget = true;
+        Place(img.rectTransform, new Vector2(1f, 1f), pos, new Vector2(76f, 76f));
+        var button = img.gameObject.AddComponent<Button>();
+        button.transition = Selectable.Transition.None;
+        button.onClick.AddListener(() =>
+        {
+            var gm = GameManager.Instance;
+            if (gm == null || gm.IntroActive) return;
+            onClick();
+        });
+        img.gameObject.AddComponent<ButtonJuice>().Init(GameManager.Instance, click);
+    }
+
+    // أيقونة مرسومة بالكود: دايرة بيضا بحافة غامقة وفيها سهم دايري (إعادة) أو خطين (استراحة)
+    static Sprite IconSprite(bool restart)
+    {
+        const int s = 128;
+        var tex = new Texture2D(s, s, TextureFormat.RGBA32, true) { name = restart ? "Restart Icon" : "Pause Icon", wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[s * s];
+        Color ink = new Color(0.16f, 0.15f, 0.2f);
+        for (int y = 0; y < s; y++)
+            for (int x = 0; x < s; x++)
+            {
+                float u = (x + 0.5f) / s * 2f - 1f, v = (y + 0.5f) / s * 2f - 1f;
+                float r = Mathf.Sqrt(u * u + v * v);
+                float disc = Mathf.Clamp01((0.96f - r) * s * 0.5f);
+                float rim = Mathf.Clamp01((r - 0.86f) * s * 0.5f);
+                float icon;
+                if (restart)
+                {
+                    // قوس ثلاث أرباع دايرة وفي آخره راس سهم
+                    float ang = Mathf.Atan2(v, u) * Mathf.Rad2Deg;
+                    float ring = Mathf.Clamp01((0.11f - Mathf.Abs(r - 0.45f)) * s * 0.5f);
+                    float gap = ang > 30f && ang < 95f ? 0f : 1f;
+                    // راس السهم عند زاوية 30 درجة
+                    Vector2 tip = new Vector2(Mathf.Cos(30f * Mathf.Deg2Rad), Mathf.Sin(30f * Mathf.Deg2Rad)) * 0.45f;
+                    Vector2 p = new Vector2(u, v) - tip;
+                    float head = (p.y > -0.02f && p.y < 0.26f && Mathf.Abs(p.x) < (0.26f - p.y) * 0.9f) ? 1f : 0f;
+                    icon = Mathf.Max(ring * gap, head);
+                }
+                else
+                {
+                    bool bar = Mathf.Abs(v) < 0.42f && (Mathf.Abs(u - 0.2f) < 0.1f || Mathf.Abs(u + 0.2f) < 0.1f);
+                    icon = bar ? 1f : 0f;
+                }
+                Color c = Color.Lerp(new Color(1f, 0.99f, 0.96f), ink, Mathf.Max(rim, icon));
+                c.a = disc;
+                px[y * s + x] = c;
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 100f);
     }
 
     // ---------- الوقت ----------

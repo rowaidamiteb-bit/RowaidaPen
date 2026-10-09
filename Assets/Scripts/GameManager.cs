@@ -146,6 +146,13 @@ public class GameManager : MonoBehaviour
         weather.Apply(null);
     }
 
+    // زر الاستراحة في الشاشة: يوقف أو يكمل
+    public void TogglePause()
+    {
+        if (Paused) Resume();
+        else Pause();
+    }
+
     void Pause()
     {
         if (!IsPlaying || menu.AnyOpen || menu.Transitioning) return;

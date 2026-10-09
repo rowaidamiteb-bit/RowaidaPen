@@ -30,7 +30,7 @@ public class MenuUI : MonoBehaviour
 
     public bool Transitioning { get; private set; }
     public bool PauseOpen => pausePanel.gameObject.activeSelf || (levelsPanel.gameObject.activeSelf && levelsFromPause);
-    public bool AnyOpen => mainPanel.gameObject.activeSelf || levelsPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf || completePanel.gameObject.activeSelf;
+    public bool AnyOpen => mainPanel.gameObject.activeSelf || levelsPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf || completePanel.gameObject.activeSelf || pencilPanel.gameObject.activeSelf;
 
     public void Build(GameManager manager)
     {
@@ -65,6 +65,7 @@ public class MenuUI : MonoBehaviour
         BuildLevels();
         BuildPause();
         BuildComplete();
+        BuildPencil();
 
         flash = Panel(canvasRect, "Flash", new Color(1f, 1f, 1f, 0f));
         Stretch(flash.rectTransform);
@@ -81,6 +82,7 @@ public class MenuUI : MonoBehaviour
         levelsPanel.gameObject.SetActive(false);
         pausePanel.gameObject.SetActive(false);
         completePanel.gameObject.SetActive(false);
+        if (pencilPanel != null) pencilPanel.gameObject.SetActive(false);
     }
 
     void Open(RectTransform panel)
@@ -196,14 +198,15 @@ public class MenuUI : MonoBehaviour
         titleRect = Label(mainPanel, ArabicText.Fix("قلم رويدا"), 140, new Vector2(0f, 290f), new Vector2(780f, 190f)).rectTransform;
         Label(mainPanel, ArabicText.Fix("ارسمي طريق رويدا لين ترجع لغرفتها"), 38, new Vector2(0f, 175f), new Vector2(760f, 60f)).color = new Color(0.4f, 0.38f, 0.45f);
 
-        playLabel = Button(mainPanel, "", new Vector2(0f, 40f), new Vector2(520f, 120f), Primary, () => gm.PlayFromMenu(), 52);
-        Button(mainPanel, "المراحل", new Vector2(0f, -110f), new Vector2(520f, 110f), Secondary, () => ShowLevels(false), 46);
-        Button(mainPanel, "اطلعي من اللعبة", new Vector2(0f, -245f), new Vector2(520f, 100f), Secondary, Application.Quit, 40);
+        playLabel = Button(mainPanel, "", new Vector2(0f, 60f), new Vector2(520f, 115f), Primary, () => gm.PlayFromMenu(), 52);
+        Button(mainPanel, "المراحل", new Vector2(0f, -68f), new Vector2(520f, 100f), Secondary, () => ShowLevels(false), 46);
+        Button(mainPanel, "قلمي", new Vector2(0f, -180f), new Vector2(520f, 100f), Secondary, ShowPencil, 46);
+        Button(mainPanel, "اطلعي من اللعبة", new Vector2(0f, -292f), new Vector2(520f, 90f), Secondary, Application.Quit, 38);
 
         var starIcon = Panel(mainPanel, "Star", Gold);
         starIcon.sprite = star;
-        Place(starIcon.rectTransform, new Vector2(70f, -365f), new Vector2(58f, 58f));
-        starsTotal = Label(mainPanel, "", 40, new Vector2(-40f, -365f), new Vector2(200f, 60f));
+        Place(starIcon.rectTransform, new Vector2(70f, -390f), new Vector2(54f, 54f));
+        starsTotal = Label(mainPanel, "", 38, new Vector2(-40f, -390f), new Vector2(200f, 60f));
     }
 
     void RefreshMain()
@@ -218,6 +221,20 @@ public class MenuUI : MonoBehaviour
     readonly List<Text> levelNames = new List<Text>();
     readonly List<Image> levelCards = new List<Image>();
     readonly List<Image[]> levelStars = new List<Image[]>();
+    readonly List<RawImage> levelThumbs = new List<RawImage>();
+    readonly List<Text> lockedLabels = new List<Text>();
+
+    // صورة المرحلة (لقطة من المرحلة نفسها)، ولو ما فيه صورة نسوي تدرج بألوان سماها
+    static Texture Thumbnail(int index)
+    {
+        var tex = Resources.Load<Texture2D>("LevelThumbs/level_" + index);
+        if (tex != null) return tex;
+        LevelTheme theme = Levels.All[index].theme;
+        var g = new Texture2D(1, 3, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        g.SetPixels(new[] { theme.paper, theme.skyMid, theme.skyTop });
+        g.Apply();
+        return g;
+    }
 
     void BuildLevels()
     {
@@ -235,22 +252,37 @@ public class MenuUI : MonoBehaviour
             card.sprite = rounded;
             card.type = Image.Type.Sliced;
             card.raycastTarget = true;
-            Place(card.rectTransform, pos, new Vector2(260f, 200f));
+            Place(card.rectTransform, pos, new Vector2(260f, 212f));
             var button = card.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => { if (index <= SaveData.Unlocked) gm.StartLevelFromMenu(index); });
             card.gameObject.AddComponent<ButtonJuice>().Init(gm, clickClip);
 
-            levelNumbers.Add(Label(card.rectTransform, "", 64, new Vector2(0f, 40f), new Vector2(300f, 80f)));
-            var name = Label(card.rectTransform, "", 26, new Vector2(0f, -18f), new Vector2(290f, 40f));
-            name.color = new Color(0.35f, 0.33f, 0.4f);
+            // صورة المرحلة
+            var thumb = new GameObject("Thumbnail", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
+            thumb.transform.SetParent(card.rectTransform, false);
+            thumb.raycastTarget = false;
+            thumb.texture = Thumbnail(i);
+            Place(thumb.rectTransform, new Vector2(0f, 30f), new Vector2(238f, 134f));
+            levelThumbs.Add(thumb);
+            lockedLabels.Add(Label(thumb.rectTransform, ArabicText.Fix("مقفلة"), 40, Vector2.zero, new Vector2(238f, 134f)));
+
+            // رقم المرحلة في دايرة على زاوية الصورة
+            var badge = Panel(card.rectTransform, "Badge", Primary);
+            badge.sprite = rounded;
+            badge.type = Image.Type.Sliced;
+            Place(badge.rectTransform, new Vector2(100f, 82f), new Vector2(54f, 54f));
+            levelNumbers.Add(Label(badge.rectTransform, "", 32, Vector2.zero, new Vector2(54f, 54f)));
+
+            var name = Label(card.rectTransform, "", 24, new Vector2(0f, -58f), new Vector2(250f, 36f));
+            name.color = new Color(0.3f, 0.28f, 0.36f);
             levelNames.Add(name);
             var stars = new Image[SaveData.MaxStars];
             for (int s = 0; s < stars.Length; s++)
             {
                 stars[s] = Panel(card.rectTransform, "Star", StarOff);
                 stars[s].sprite = star;
-                Place(stars[s].rectTransform, new Vector2((s - 1) * 52f, -65f), new Vector2(46f, 46f));
+                Place(stars[s].rectTransform, new Vector2((s - 1) * 38f, -88f), new Vector2(34f, 34f));
             }
             levelStars.Add(stars);
             levelCards.Add(card);
@@ -270,9 +302,11 @@ public class MenuUI : MonoBehaviour
             bool open = i <= SaveData.Unlocked;
             int got = SaveData.Stars(i);
             levelCards[i].color = open ? (got == SaveData.MaxStars ? new Color(1f, 0.93f, 0.7f) : Secondary) : new Color(0.8f, 0.79f, 0.78f);
-            levelNumbers[i].text = ArabicText.Fix(open ? (i + 1).ToString() : "مقفلة");
-            levelNumbers[i].fontSize = open ? 64 : 40;
+            levelNumbers[i].text = (i + 1).ToString();
             levelNumbers[i].color = open ? Ink : new Color(0.45f, 0.44f, 0.48f);
+            levelThumbs[i].color = open ? Color.white : new Color(0.28f, 0.27f, 0.32f);
+            lockedLabels[i].enabled = !open;
+            lockedLabels[i].color = new Color(0.92f, 0.9f, 0.95f);
             levelNames[i].text = open ? ArabicText.Fix(Levels.All[i].title) : "";
             for (int s = 0; s < SaveData.MaxStars; s++)
             {
@@ -280,6 +314,113 @@ public class MenuUI : MonoBehaviour
                 levelStars[i][s].color = s < got ? Gold : StarOff;
             }
         }
+    }
+
+    // ---------- قلمي: لون وشكل خط القلم ----------
+
+    RectTransform pencilPanel;
+    readonly List<Image> swatches = new List<Image>();
+    readonly List<Image> styleButtons = new List<Image>();
+    RawImage preview;
+    Outline previewGlow;
+    Text previewName;
+
+    void BuildPencil()
+    {
+        pencilPanel = NotebookPage(canvasRect, "Pencil", new Vector2(1040f, 860f), -0.8f);
+        Label(pencilPanel, ArabicText.Fix("قلمي"), 90, new Vector2(0f, 330f), new Vector2(700f, 120f));
+        Label(pencilPanel, ArabicText.Fix("اختاري لون وشكل خط القلم"), 34, new Vector2(0f, 255f), new Vector2(800f, 50f)).color = new Color(0.4f, 0.38f, 0.45f);
+
+        Label(pencilPanel, ArabicText.Fix("اللون"), 38, new Vector2(0f, 185f), new Vector2(400f, 50f));
+        for (int i = 0; i < PencilStyle.Colors.Length; i++)
+        {
+            int index = i;
+            var s = Panel(pencilPanel, "Swatch", PencilStyle.Colors[i]);
+            s.sprite = rounded;
+            s.type = Image.Type.Sliced;
+            s.raycastTarget = true;
+            Place(s.rectTransform, new Vector2(350f - i * 100f, 115f), new Vector2(78f, 78f));
+            s.gameObject.AddComponent<Button>().onClick.AddListener(() => { PencilStyle.ColorIndex = index; RefreshPencil(); });
+            s.gameObject.AddComponent<ButtonJuice>().Init(gm, clickClip);
+            var o = s.gameObject.AddComponent<Outline>();
+            o.effectColor = Ink;
+            o.effectDistance = new Vector2(5f, -5f);
+            swatches.Add(s);
+        }
+
+        Label(pencilPanel, ArabicText.Fix("الشكل"), 38, new Vector2(0f, 30f), new Vector2(400f, 50f));
+        for (int i = 0; i < PencilStyle.StyleNames.Length; i++)
+        {
+            int index = i;
+            Button(pencilPanel, PencilStyle.StyleNames[i], new Vector2(372f - i * 186f, -40f), new Vector2(170f, 84f), Secondary,
+                () => { PencilStyle.Current = (PencilStyle.Style)index; RefreshPencil(); }, 32);
+            styleButtons.Add(pencilPanel.GetChild(pencilPanel.childCount - 1).GetComponent<Image>());
+        }
+
+        previewName = Label(pencilPanel, "", 32, new Vector2(0f, -130f), new Vector2(800f, 50f));
+        preview = new GameObject("Preview", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
+        preview.transform.SetParent(pencilPanel, false);
+        preview.raycastTarget = false;
+        Place(preview.rectTransform, new Vector2(0f, -200f), new Vector2(640f, 44f));
+        previewGlow = preview.gameObject.AddComponent<Outline>();
+
+        Button(pencilPanel, "رجوع", new Vector2(0f, -320f), new Vector2(320f, 90f), Primary, ShowMain, 40);
+    }
+
+    public void ShowPencil()
+    {
+        RefreshPencil();
+        Open(pencilPanel);
+    }
+
+    void RefreshPencil()
+    {
+        int c = PencilStyle.ColorIndex;
+        PencilStyle.Style st = PencilStyle.Current;
+        for (int i = 0; i < swatches.Count; i++)
+        {
+            bool on = i == c;
+            swatches[i].GetComponent<Outline>().enabled = on;
+            swatches[i].rectTransform.sizeDelta = Vector2.one * (on ? 88f : 74f);
+        }
+        for (int i = 0; i < styleButtons.Count; i++) styleButtons[i].color = i == (int)st ? Primary : Secondary;
+
+        // معاينة شكل الخط
+        Color color = PencilStyle.CurrentColor;
+        preview.texture = null;
+        preview.uvRect = new Rect(0f, 0f, 1f, 1f);
+        preview.color = color;
+        previewGlow.enabled = false;
+        switch (st)
+        {
+            case PencilStyle.Style.Dotted:
+                var dash = new Texture2D(16, 1, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Point };
+                var px = new Color[16];
+                for (int i = 0; i < 16; i++) px[i] = new Color(1f, 1f, 1f, i < 10 ? 1f : 0f);
+                dash.SetPixels(px);
+                dash.Apply();
+                preview.texture = dash;
+                preview.uvRect = new Rect(0f, 0f, 9f, 1f);
+                break;
+            case PencilStyle.Style.Glitter:
+                preview.color = Color.Lerp(color, Color.white, 0.3f);
+                previewGlow.enabled = true;
+                previewGlow.effectColor = new Color(1f, 1f, 1f, 0.9f);
+                previewGlow.effectDistance = new Vector2(3f, -3f);
+                break;
+            case PencilStyle.Style.Neon:
+                preview.color = Color.Lerp(color, Color.white, 0.4f);
+                previewGlow.enabled = true;
+                previewGlow.effectColor = new Color(color.r, color.g, color.b, 0.8f);
+                previewGlow.effectDistance = new Vector2(8f, -8f);
+                break;
+            case PencilStyle.Style.Rainbow:
+                preview.texture = PencilStyle.RainbowTexture();
+                preview.color = Color.white;
+                preview.uvRect = new Rect(0f, 0f, 2f, 1f);
+                break;
+        }
+        previewName.text = ArabicText.Fix("خطك: " + PencilStyle.StyleNames[(int)st] + " — " + PencilStyle.ColorNames[c]);
     }
 
     // ---------- الاستراحة ----------

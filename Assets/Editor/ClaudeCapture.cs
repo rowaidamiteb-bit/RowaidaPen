@@ -244,6 +244,18 @@ public static class ClaudeCapture
                 case "tp":
                     GameManager.Instance.Rowaida.Respawn(new Vector3(float.Parse(arg, System.Globalization.CultureInfo.InvariantCulture), 1.5f, 0f));
                     break;
+                case "hideui":
+                    GameManager.Instance.UI.SetVisible(false);
+                    break;
+                case "pencil":
+                    Object.FindAnyObjectByType<MenuUI>().ShowPencil();
+                    break;
+                case "style":
+                    // style:الشكل;اللون
+                    var sc = arg.Split(';');
+                    PencilStyle.Current = (PencilStyle.Style)int.Parse(sc[0]);
+                    PencilStyle.ColorIndex = int.Parse(sc[1]);
+                    break;
                 case "jump":
                     GameManager.Instance.Rowaida.Jump();
                     break;

@@ -46,6 +46,9 @@ public class InkDrawer : MonoBehaviour
             SelectColor(picked);
             return;
         }
+        // ضغطة على زر في الشاشة (إعادة، استراحة): ما نرسم
+        if (mouse.leftButton.wasPressedThisFrame && UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+            return;
         if (mouse.leftButton.wasPressedThisFrame)
             BeginStroke(screen);
         else if (drawing && mouse.leftButton.isPressed)
@@ -127,7 +130,7 @@ public class InkDrawer : MonoBehaviour
         stroke.transform.SetParent(Game.DrawingsRoot, false);
         strokeMesh = new Mesh { name = "Ink Tube" };
         stroke.AddComponent<MeshFilter>().sharedMesh = strokeMesh;
-        stroke.AddComponent<MeshRenderer>().sharedMaterial = erasing ? Game.pencilMaterial : ColorsAllowed ? ColorMaterial(CurrentColor) : Game.inkMaterial;
+        stroke.AddComponent<MeshRenderer>().sharedMaterial = erasing ? Game.pencilMaterial : ColorsAllowed ? ColorMaterial(CurrentColor) : PencilStyle.Material(Game);
     }
 
     float nextGraphite;
@@ -268,6 +271,7 @@ public class InkDrawer : MonoBehaviour
         AddColliders(stroke.transform, points, false);
         AddRainErosion(points, false);
         ApplyColor(points, false);
+        if (!ColorsAllowed) PencilStyle.Decorate(stroke);
         AddWindDrift();
     }
 
@@ -289,6 +293,7 @@ public class InkDrawer : MonoBehaviour
         AddColliders(stroke.transform, local, true);
         AddRainErosion(local, true);
         ApplyColor(local, true);
+        if (!ColorsAllowed) PencilStyle.Decorate(stroke);
 
         var rb = stroke.AddComponent<Rigidbody>();
         rb.mass = Mathf.Max(0.5f, strokeLength * 0.4f);
