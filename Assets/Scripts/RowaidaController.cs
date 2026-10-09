@@ -25,9 +25,12 @@ public class RowaidaController : MonoBehaviour
 
         // نثبت السرعة الأفقية ونخلي السرعة العمودية للجاذبية
         Vector3 v = rb.linearVelocity;
-        v.x = WaitOnBoat() || WaitAtFold() ? 0f : walkSpeed * (boosted ? 2.2f : 1f);
+        v.x = Held || WaitOnBoat() || WaitAtFold() ? 0f : walkSpeed * (boosted ? 2.2f : 1f);
         rb.linearVelocity = v;
     }
+
+    // توقف مكانها وتستنى (مثل لما تستنى الزلاجة)
+    public bool Held { get; set; }
 
     public void Stop()
     {
@@ -163,5 +166,6 @@ public class RowaidaController : MonoBehaviour
         timer = 0f;
         boosted = false;
         stopped = false;
+        Held = false;
     }
 }

@@ -27,6 +27,7 @@ public static class LevelBuilder
         if (data.Flood) InkFlood.Spawn(root.transform, data, gm);
         foreach (FoldSpec f in data.folds) FoldingFlap.Spawn(root.transform, f, gm);
         BuildFloaters(root.transform, data, gm, rng);
+        SnowFeatures.Build(root.transform, data, gm, rng);
         return root;
     }
 
@@ -96,7 +97,7 @@ public static class LevelBuilder
     // صفحة ورق سميكة: سطح ورق، جوانب صفحات مكدسة، خطوط رصاص على الحواف، شقوق، وسلك الدفتر
     static int pageCounter;
 
-    static GameObject CreatePaperBlock(Transform parent, Block b, GameManager gm, System.Random rng, LevelData data, bool first, int index = -1)
+    public static GameObject CreatePaperBlock(Transform parent, Block b, GameManager gm, System.Random rng, LevelData data, bool first, int index = -1)
     {
         var go = new GameObject("Paper Page");
         go.transform.SetParent(parent, false);

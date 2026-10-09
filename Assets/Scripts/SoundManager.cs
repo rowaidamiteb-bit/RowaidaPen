@@ -165,6 +165,13 @@ public class SoundManager : MonoBehaviour
         effects.PlayOneShot(thunderClip, effectsVolume * Random.Range(0.6f, 1f));
     }
 
+    // هدير الانهيار الثلجي (نفس صوت الرعد بس أخف)
+    public void PlayRumble(float volume)
+    {
+        if (thunderClip == null) thunderClip = SynthAudio.Thunder();
+        effects.PlayOneShot(thunderClip, effectsVolume * volume);
+    }
+
     public void PlayLose()
     {
         effects.PlayOneShot(LoseClip, effectsVolume);

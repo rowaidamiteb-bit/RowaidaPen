@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 // ويسكر الطريق على رويدا. اللاعب يشخبط عليه عشان يمسحه: كل ما شخبط أكثر يبهت ويصغر لين يختفي.
 public class ScribbleMonster : MonoBehaviour
 {
-    public enum Kind { PurpleBlob, FuzzyBall, GreenEye, SnowChaser, SnowGuard }
+    public enum Kind { PurpleBlob, FuzzyBall, GreenEye, SnowChaser, SnowGuard, SnowThrower }
     enum State { Wander, EatInk }
 
     const float Radius = 0.45f;
@@ -15,6 +15,36 @@ public class ScribbleMonster : MonoBehaviour
     const float SnowChaseSpeed = 2.4f;      // رجل الثلج أبطأ من رويدا: يمسكها بس إذا وقفت أو انصدت
     bool hunting;
     float chaseFrom;
+
+    // ---------- رجل الثلج اللي يرمي ----------
+
+    const float ThrowRange = 9f, ThrowEvery = 1.7f, FlightTime = 0.95f;
+    float nextThrow, throwAnim;
+
+    // يرمي كرة ثلج على المكان اللي بتوصله رويدا (ترسمين درع فوقها يصد الكور)
+    void UpdateThrowing()
+    {
+        if (throwAnim > 0f)
+        {
+            throwAnim -= Time.deltaTime * 3f;
+            visual.localRotation = Quaternion.Euler(0f, 180f, Mathf.Sin(Mathf.Clamp01(throwAnim) * Mathf.PI) * -25f);
+        }
+        GameManager gm = GameManager.Instance;
+        if (gm == null || !gm.IsPlaying || gm.Rowaida == null || Stunned) return;
+        Vector3 r = gm.Rowaida.transform.position;
+        float dx = transform.position.x - r.x;
+        if (dx < 1.2f || dx > ThrowRange) { nextThrow = Mathf.Max(nextThrow, Time.time + 0.5f); return; }
+        if (Time.time < nextThrow) return;
+        nextThrow = Time.time + ThrowEvery;
+
+        Vector3 from = transform.position + new Vector3(-0.55f, 1.1f, 0f);
+        Vector3 target = r + new Vector3(gm.Rowaida.walkSpeed * FlightTime, 0.25f, 0f);
+        Vector3 v = (target - from - 0.5f * Physics.gravity * FlightTime * FlightTime) / FlightTime;
+        v.z = 0f;
+        Snowball.Throw(from, v, GetComponent<Collider>());
+        gm.Sound.PlaySqueak(Random.Range(1.6f, 1.9f));
+        throwAnim = 1f;
+    }
 
     // ---------- رجل الثلج اللي يلحق ----------
 
@@ -149,6 +179,7 @@ public class ScribbleMonster : MonoBehaviour
         {
             case Kind.SnowChaser:
             case Kind.SnowGuard:
+            case Kind.SnowThrower:
                 BuildSnowman(gm, white, black);
                 break;
             case Kind.PurpleBlob:
@@ -273,14 +304,14 @@ public class ScribbleMonster : MonoBehaviour
         }
         else
         {
-            Material beanie = gm.Mat("Beanie", new Color(0.9f, 0.25f, 0.3f), 0.3f);
+            Material beanie = kind == Kind.SnowThrower ? gm.Mat("Beanie Blue", new Color(0.3f, 0.5f, 0.95f), 0.3f) : gm.Mat("Beanie", new Color(0.9f, 0.25f, 0.3f), 0.3f);
             var cap = Part(PrimitiveType.Sphere, new Vector3(0f, 1.26f, 0f), new Vector3(0.5f, 0.3f, 0.5f), beanie);
             Part(PrimitiveType.Sphere, new Vector3(0f, 1.43f, 0f), Vector3.one * 0.13f, white);
             Part(PrimitiveType.Cylinder, new Vector3(0f, 1.2f, 0f), new Vector3(0.53f, 0.04f, 0.53f), white);
         }
     }
 
-    public bool IsSnowman => kind == Kind.SnowChaser || kind == Kind.SnowGuard;
+    public bool IsSnowman => kind == Kind.SnowChaser || kind == Kind.SnowGuard || kind == Kind.SnowThrower;
 
     // وين تنحسب الشخبطة (رجل الثلج أطول فنحسب من نصه)
     public Vector3 EraseCenter => transform.position + transform.up * (IsSnowman ? 0.5f : 0f);
@@ -366,6 +397,7 @@ public class ScribbleMonster : MonoBehaviour
 
         if (state == State.EatInk) UpdateEating();
         if (kind == Kind.SnowChaser && hunting) FreezeInkBehind();
+        if (kind == Kind.SnowThrower) UpdateThrowing();
 
         // لو وقفت الشخبطة يرجع لونه شوي شوي
         if (Time.time > stunnedUntil + 0.6f) erased = Mathf.Max(0f, erased - Time.deltaTime * 0.12f);
@@ -447,7 +479,7 @@ public class ScribbleMonster : MonoBehaviour
         {
             if (p.x < patrolMin) dir = 1;
             else if (p.x > patrolMax) dir = -1;
-            speed = kind == Kind.SnowGuard ? 0f : WanderSpeed * dir;   // الحارس واقف مكانه
+            speed = kind == Kind.SnowGuard || kind == Kind.SnowThrower ? 0f : WanderSpeed * dir;   // الحارس والرامي واقفين مكانهم
             // جسر قريب؟ نمشي له
             if (target != null)
             {
@@ -471,7 +503,7 @@ public class ScribbleMonster : MonoBehaviour
                 }
             }
             // شاف رويدا قريبة على نفس المستوى؟ يركض لها
-            else if (SeesRowaida(p, out float dx))
+            else if (kind != Kind.SnowThrower && SeesRowaida(p, out float dx))
             {
                 sawHer = true;
                 dir = dx > 0f ? 1 : -1;

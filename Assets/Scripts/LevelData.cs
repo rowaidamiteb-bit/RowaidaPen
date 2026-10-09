@@ -66,6 +66,18 @@ public struct FoldSpec
     }
 }
 
+// الزلاجة: رويدا توقف عند spotX لين ترسمين زلاجة، بعدين تنزل المنحدر وتطير فوق الحفرة
+public class SledSpec
+{
+    public float spotX;          // وين توقف رويدا تستنى الزلاجة
+    public float hillStart;      // بداية المنحدر (آخر الصفحة العالية)
+    public float hillEnd;        // نهاية المنحدر
+    public float drop;           // كم ينزل المنحدر
+    public float rampEnd;        // نهاية القفزة (الطلعة الصغيرة)
+    public float rampRise;       // كم تطلع القفزة
+    public float landingTop;     // سطح الصفحة اللي تنزل عليها
+}
+
 // أرضية طايرة: مكانها، عرضها، وكم تتحرك يمين ويسار (وكل كم ثانية)
 public struct FloaterSpec
 {
@@ -113,6 +125,9 @@ public class LevelData
     public List<FoldSpec> folds = new List<FoldSpec>();   // صفحة الطيّة: صفحات تنطوي وتنفتح
     public List<Vector3> vanishTiles = new List<Vector3>(); // الصفحة المتلاشية: (من x، لـ x، مسافة البداية)
     public List<FloaterSpec> floaters = new List<FloaterSpec>(); // الأرض الطايرة: صفحات تتحرك في السما
+    public List<Vector2> iceSheets = new List<Vector2>();   // زيزو: جليد يتشقق ويتكسر تحت رويدا (من x لـ x)
+    public bool avalanche;                                  // زيزو: انهيار ثلجي يلحقها من ورا
+    public SledSpec sled;                                   // زيزو: محطة الزلاجة والمنحدر (null = ما فيه)
     public float timeLimit;                               // وقت محدود للمرحلة بالثواني (0 = بدون وقت)
     public List<Block> blocks = new List<Block>();
 }
@@ -276,31 +291,40 @@ public static class Levels
 
     // الصفحة المتلاشية: أجزاء من الأرض تهتز وتختفي لما تقربين منها، ارسمي خط فوقها عشان تعدين.
     // (تقدرين ترسمين الخط قبل لا تختفي، والخط يبقى)
-    // زيزو: صباح ثلجي. رجل ثلج يلحق رويدا من ورا ويكسر الحبر اللي يعديه (لو مسكها تخسر قلب)،
-    // ورجال ثلج واقفين يستنونها: لما تقرب يركضون لها ويدفونها لورا (لين الثاني يلحقها)
+    // زيزو: صباح ثلجي بثلاث أجزاء، وانهيار ثلجي يلحق رويدا من البداية:
+    // 1) بحيرة جليد تتشقق وتنكسر تحت رجولها  2) رجال ثلج فوق رفوف يرمون كور (ارسمي درع)
+    // 3) فوق التلة ترسمين زلاجة وتنزلين المنحدر وتطيرين فوق حفرة كبيرة
     static LevelData SnowLevel()
     {
         return new LevelData
         {
             title = "زيزو",
             theme = LevelTheme.SnowMorning(),
-            subtitle = "رجل ثلج يلحقك ويكسر الحبر، والباقين يستنونك... شخبطي عليهم!",
+            subtitle = "انهيار ثلجي وراك! عدّي الجليد، صدّي الكور، وارسمي زلاجة فوق التلة",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(45f, 0f, 0f),
-            ink = 16f,
+            door = new Vector3(66f, -3.5f, 0f),
+            ink = 18f,
+            avalanche = true,
             blocks =
             {
-                Page(-7f, 6f),          // حفرة 3
-                Page(9f, 19f),          // حفرة 3.5
-                Page(22.5f, 31f),       // حفرة 3
-                Page(34f, 48f),
+                Page(-7f, 4f),                  // حفرة 3 بعدها بحيرة الجليد
+                Page(21.5f, 36f),               // التلة: رجال الثلج فوقها ومحطة الزلاجة في آخرها
+                Page(56f, 70f, -3.5f),          // تحت بعد الطيران
+                Wall(24.5f, 26.1f, 2.8f, 2f),   // رف رجل الثلج الأول
+                Wall(28.6f, 30.2f, 2.8f, 2f),   // رف الثاني
             },
+            iceSheets = { new Vector2(7f, 19f) },
+            sled = new SledSpec { spotX = 32.5f, hillStart = 36f, hillEnd = 46f, drop = 4f, rampEnd = 48f, rampRise = 1f, landingTop = -3.5f },
             monsters =
             {
-                Monster(ScribbleMonster.Kind.SnowChaser, -6.4f, -7f, 6f),
-                Monster(ScribbleMonster.Kind.SnowGuard, 15f, 15f, 15f),
-                Monster(ScribbleMonster.Kind.SnowGuard, 27.5f, 27.5f, 27.5f),
-                Monster(ScribbleMonster.Kind.SnowGuard, 40f, 40f, 40f),
+                Monster(ScribbleMonster.Kind.SnowThrower, 25.3f, 25.3f, 25.3f),
+                Monster(ScribbleMonster.Kind.SnowThrower, 29.4f, 29.4f, 29.4f),
+            },
+            hints =
+            {
+                new HintLine(new Vector3(3.6f, 0.2f, 0f), new Vector3(7.4f, 0.2f, 0f), new Color(0.3f, 0.4f, 0.6f)),
+                new HintLine(new Vector3(33.2f, 0.25f, 0f), new Vector3(35.1f, 0.25f, 0f), new Color(0.85f, 0.3f, 0.35f)),
+                new HintLine(new Vector3(35.1f, 0.25f, 0f), new Vector3(35.45f, 0.65f, 0f), new Color(0.85f, 0.3f, 0.35f)),
             },
         };
     }
