@@ -181,7 +181,7 @@ public class NightSky : MonoBehaviour
     }
 
     // مادة شفافة بدون إضاءة (اللون فوق 1 يعطي توهج مع الـ Bloom)
-    static Material Transparent(string name, Texture2D tex, Color color)
+    public static Material Transparent(string name, Texture2D tex, Color color)
     {
         var m = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = name };
         m.SetTexture("_BaseMap", tex);
@@ -206,7 +206,7 @@ public class NightSky : MonoBehaviour
         return new Texture2D(w, h, TextureFormat.RGBA32, true) { name = name, wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear };
     }
 
-    static Texture2D DotTexture()
+    public static Texture2D DotTexture()
     {
         const int s = 64;
         var tex = NewTex(s, s, "Star Dot");
@@ -290,7 +290,7 @@ public class NightSky : MonoBehaviour
     }
 
     // غيمة ناعمة: كور منفوخة فوق قاعدة مسطحة، بحواف ضبابية
-    static Texture2D CloudTexture(int seed)
+    public static Texture2D CloudTexture(int seed)
     {
         const int w = 256, h = 112;
         var tex = NewTex(w, h, "Cloud");
