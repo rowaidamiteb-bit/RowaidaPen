@@ -21,6 +21,8 @@ public static class NewFeatures
         foreach (Vector3 peg in data.pegs) StonePillar.Create(root, peg, gm);
         foreach (Vector4 b in data.birds) PaperBird.Create(root, b, gm);
         if (data.darkness) BuildDarkness(root, data, gm);
+        foreach (Vector3 s in data.swarms) FireflySwarm.Create(root, s, gm);
+        foreach (Vector3 s in data.shadows) ShadowCreature.Create(root, s, gm);
     }
 
     // ---------- الرسم ----------
@@ -83,8 +85,9 @@ public static class NewFeatures
             lantern.range = 7f;
             lantern.intensity = 3.2f;
             var glow = gm.Mat("Lantern Glow", new Color(2.6f, 2f, 0.9f), 0.9f);
-            LevelBuilder.Visual("Lantern", PrimitiveType.Sphere, rowaida.transform, new Vector3(0.38f, 0.05f, -0.32f), Vector3.one * 0.16f, glow, false);
+            var ball = LevelBuilder.Visual("Lantern", PrimitiveType.Sphere, rowaida.transform, new Vector3(0.38f, 0.05f, -0.32f), Vector3.one * 0.16f, glow, false);
             lantern.gameObject.AddComponent<Flicker>().baseIntensity = 3.2f;
+            rowaida.gameObject.AddComponent<LanternFuel>().Init(lantern, ball.transform);
         }
 
         // يراعات عند أطراف الحفر (تعلّم وين تنتهي الأرض)
@@ -1302,5 +1305,210 @@ public class PaperBird : MonoBehaviour
                 Destroy(g);
             }
         carried.Clear();
+    }
+}
+
+// ---------- اليراعات: فانوس يخلص، يراعات تعبيه، وظلال تخاف من الضو ----------
+
+// زيت الفانوس: ينقص مع الوقت، والضو يصغر معه
+public class LanternFuel : MonoBehaviour
+{
+    public const float Drain = 1f / 9f;
+    public static LanternFuel Instance;
+    public float fuel = 1f;
+    Light lamp;
+    Flicker flicker;
+    Transform glow;
+
+    // نص قطر الضو اللي تخاف منه الظلال
+    public float Radius => Mathf.Lerp(0.3f, 5.5f, fuel);
+
+    public void Init(Light light, Transform glowBall)
+    {
+        Instance = this;
+        lamp = light;
+        flicker = light.GetComponent<Flicker>();
+        glow = glowBall;
+        GameManager.Instance.Respawned += OnRespawned;
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
+        if (GameManager.Instance != null) GameManager.Instance.Respawned -= OnRespawned;
+    }
+
+    void OnRespawned(Vector3 pos) => fuel = 1f;
+
+    public void Refill(float amount)
+    {
+        fuel = Mathf.Min(1f, fuel + amount);
+        Fx.Sparkle(lamp.transform.position, new Color(0.85f, 1f, 0.4f), 16);
+        GameManager.Instance.Sound.PlaySqueak(1.6f);
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm != null && gm.IsPlaying) fuel = Mathf.Max(0f, fuel - Drain * Time.deltaTime);
+        lamp.range = Mathf.Lerp(1.6f, 7.5f, fuel);
+        float k = Mathf.Lerp(0.5f, 3.4f, fuel);
+        // لما يقرب يخلص يرجف
+        if (fuel < 0.25f) k *= 0.6f + 0.4f * Mathf.PerlinNoise(Time.time * 12f, 0f);
+        if (flicker != null) flicker.baseIntensity = k; else lamp.intensity = k;
+        if (glow != null) glow.localScale = Vector3.one * Mathf.Lerp(0.08f, 0.17f, fuel);
+    }
+}
+
+// سرب يراعات يطير بمكانه: إذا لمسته رويدا أو خط، يطير للفانوس ويعبيه
+public class FireflySwarm : MonoBehaviour
+{
+    readonly List<Transform> bugs = new List<Transform>();
+    float seed, flyT = -1f;
+    Vector3[] flyFrom;
+    Light glow;
+
+    public static void Create(Transform root, Vector3 pos, GameManager gm)
+    {
+        var go = new GameObject("Firefly Swarm");
+        go.transform.SetParent(root, false);
+        go.transform.position = pos;
+        var s = go.AddComponent<FireflySwarm>();
+        s.seed = pos.x;
+        var mat = gm.Mat("Swarm Glow", new Color(2.6f, 3f, 0.8f), 0.9f);
+        for (int i = 0; i < 12; i++)
+            s.bugs.Add(LevelBuilder.Visual("Firefly", PrimitiveType.Sphere, go.transform, Vector3.zero, Vector3.one * 0.08f, mat, false).transform);
+        s.glow = go.AddComponent<Light>();
+        s.glow.type = LightType.Point;
+        s.glow.color = new Color(0.8f, 1f, 0.4f);
+        s.glow.range = 3.5f;
+        s.glow.intensity = 2.2f;
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null || gm.Rowaida == null) return;
+        Vector3 lantern = gm.Rowaida.transform.position + new Vector3(0.4f, 0.1f, -0.3f);
+
+        if (flyT >= 0f)
+        {
+            // تطير للفانوس كل وحدة بطريقها
+            flyT += Time.deltaTime / 0.8f;
+            for (int i = 0; i < bugs.Count; i++)
+            {
+                Vector3 mid = Vector3.Lerp(flyFrom[i], lantern, 0.5f) + Vector3.up * (0.8f + i % 3 * 0.3f);
+                float t = Mathf.Clamp01(flyT - i * 0.03f);
+                bugs[i].position = Vector3.Lerp(Vector3.Lerp(flyFrom[i], mid, t), Vector3.Lerp(mid, lantern, t), t);
+            }
+            glow.transform.position = bugs[0].position;
+            if (flyT >= 1.35f)
+            {
+                if (LanternFuel.Instance != null) LanternFuel.Instance.Refill(0.6f);
+                Destroy(gameObject);
+            }
+            return;
+        }
+
+        float time = Time.time + seed;
+        for (int i = 0; i < bugs.Count; i++)
+        {
+            float a = time * (0.7f + i * 0.13f) + i * 2.1f;
+            bugs[i].localPosition = new Vector3(Mathf.Cos(a) * 0.6f, Mathf.Sin(a * 1.4f) * 0.45f, Mathf.Sin(a) * 0.35f);
+            bugs[i].localScale = Vector3.one * (0.06f + 0.04f * Mathf.Abs(Mathf.Sin(time * 5f + i)));
+        }
+        glow.intensity = 2f + Mathf.Sin(time * 3f) * 0.5f;
+
+        // رويدا قريبة، أو خط يلمسه؟
+        bool touched = (gm.Rowaida.transform.position - transform.position).sqrMagnitude < 1.3f * 1.3f;
+        if (!touched)
+            foreach (InkMark mark in Object.FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                var r = mark.GetComponent<MeshRenderer>();
+                if (r != null && r.bounds.SqrDistance(transform.position) < 0.8f * 0.8f) { touched = true; break; }
+            }
+        if (!touched) return;
+        flyT = 0f;
+        flyFrom = new Vector3[bugs.Count];
+        for (int i = 0; i < bugs.Count; i++) flyFrom[i] = bugs[i].position;
+        gm.Sound.PlaySqueak(2f);
+    }
+}
+
+// ظل بعيون تلمع: يقرب من رويدا لما الضو ضعيف، ويهرب منه لما يكون قوي. لو لمسها تخسر قلب
+public class ShadowCreature : MonoBehaviour
+{
+    Vector3 home, vel;
+    Transform body;
+    readonly List<Transform> eyes = new List<Transform>();
+    readonly List<Transform> wisps = new List<Transform>();
+    float seed;
+
+    public static void Create(Transform root, Vector3 pos, GameManager gm)
+    {
+        var go = new GameObject("Shadow Creature");
+        go.transform.SetParent(root, false);
+        go.transform.position = pos;
+        var s = go.AddComponent<ShadowCreature>();
+        s.home = pos;
+        s.seed = pos.x * 3.1f;
+
+        Material dark = gm.Mat("Shadow Body", new Color(0.02f, 0.015f, 0.04f), 0f);
+        var eyeMat = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = "Shadow Eye" };
+        eyeMat.SetColor("_BaseColor", new Color(2.4f, 2.1f, 1.1f));
+        s.body = new GameObject("Body").transform;
+        s.body.SetParent(go.transform, false);
+        LevelBuilder.Visual("Blob", PrimitiveType.Sphere, s.body, Vector3.zero, new Vector3(0.95f, 1.15f, 0.8f), dark, false);
+        LevelBuilder.Visual("Hood", PrimitiveType.Sphere, s.body, new Vector3(0f, 0.45f, 0f), new Vector3(0.7f, 0.6f, 0.65f), dark, false);
+        for (int i = 0; i < 4; i++)
+            s.wisps.Add(LevelBuilder.Visual("Wisp", PrimitiveType.Sphere, s.body, new Vector3(-0.3f + i * 0.2f, -0.55f, 0f), Vector3.one * 0.3f, dark, false).transform);
+        for (int e = -1; e <= 1; e += 2)
+            s.eyes.Add(LevelBuilder.Visual("Eye", PrimitiveType.Sphere, s.body, new Vector3(e * 0.16f, 0.32f, -0.36f), new Vector3(0.14f, 0.09f, 0.05f), eyeMat, false).transform);
+        gm.Respawned += s.OnRespawned;
+    }
+
+    void OnDestroy()
+    {
+        if (GameManager.Instance != null) GameManager.Instance.Respawned -= OnRespawned;
+    }
+
+    void OnRespawned(Vector3 pos)
+    {
+        transform.position = home;
+        vel = Vector3.zero;
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null || gm.Rowaida == null) return;
+        float t = Time.time + seed;
+        Vector3 me = transform.position, her = gm.Rowaida.transform.position + Vector3.up * 0.2f;
+        Vector3 to = her - me;
+        float d = to.magnitude;
+        float light = LanternFuel.Instance != null ? LanternFuel.Instance.Radius : 3f;
+
+        Vector3 want;
+        if (d < light) vel = want = -to.normalized * 4f;             // الضو عليه: يهرب على طول
+        else if (d < light + 1f) want = Vector3.zero;               // على حد الضو: يحوم ويطالع
+        else if (d < 9f) want = to.normalized * 1.9f;               // بعيد عن الضو: يقرب
+        else want = (home - me) * 0.8f;                             // بعيد: يرجع مكانه
+        vel = Vector3.Lerp(vel, want, Time.deltaTime * 3f);
+        vel.z = 0f;
+        transform.position = me + vel * Time.deltaTime;
+
+        // شكله: يتموج، ويصغر إذا الضو عليه، والعيون تغمض شوي
+        float scared = Mathf.Clamp01((light - d) / 2f);
+        body.localScale = Vector3.one * (1f - scared * 0.3f) + new Vector3(Mathf.Sin(t * 3f) * 0.05f, Mathf.Cos(t * 2.6f) * 0.06f, 0f);
+        foreach (Transform e in eyes) e.localScale = new Vector3(0.14f, Mathf.Lerp(0.09f, 0.025f, scared), 0.05f);
+        for (int i = 0; i < wisps.Count; i++)
+            wisps[i].localPosition = new Vector3(-0.3f + i * 0.2f + Mathf.Sin(t * 4f + i) * 0.06f, -0.55f + Mathf.Sin(t * 5f + i * 1.7f) * 0.1f, 0f);
+        body.localRotation = Quaternion.Euler(0f, 0f, -vel.x * 4f);
+
+        if (d < 0.8f && gm.IsPlaying)
+        {
+            Fx.Sparkle(her, new Color(0.3f, 0.2f, 0.5f), 16);
+            gm.KillRowaida();
+        }
     }
 }

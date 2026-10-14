@@ -143,6 +143,8 @@ public class LevelData
     public List<Vector3> pins = new List<Vector3>();        // البالونات: دبابيس معلقة تفجر البالونة (من x، لـ x، ارتفاعها)
     public List<Vector3> fans = new List<Vector3>();        // البالونات: مروحة تدف البالونة لليمين (من x، لـ x، ارتفاع الطيران)
     public bool darkness;                                   // اليراعات: ظلام، فانوس مع رويدا، وخطوط تضوي
+    public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
+    public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
     public bool HasMeteors => meteorZone.y > meteorZone.x;
     public Vector3? blackHole;                              // الفضاء: مكان الثقب الأسود (null = ما فيه)
@@ -586,17 +588,18 @@ public static class Levels
         };
     }
 
-    // صفحة اليراعات: ظلام، رويدا ماسكة فانوس، والحفر تبين بس لما تقربين. يراعات تعلّم أطراف الأرض، وخطوطك تضوي
+    // صفحة اليراعات: ظلام، وزيت الفانوس يخلص شوي شوي. الظلال تقرب لما يضعف الضو.
+    // اليراعات تعبي الفانوس: اللي على الطريق تاخذها رويدا، واللي فوق ارسمي لها خط يوصلها
     static LevelData FirefliesLevel()
     {
         return new LevelData
         {
             title = "صفحة اليراعات",
             theme = LevelTheme.Fireflies(),
-            subtitle = "الدنيا ظلام... اتبعي اليراعات، وخطوطك بتضوي الطريق",
+            subtitle = "الفانوس يخلص! ارسمي خط يلمس اليراعات تعبيه، والظلال تخاف من الضو",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(43f, 0f, 0f),
-            ink = 24f,
+            ink = 26f,
             darkness = true,
             blocks =
             {
@@ -606,7 +609,23 @@ public static class Levels
                 Page(29f, 33f, -0.5f),
                 Page(36f, 46f),
             },
-            monsters = { Monster(ScribbleMonster.Kind.PurpleBlob, 22f, 19f, 25f) },
+            swarms =
+            {
+                new Vector3(9.5f, 1.9f, 0f),    // على الطريق
+                new Vector3(21f, 3.6f, 0f),     // فوق: يبي خط
+                new Vector3(31f, 3.1f, 0f),     // فوق: يبي خط
+            },
+            shadows =
+            {
+                new Vector3(22.5f, 1.5f, 0f),
+                new Vector3(31.5f, 1.2f, 0f),
+                new Vector3(40.5f, 1.6f, 0f),
+            },
+            hints =
+            {
+                new HintLine(new Vector3(20.3f, 2.9f, 0f), new Vector3(21.7f, 2.9f, 0f), new Color(0.8f, 1f, 0.4f)),
+                new HintLine(new Vector3(30.3f, 2.4f, 0f), new Vector3(31.7f, 2.4f, 0f), new Color(0.8f, 1f, 0.4f)),
+            },
         };
     }
 
