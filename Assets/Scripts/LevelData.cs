@@ -136,6 +136,8 @@ public class LevelData
     public List<Vector4> portals = new List<Vector4>();     // البوابات: (دخول x، دخول y، خروج x، خروج y) على سطح الأرض
     public float maxSpan;                                   // الوادي: الخط أطول من كذا ينكسر تحت رويدا (0 = ما فيه)
     public List<Vector3> pegs = new List<Vector3>();        // الوادي: حجارة طايرة (x، سطحها، عرضها)
+    public List<Vector3> pins = new List<Vector3>();        // البالونات: دبابيس معلقة تفجر البالونة (من x، لـ x، ارتفاعها)
+    public List<Vector3> fans = new List<Vector3>();        // البالونات: مروحة تدف البالونة لليمين (من x، لـ x، ارتفاع الطيران)
     public bool darkness;                                   // اليراعات: ظلام، فانوس مع رويدا، وخطوط تضوي
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
     public bool HasMeteors => meteorZone.y > meteorZone.x;
@@ -424,36 +426,47 @@ public static class Levels
         };
     }
 
-    // صفحة البالونات: الأشكال المغلقة تصير بالونات. ارسمي بالونة في الحفرة، توقف عليها رويدا وتطلع فيها فوق الجدار
+    // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.
+    // 1) بالونة بسيطة فوق جدار  2) دبابيس معلقة: جسر صغير أول، وبعدين البالونة بعيد عن الدبابيس
+    // 3) مروحة كبيرة تدف البالونة فوق حفرة طويلة
     static LevelData BalloonLevel()
     {
         var level = new LevelData
         {
             title = "صفحة البالونات",
             theme = LevelTheme.BalloonSky(),
-            subtitle = "ارسمي دايرة تصير بالونة... وطيري فيها فوق الجدران!",
+            subtitle = "ارسمي دايرة تصير بالونة... وانتبهي من الدبابيس!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(55f, 0f, 0f),
-            ink = 32f,
+            door = new Vector3(51f, 0f, 0f),
+            ink = 34f,
             balloonInk = true,
             blocks =
             {
                 Page(-7f, 3f),              // حفرة: بالونة لفوق
-                Wall(6f, 13f, 3f),          // حفرة: بالونة أعلى
-                Wall(16f, 24f, 6f),         // حفرة: جسر لتحت
-                Page(27f, 34f, 3f),         // حفرة: بالونة لفوق
-                Wall(37f, 46f, 6f),         // حفرة: جسر لتحت
-                Page(49f, 58f),
+                Wall(6f, 13f, 3f),          // حفرة عريضة تحت دبابيس
+                Wall(18.5f, 24f, 6.5f),     // حفرة طويلة: المروحة تدفك
+                Page(33f, 40f, 6.5f),       // حفرة: جسر لتحت
+                Page(43f, 54f),
             },
+            pins = { new Vector3(13f, 15.3f, 7.3f) },
+            fans = { new Vector3(24f, 33f, 6.5f) },
         };
-        // تلميح: بالونة منقطة في أول حفرة
+        Oval(level, 4.5f, -0.3f, new Color(1f, 0.45f, 0.5f));
+        level.hints.Add(new HintLine(new Vector3(12.8f, 3.2f, 0f), new Vector3(15.5f, 3.2f, 0f), new Color(0.4f, 0.6f, 0.95f)));
+        Oval(level, 16.95f, 2.75f, new Color(0.4f, 0.6f, 0.95f));
+        Oval(level, 25.3f, 6.15f, new Color(1f, 0.7f, 0.2f));
+        return level;
+    }
+
+    // بالونة منقطة (تلميح وين ترسمين)
+    static void Oval(LevelData level, float cx, float cy, Color c)
+    {
         for (int i = 0; i < 10; i++)
         {
             float a0 = i / 10f * Mathf.PI * 2f, a1 = (i + 1) / 10f * Mathf.PI * 2f;
-            level.hints.Add(new HintLine(new Vector3(4.5f + Mathf.Cos(a0) * 1.15f, -0.35f + Mathf.Sin(a0) * 0.45f, 0f),
-                                         new Vector3(4.5f + Mathf.Cos(a1) * 1.15f, -0.35f + Mathf.Sin(a1) * 0.45f, 0f), new Color(1f, 0.45f, 0.5f)));
+            level.hints.Add(new HintLine(new Vector3(cx + Mathf.Cos(a0) * 1.15f, cy + Mathf.Sin(a0) * 0.42f, 0f),
+                                         new Vector3(cx + Mathf.Cos(a1) * 1.15f, cy + Mathf.Sin(a1) * 0.42f, 0f), c));
         }
-        return level;
     }
 
     // صفحة النار: حفر نار تشتعل وتنطفي. رويدا تستنى عند الطرف، وأنتِ ترسمين الجسر أول ما تنطفي النار

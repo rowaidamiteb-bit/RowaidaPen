@@ -25,7 +25,7 @@ public class RowaidaController : MonoBehaviour
 
         // نثبت السرعة الأفقية ونخلي السرعة العمودية للجاذبية
         Vector3 v = rb.linearVelocity;
-        v.x = Held || WaitOnBoat() || WaitAtFold() ? 0f : walkSpeed * (boosted ? 2.2f : 1f) + WalkBonus;
+        v.x = Held ? CarryX : WaitOnBoat() || WaitAtFold() ? 0f : walkSpeed * (boosted ? 2.2f : 1f) + WalkBonus;
         if (jumpRequested)
         {
             jumpRequested = false;
@@ -75,6 +75,9 @@ public class RowaidaController : MonoBehaviour
 
     // سرعة زيادة (أو نقص) من شي يسحبها، مثل الثقب الأسود
     public float WalkBonus { get; set; }
+
+    // سرعة شي شايلها وهي واقفة (مثل البالونة اللي تمشي مع المروحة)
+    public float CarryX { get; set; }
 
     public void Stop()
     {
@@ -211,5 +214,6 @@ public class RowaidaController : MonoBehaviour
         boosted = false;
         stopped = false;
         Held = false;
+        CarryX = 0f;
     }
 }

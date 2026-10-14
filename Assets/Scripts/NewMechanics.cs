@@ -7,6 +7,8 @@ public static class NewFeatures
     public static void Build(Transform root, LevelData data, GameManager gm, System.Random rng)
     {
         foreach (Vector4 f in data.firePits) FirePit.Create(root, f, gm);
+        foreach (Vector3 p in data.pins) PinRow.Create(root, p, gm);
+        foreach (Vector3 f in data.fans) FanZone.Create(root, f, gm);
         foreach (Vector4 p in data.portals) Portal.Create(root, new Vector3(p.x, p.y, 0f), new Vector3(p.z, p.w, 0f));
         foreach (Vector3 peg in data.pegs)
             LevelBuilder.CreatePaperBlock(root, new Block(new Vector3(peg.x, peg.y - 0.3f, 0f), new Vector3(peg.z, 0.6f, 2.2f)), gm, rng, data, false);
@@ -142,17 +144,22 @@ public class FireflyCluster : MonoBehaviour
 
 // ---------- البالونات ----------
 
-// شكل مغلق يصير بالونة: يطفو مكانه، ولما توقف عليه رويدا يطلع فيها لين يوصل للأرض العالية اللي جنبه
+// الشكل المغلق يصير سلة، وفوقها بالونة حقيقية (لمعة وعقدة وخيطين).
+// لما توقف رويدا في السلة تطلع لين الأرض العالية اللي جنبها. لو صدمت دبابيس تنفجر وتطيح السلة،
+// ولو كانت عند مروحة تدفها المروحة لليمين فوق الحفرة الطويلة
 public class BalloonLift : MonoBehaviour
 {
-    const float RiseSpeed = 1.7f;
+    const float RiseSpeed = 1.7f, FerrySpeed = 2.3f;
     static readonly Color[] Colors = { new Color(1f, 0.4f, 0.45f), new Color(1f, 0.75f, 0.25f), new Color(0.4f, 0.7f, 1f), new Color(0.55f, 0.85f, 0.45f), new Color(0.8f, 0.55f, 1f) };
     static int next;
 
     Rigidbody rb;
     MeshRenderer rend;
-    float targetTop, doneTime;
-    bool rising, done;
+    Transform balloon;
+    Color color;
+    float targetTop, doneTime, ferryStart, lastX;
+    bool rising, ferrying, done, popped;
+    FanZone fan;
 
     void Start()
     {
@@ -161,74 +168,162 @@ public class BalloonLift : MonoBehaviour
         rb.useGravity = false;
         rb.linearVelocity = Vector3.zero;
         rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezePositionX;
+        GameManager gm = GameManager.Instance;
 
-        // لون بالونة وخيط نازل منها
-        Color c = Colors[next++ % Colors.Length];
-        rend.material.SetColor("_BaseColor", c);
-        rend.material.SetFloat("_Smoothness", 0.75f);
+        color = Colors[next++ % Colors.Length];
         Bounds b = rend.bounds;
-        // جسم البالونة: نعبي الشكل بكورة منفوخة بنفس اللون (أفتح شوي)
-        var fill = LevelBuilder.Visual("Balloon Body", PrimitiveType.Sphere, transform, Vector3.zero,
-            new Vector3(b.size.x * 0.92f, b.size.y * 0.92f, 0.5f), GameManager.Instance.Mat("Balloon Fill " + ColorUtility.ToHtmlStringRGB(c), Color.Lerp(c, Color.white, 0.25f), 0.7f), false);
-        fill.transform.position = b.center + new Vector3(0f, 0f, 0.05f);
-        var str = LevelBuilder.Visual("Balloon String", PrimitiveType.Cylinder, transform, Vector3.zero, new Vector3(0.025f, 0.45f, 0.025f), GameManager.Instance.Mat("Balloon String", new Color(0.92f, 0.92f, 0.92f), 0.2f), false);
-        str.transform.position = new Vector3(b.center.x, b.min.y - 0.45f, b.center.z);
-        Fx.Sparkle(b.center, c, 10);
-        GameManager.Instance.Sound.PlayBoing();
+
+        // البالونة فوق السلة (أعلى من راس رويدا) مع لمعة وعقدة
+        Material skin = gm.Mat("Balloon " + ColorUtility.ToHtmlStringRGB(color), color, 0.85f);
+        Material shine = gm.Mat("Balloon Shine", new Color(1.6f, 1.6f, 1.6f), 0.9f);
+        Material stringMat = gm.Mat("Balloon String", new Color(0.95f, 0.95f, 0.95f), 0.2f);
+        balloon = new GameObject("Balloon").transform;
+        balloon.SetParent(transform, false);
+        balloon.position = new Vector3(b.center.x, b.max.y + 2.35f, 0f);
+        float size = Mathf.Clamp(b.size.x * 0.75f, 1.3f, 2f);
+        LevelBuilder.Visual("Balloon Skin", PrimitiveType.Sphere, balloon, Vector3.zero, new Vector3(size, size * 1.15f, size), skin);
+        LevelBuilder.Visual("Shine", PrimitiveType.Sphere, balloon, new Vector3(-size * 0.22f, size * 0.25f, -size * 0.4f), new Vector3(0.22f, 0.32f, 0.1f) * size, shine, false);
+        LevelBuilder.Visual("Knot", PrimitiveType.Sphere, balloon, new Vector3(0f, -size * 0.6f, 0f), new Vector3(0.18f, 0.14f, 0.18f), skin, false);
+
+        // خيطين من طرفي السلة للعقدة
+        Vector3 knot = balloon.position + Vector3.down * size * 0.62f;
+        for (int s = -1; s <= 1; s += 2)
+        {
+            Vector3 foot = new Vector3(b.center.x + s * b.extents.x * 0.8f, b.max.y, 0f);
+            Vector3 mid = (foot + knot) * 0.5f, dir = knot - foot;
+            var str = LevelBuilder.Visual("String", PrimitiveType.Cylinder, transform, Vector3.zero, new Vector3(0.025f, dir.magnitude * 0.5f, 0.025f), stringMat, false);
+            str.transform.position = mid;
+            str.transform.rotation = Quaternion.FromToRotation(Vector3.up, dir);
+        }
+        // السلة بلون خشبي فاتح
+        rend.material.SetColor("_BaseColor", new Color(0.72f, 0.5f, 0.3f));
+
+        Fx.Sparkle(balloon.position, color, 12);
+        gm.Sound.PlayBoing();
     }
 
     void FixedUpdate()
     {
         GameManager gm = GameManager.Instance;
-        if (gm == null || rb == null) return;
+        if (gm == null || rb == null || popped) return;
         Bounds b = rend.bounds;
         RowaidaController rowaida = gm.Rowaida;
         // لازم تكون فعلًا فوقها (مو واقفة على طرف الصفحة جنبها)
         bool riding = rowaida != null && NewFeatures.RowaidaOn(b, rowaida.transform.position) && rowaida.transform.position.x > b.min.x + 0.5f;
 
-        if (!rising && !done && riding && gm.IsPlaying)
+        if (!rising && !ferrying && !done && riding && gm.IsPlaying)
         {
+            fan = FanZone.At(b.center.x);
+            targetTop = fan != null ? fan.Height + 0.12f : FindTarget(b, gm.CurrentLevel);
             rising = true;
-            targetTop = FindTarget(b, gm.CurrentLevel);
             rowaida.Held = true;
+            rowaida.CarryX = 0f;
             gm.Sound.PlaySqueak(1.5f);
         }
+
+        // الدبابيس تفجرها
+        if ((rising || ferrying) && PinRow.Hits(balloon.position, 0.8f)) { Pop(gm, rowaida); return; }
 
         Vector3 v = rb.linearVelocity;
         if (rising)
         {
-            v.y = RiseSpeed;
-            // رويدا تطلع معها (ما نخليها تتأخر عن البالونة)
-            if (riding)
-            {
-                var body = rowaida.GetComponent<Rigidbody>();
-                Vector3 rv = body.linearVelocity;
-                if (rv.y < RiseSpeed) { rv.y = RiseSpeed; body.linearVelocity = rv; }
-            }
-            if (b.max.y >= targetTop)
+            v.y = Mathf.Clamp((targetTop - b.max.y) * 3f, -RiseSpeed, RiseSpeed);
+            Carry(rowaida, riding, 0f, v.y);
+            if (Mathf.Abs(targetTop - b.max.y) < 0.04f)
             {
                 v.y = 0f;
                 rising = false;
-                done = true;
-                doneTime = Time.time;
-                if (rowaida != null) rowaida.Held = false;
+                if (fan != null)
+                {
+                    // المروحة تدفها لليمين فوق الحفرة
+                    ferrying = true;
+                    ferryStart = Time.time;
+                    lastX = float.MinValue;
+                    rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezePositionY;
+                }
+                else Finish(rowaida);
+            }
+        }
+        else if (ferrying)
+        {
+            v = new Vector3(FerrySpeed, 0f, 0f);
+            Carry(rowaida, true, FerrySpeed, 0f);
+            // توقف لما توصل طرف الصفحة اللي بعد الحفرة، أو لو علقت، أو لو رويدا نزلت منها
+            bool stuck = Mathf.Abs(b.center.x - lastX) < 0.001f && Time.time - ferryStart > 0.5f;
+            lastX = b.center.x;
+            Vector3 rp = rowaida != null ? rowaida.transform.position : Vector3.zero;
+            bool lost = rowaida == null || Mathf.Abs(rp.x - b.center.x) > b.extents.x + 1f || rp.y < b.max.y - 0.3f;
+            if (b.max.x >= fan.To - 0.05f || stuck || lost)
+            {
+                v = Vector3.zero;
+                ferrying = false;
+                rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezePositionX;
+                Finish(rowaida);
             }
         }
         else if (done)
         {
-            // بعد ما تنزل منها تطير بعيد وتنفجر
+            // بعد ما تنزل منها تطير بعيد وتختفي
             float since = Time.time - doneTime;
             v.y = since > 2.2f ? 2.4f : 0f;
             if (since > 4.2f)
             {
-                Fx.Sparkle(b.center, rend.material.GetColor("_BaseColor"), 14);
-                gm.Sound.PlayPoof();
+                Fx.Sparkle(balloon.position, color, 14);
                 Destroy(gameObject);
                 return;
             }
         }
         else v.y = Mathf.Sin(Time.time * 2f) * 0.12f;   // تطفو مكانها
         rb.linearVelocity = v;
+
+        // البالونة تتمايل شوي
+        balloon.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 1.6f) * 4f + (ferrying ? -8f : 0f));
+    }
+
+    // رويدا تمشي مع السلة
+    static void Carry(RowaidaController rowaida, bool riding, float vx, float vy)
+    {
+        if (!riding) return;
+        rowaida.CarryX = vx;
+        var body = rowaida.GetComponent<Rigidbody>();
+        Vector3 rv = body.linearVelocity;
+        if (vy > 0f && rv.y < vy) rv.y = vy;
+        rv.x = vx;
+        body.linearVelocity = rv;
+    }
+
+    void Finish(RowaidaController rowaida)
+    {
+        done = true;
+        doneTime = Time.time;
+        if (rowaida != null) { rowaida.Held = false; rowaida.CarryX = 0f; }
+    }
+
+    // انفجرت: قصاصات ملونة، والسلة تطيح
+    void Pop(GameManager gm, RowaidaController rowaida)
+    {
+        popped = true;
+        gm.Sound.PlayPoof();
+        gm.Sound.PlayBoing();
+        Material bit = gm.Mat("Balloon " + ColorUtility.ToHtmlStringRGB(color), color, 0.85f);
+        for (int i = 0; i < 18; i++)
+        {
+            var p = LevelBuilder.Visual("Balloon Bit", PrimitiveType.Cube, null, balloon.position + Random.insideUnitSphere * 0.5f, new Vector3(0.18f, 0.12f, 0.02f), bit, false);
+            p.transform.rotation = Random.rotation;
+            var fx = p.AddComponent<FxParticle>();
+            fx.velocity = Random.insideUnitSphere * 5f;
+            fx.gravity = 6f;
+            fx.spin = Random.insideUnitSphere * 600f;
+            fx.life = 1.2f;
+        }
+        var cam = Camera.main.GetComponent<CameraFollow>();
+        if (cam != null) cam.Shake(0.12f, 0.25f);
+        Destroy(balloon.gameObject);
+        foreach (Transform t in transform) if (t.name == "String") Destroy(t.gameObject);
+        rb.useGravity = true;
+        rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionZ;
+        if (rowaida != null) { rowaida.Held = false; rowaida.CarryX = 0f; }
+        Destroy(gameObject, 4f);
     }
 
     // سطح الأرض العالية اللي جنب البالونة (على يمينها)
@@ -246,7 +341,99 @@ public class BalloonLift : MonoBehaviour
     void OnDestroy()
     {
         var gm = GameManager.Instance;
-        if (rising && gm != null && gm.Rowaida != null) gm.Rowaida.Held = false;
+        if ((rising || ferrying) && gm != null && gm.Rowaida != null) { gm.Rowaida.Held = false; gm.Rowaida.CarryX = 0f; }
+    }
+}
+
+// صف دبابيس معلقة من خشبة: البالونة اللي تطلع تحتها تنفجر
+public class PinRow : MonoBehaviour
+{
+    static readonly List<PinRow> all = new List<PinRow>();
+    float from, to, y;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Pins");
+        go.transform.SetParent(root, false);
+        var p = go.AddComponent<PinRow>();
+        p.from = spec.x; p.to = spec.y; p.y = spec.z;
+        Material wood = gm.Mat("Pin Beam", new Color(0.55f, 0.38f, 0.25f), 0.3f);
+        Material steel = gm.Mat("Pin Steel", new Color(0.8f, 0.82f, 0.86f), 0.9f, 0.9f);
+        Material[] heads = { gm.Mat("Pin Red", new Color(0.95f, 0.25f, 0.3f), 0.6f), gm.Mat("Pin Blue", new Color(0.25f, 0.5f, 0.95f), 0.6f), gm.Mat("Pin Yellow", new Color(1f, 0.8f, 0.2f), 0.6f) };
+        LevelBuilder.Visual("Beam", PrimitiveType.Cube, go.transform, new Vector3((p.from + p.to) * 0.5f, p.y + 0.45f, 0f), new Vector3(p.to - p.from + 0.3f, 0.18f, 1.6f), wood);
+        int i = 0;
+        for (float x = p.from + 0.15f; x <= p.to - 0.1f; x += 0.32f, i++)
+        {
+            LevelBuilder.Visual("Pin Head", PrimitiveType.Sphere, go.transform, new Vector3(x, p.y + 0.3f, -0.1f), new Vector3(0.2f, 0.12f, 0.2f), heads[i % 3]);
+            LevelBuilder.Visual("Needle", PrimitiveType.Cylinder, go.transform, new Vector3(x, p.y + 0.1f, -0.1f), new Vector3(0.025f, 0.17f, 0.025f), steel, false);
+        }
+        all.Add(p);
+    }
+
+    void OnDestroy() { all.Remove(this); }
+
+    public static bool Hits(Vector3 balloonCenter, float radius)
+    {
+        foreach (PinRow p in all)
+            if (p != null && balloonCenter.x + radius > p.from && balloonCenter.x - radius < p.to && balloonCenter.y + radius * 1.15f > p.y)
+                return true;
+        return false;
+    }
+}
+
+// مروحة ورق كبيرة تدف البالونات لليمين فوق حفرة طويلة
+public class FanZone : MonoBehaviour
+{
+    static readonly List<FanZone> all = new List<FanZone>();
+    public float From, To, Height;
+    Transform blades;
+    float nextStreak;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Fan");
+        go.transform.SetParent(root, false);
+        var f = go.AddComponent<FanZone>();
+        f.From = spec.x; f.To = spec.y; f.Height = spec.z;
+        Material stick = gm.Mat("Fan Stick", new Color(0.55f, 0.38f, 0.25f), 0.3f);
+        Material[] paper = { gm.Mat("Fan Pink", new Color(1f, 0.6f, 0.7f), 0.3f), gm.Mat("Fan Yellow", new Color(1f, 0.85f, 0.4f), 0.3f), gm.Mat("Fan Blue", new Color(0.5f, 0.75f, 1f), 0.3f) };
+        // المروحة واقفة على طرف الصفحة اللي قبل الحفرة
+        Vector3 hub = new Vector3(f.From - 0.6f, f.Height + 2.2f, 0.4f);
+        LevelBuilder.Visual("Fan Stick", PrimitiveType.Cylinder, go.transform, new Vector3(hub.x, f.Height + 1.1f, 0.4f), new Vector3(0.09f, 1.1f, 0.09f), stick);
+        f.blades = new GameObject("Blades").transform;
+        f.blades.SetParent(go.transform, false);
+        f.blades.position = hub;
+        f.blades.rotation = Quaternion.Euler(0f, 90f, 0f);   // تواجه الحفرة (تنفخ لليمين)
+        for (int i = 0; i < 4; i++)
+        {
+            var blade = LevelBuilder.Visual("Blade", PrimitiveType.Cube, f.blades, Vector3.zero, new Vector3(0.05f, 0.9f, 0.55f), paper[i % 3]);
+            blade.transform.localRotation = Quaternion.Euler(i * 90f, 0f, 0f);
+            blade.transform.localPosition = blade.transform.localRotation * new Vector3(0f, 0.45f, 0f);
+        }
+        all.Add(f);
+    }
+
+    void OnDestroy() { all.Remove(this); }
+
+    public static FanZone At(float x)
+    {
+        foreach (FanZone f in all) if (f != null && x > f.From - 1.5f && x < f.To) return f;
+        return null;
+    }
+
+    void Update()
+    {
+        blades.Rotate(400f * Time.deltaTime, 0f, 0f, Space.Self);
+        // خطوط ريح بيضا تمشي فوق الحفرة
+        if (Time.time >= nextStreak)
+        {
+            nextStreak = Time.time + 0.08f;
+            Material m = GameManager.Instance.Mat("Wind Streak", new Color(1.4f, 1.4f, 1.5f), 0.2f);
+            var s = LevelBuilder.Visual("Wind", PrimitiveType.Cube, null, new Vector3(From, Height + Random.Range(0.6f, 3.6f), Random.Range(-1f, 1f)), new Vector3(0.8f, 0.03f, 0.03f), m, false);
+            var fx = s.AddComponent<FxParticle>();
+            fx.velocity = new Vector3(Random.Range(5f, 8f), 0f, 0f);
+            fx.life = (To - From) / 6.5f;
+        }
     }
 }
 
