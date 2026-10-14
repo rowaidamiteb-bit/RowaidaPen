@@ -10,7 +10,14 @@ public static class NewFeatures
         foreach (Vector4 d in data.dragons) Dragon.Create(root, d, gm);
         foreach (Vector3 p in data.pins) PinRow.Create(root, p, gm);
         foreach (Vector3 f in data.fans) FanZone.Create(root, f, gm);
-        foreach (Vector4 p in data.portals) Portal.Create(root, new Vector3(p.x, p.y, 0f), new Vector3(p.z, p.w, 0f));
+        for (int i = 0; i < data.portals.Count; i++)
+        {
+            Vector4 p = data.portals[i];
+            var portal = Portal.Create(root, new Vector3(p.x, p.y, 0f), new Vector3(p.z, p.w, 0f));
+            foreach (Vector3 m in data.portalMoves)
+                if ((int)m.x == i) portal.MoveExit(m.y, m.z, gm);
+        }
+        foreach (Vector3 g in data.gates) PortalGate.Create(root, g, gm, rng, data);
         foreach (Vector3 peg in data.pegs)
             LevelBuilder.CreatePaperBlock(root, new Block(new Vector3(peg.x, peg.y - 0.3f, 0f), new Vector3(peg.z, 0.6f, 2.2f)), gm, rng, data, false);
         if (data.darkness) BuildDarkness(root, data, gm);
@@ -562,10 +569,22 @@ public class Portal : MonoBehaviour
 {
     static Texture2D swirlTex;
     Vector3 exit;
-    Transform swirlIn, swirlOut;
+    Transform swirlIn, swirlOut, exitRoot;
+    Vector3 exitBase;
+    float moveRange, movePeriod;
+
+    // البوابة البرتقالية تمشي يمين ويسار على سكة (range متر، كل period ثانية)
+    public void MoveExit(float range, float period, GameManager gm)
+    {
+        moveRange = range;
+        movePeriod = period;
+        Material rail = gm.Mat("Portal Rail", new Color(1f, 0.75f, 0.45f), 0.5f);
+        for (float x = 0f; x <= range + 0.01f; x += 0.45f)
+            LevelBuilder.Visual("Rail Dot", PrimitiveType.Sphere, transform.parent, exitBase + new Vector3(x, 1.25f, 0.2f), Vector3.one * 0.12f, rail, false);
+    }
     readonly Dictionary<int, float> cooldown = new Dictionary<int, float>();
 
-    public static void Create(Transform root, Vector3 entry, Vector3 exit)
+    public static Portal Create(Transform root, Vector3 entry, Vector3 exit)
     {
         if (swirlTex == null) swirlTex = NightSky.DotTexture();
         var go = new GameObject("Portal");
@@ -582,12 +601,15 @@ public class Portal : MonoBehaviour
         outGo.transform.SetParent(root, false);
         outGo.transform.position = p.exit;
         p.swirlOut = Ring(outGo.transform, Vector3.zero, new Color(1f, 0.6f, 0.25f));
+        p.exitRoot = outGo.transform;
+        p.exitBase = p.exit;
+        return p;
     }
 
     static Transform Ring(Transform parent, Vector3 local, Color c)
     {
         var mat = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = "Portal Ring" };
-        mat.SetColor("_BaseColor", c * 2.4f);
+        mat.SetColor("_BaseColor", c * 1.25f);
         var ring = new GameObject("Ring");
         ring.transform.SetParent(parent, false);
         ring.transform.localPosition = local;
@@ -613,6 +635,11 @@ public class Portal : MonoBehaviour
         swirlOut.localScale = new Vector3(1.5f / s, 1.9f / s, 1f);
         swirlIn.Rotate(0f, 0f, 120f * Time.deltaTime);
         swirlOut.Rotate(0f, 0f, -120f * Time.deltaTime);
+        if (movePeriod > 0f)
+        {
+            exit = exitBase + Vector3.right * (0.5f - 0.5f * Mathf.Cos(Time.time * Mathf.PI * 2f / movePeriod)) * moveRange;
+            exitRoot.position = exit;
+        }
     }
 
     void OnTriggerEnter(Collider other)
@@ -626,7 +653,13 @@ public class Portal : MonoBehaviour
         GameManager gm = GameManager.Instance;
         var rowaida = body.GetComponent<RowaidaController>();
         Vector3 target = exit;
-        if (rowaida == null) target += new Vector3(0.6f, 0f, 0f);
+        if (rowaida == null)
+        {
+            // الشكل يطلع ويطيح على طول (عشان ينزل على الزر)
+            target += new Vector3(0.6f, 0f, 0f);
+            body.linearVelocity = new Vector3(0f, Mathf.Min(body.linearVelocity.y, 0f), 0f);
+            if (body.GetComponent<InkMark>() != null && body.GetComponent<PortalBall>() == null) body.gameObject.AddComponent<PortalBall>();
+        }
         Fx.Sparkle(body.position, new Color(0.5f, 0.85f, 1f), 14);
         body.position = target;
         body.transform.position = target;
@@ -944,4 +977,109 @@ public class Bob : MonoBehaviour
     float seed;
     void Start() { home = transform.localPosition; seed = Random.value * 10f; }
     void Update() => transform.localPosition = home + Vector3.up * Mathf.Sin(Time.time * 1.6f + seed) * 0.12f;
+}
+
+// ---------- البوابة المقفلة والزر ----------
+
+// باب عالي يسد الطريق، وزر فوق رف وراه. أي شكل يطيح على الزر (من البوابة) يفتح الباب
+public class PortalGate : MonoBehaviour
+{
+    float gateX, buttonX, buttonTop, openT = -1f;
+    Transform door, cap;
+    bool holding;
+
+    public bool Open => openT >= 0f;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm, System.Random rng, LevelData data)
+    {
+        var go = new GameObject("Portal Gate");
+        go.transform.SetParent(root, false);
+        var g = go.AddComponent<PortalGate>();
+        g.gateX = spec.x; g.buttonX = spec.y; g.buttonTop = spec.z;
+
+        Material wood = gm.Mat("Gate Wood", new Color(0.55f, 0.36f, 0.62f), 0.3f);
+        Material band = gm.Mat("Gate Band", new Color(0.98f, 0.55f, 0.72f), 0.4f);
+        Material metal = gm.Mat("Gate Lock", new Color(0.95f, 0.8f, 0.35f), 0.8f, 0.6f);
+        Material red = gm.Mat("Button Cap", new Color(1f, 0.35f, 0.55f), 0.6f);
+        Material baseMat = gm.Mat("Button Base", new Color(0.3f, 0.25f, 0.35f), 0.4f);
+
+        // الباب: له جسم يصطدم، وينزل تحت الأرض لما ينفتح
+        g.door = new GameObject("Gate Door").transform;
+        g.door.SetParent(go.transform, false);
+        g.door.position = new Vector3(g.gateX, 2.6f, 0f);
+        var col = g.door.gameObject.AddComponent<BoxCollider>();
+        col.size = new Vector3(0.6f, 5.2f, 2.4f);
+        LevelBuilder.Visual("Door", PrimitiveType.Cube, g.door, Vector3.zero, new Vector3(0.6f, 5.2f, 2.4f), wood);
+        for (int i = 0; i < 3; i++)
+            LevelBuilder.Visual("Band", PrimitiveType.Cube, g.door, new Vector3(0f, -1.7f + i * 1.7f, -0.05f), new Vector3(0.66f, 0.22f, 2.45f), band);
+        var lockT = LevelBuilder.Visual("Lock", PrimitiveType.Cylinder, g.door, new Vector3(0f, 0.6f, -1.25f), new Vector3(0.55f, 0.06f, 0.55f), metal).transform;
+        lockT.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        LevelBuilder.Visual("Keyhole", PrimitiveType.Cube, g.door, new Vector3(0f, 0.52f, -1.32f), new Vector3(0.08f, 0.22f, 0.02f), baseMat, false);
+
+        // الرف والزر فوقه
+        LevelBuilder.CreatePaperBlock(root, new Block(new Vector3(g.buttonX, g.buttonTop - 0.3f, 0f), new Vector3(2.4f, 0.6f, 2.2f)), gm, rng, data, false);
+        var bt = LevelBuilder.Visual("Button Base", PrimitiveType.Cylinder, go.transform, new Vector3(g.buttonX, g.buttonTop + 0.06f, 0f), new Vector3(1.1f, 0.06f, 1.1f), baseMat);
+        g.cap = LevelBuilder.Visual("Button Cap", PrimitiveType.Cylinder, go.transform, new Vector3(g.buttonX, g.buttonTop + 0.2f, 0f), new Vector3(0.8f, 0.1f, 0.8f), red).transform;
+        // سهم صغير يأشر على الزر
+        var arrow = LevelBuilder.Visual("Arrow", PrimitiveType.Cube, go.transform, new Vector3(g.buttonX, g.buttonTop + 1.2f, -0.3f), new Vector3(0.35f, 0.35f, 0.05f), red, false);
+        arrow.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        arrow.AddComponent<Bob>();
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+
+        if (!Open)
+        {
+            // شي من الحبر (مو رويدا) نزل على الزر؟
+            Vector3 c = new Vector3(buttonX, buttonTop + 0.4f, 0f);
+            foreach (Collider hit in Physics.OverlapBox(c, new Vector3(0.6f, 0.35f, 1f)))
+            {
+                if (hit.GetComponentInParent<InkMark>() == null) continue;
+                openT = 0f;
+                cap.localPosition += Vector3.down * 0.1f;
+                gm.Sound.PlayBoing();
+                gm.Sound.PlayRumble(0.4f);
+                Fx.Sparkle(c, new Color(1f, 0.5f, 0.75f), 18);
+                var keep = hit.GetComponentInParent<PortalBall>();
+                if (keep != null) keep.Keep();
+                break;
+            }
+        }
+        else if (openT < 1f)
+        {
+            openT += Time.deltaTime / 0.9f;
+            door.position = new Vector3(gateX, Mathf.Lerp(2.6f, -3.2f, Mathf.SmoothStep(0f, 1f, openT)), 0f);
+            if (Random.value < 0.4f) Fx.Dust(new Vector3(gateX, 0.1f, 0f), 0.3f);
+        }
+
+        // رويدا تستنى عند الباب المقفل
+        RowaidaController rowaida = gm.Rowaida;
+        if (rowaida == null) return;
+        float x = rowaida.transform.position.x;
+        bool wait = !Open && x > gateX - 1.2f && x < gateX - 0.2f && gm.IsPlaying;
+        if (!Open && x > gateX - 14f && x < gateX) CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f);
+        if (wait) { rowaida.Held = true; rowaida.CarryX = 0f; holding = true; }
+        else if (holding) { rowaida.Held = false; holding = false; }
+    }
+}
+
+// شكل طلع من بوابة: إذا ما نزل على زر، يختفي بعد شوي (عشان ما يسد الطريق)
+public class PortalBall : MonoBehaviour
+{
+    float dieAt;
+    bool kept;
+
+    void Start() => dieAt = Time.time + 2.2f;
+    public void Keep() => kept = true;
+
+    void Update()
+    {
+        if (kept || Time.time < dieAt) return;
+        Fx.Sparkle(transform.position, new Color(0.7f, 0.6f, 1f), 14);
+        if (GameManager.Instance != null) GameManager.Instance.Sound.PlayPoof();
+        Destroy(gameObject);
+    }
 }

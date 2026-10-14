@@ -135,6 +135,8 @@ public class LevelData
     public List<Vector4> firePits = new List<Vector4>();    // النار: حفر نار (من x، لـ x، كل كم ثانية، تأخير البداية)
     public List<Vector4> dragons = new List<Vector4>();     // النار: تنين على صخرة (x، y، وين ينفخ x، تأخير)
     public List<Vector4> portals = new List<Vector4>();     // البوابات: (دخول x، دخول y، خروج x، خروج y) على سطح الأرض
+    public List<Vector3> portalMoves = new List<Vector3>(); // البوابات: البرتقالية تتحرك (رقم البوابة، كم متر، كل كم ثانية)
+    public List<Vector3> gates = new List<Vector3>();       // البوابات: باب مقفل (x الباب، x الزر، ارتفاع الرف)
     public float maxSpan;                                   // الوادي: الخط أطول من كذا ينكسر تحت رويدا (0 = ما فيه)
     public List<Vector3> pegs = new List<Vector3>();        // الوادي: حجارة طايرة (x، سطحها، عرضها)
     public List<Vector3> pins = new List<Vector3>();        // البالونات: دبابيس معلقة تفجر البالونة (من x، لـ x، ارتفاعها)
@@ -507,35 +509,44 @@ public static class Levels
         return level;
     }
 
-    // صفحة البوابات: البوابة الزرقا توديك للبرتقالية. وحدة فوق الجدار، ووحدة تطلعك فوق حفرة (جهزي جسر تحتها)
+    // صفحة البوابات: 1) البوابة تطلعك فوق جدار  2) ارسمي كورة فوق بوابة طايرة: تطلع ورا الباب وتطيح على الزر
+    // 3) بوابة تطلعك فوق حفرة (جهزي جسر)  4) نفس الكورة، بس البوابة البرتقالية تمشي: انتبهي للوقت
     static LevelData PortalLevel()
     {
-        return new LevelData
+        var level = new LevelData
         {
             title = "صفحة البوابات",
             theme = LevelTheme.Mystic(),
-            subtitle = "البوابة الزرقا توديك للبرتقالية... شوفي وين بتطلعين!",
+            subtitle = "ارسمي كورة فوق البوابة الزرقا... تطيح على الزر وتفتح الباب!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(51f, 0f, 0f),
-            ink = 18f,
+            door = new Vector3(58f, 0f, 0f),
+            ink = 26f,
             blocks =
             {
                 Page(-7f, 8f),
                 Wall(10f, 18f, 4.5f),       // البوابة الأولى تطلعك فوقه
-                Page(21f, 28f, 4.5f),       // حفرة 3 قبلها
-                Page(35f, 42f),             // البوابة الثانية تطلعك فوق الحفرة اللي قبلها
-                Wall(42f, 44f, 5f),         // جدار عالي: البوابة الثالثة تعديك
-                Page(44f, 54f),
+                Page(18f, 35f),
+                Page(41f, 60f),             // البوابة الثالثة تطلعك فوق الحفرة اللي قبلها
             },
             // (دخول x، دخول y، خروج x، خروج y)
             portals =
             {
                 new Vector4(6.5f, 0f, 11.5f, 4.5f),
-                new Vector4(26f, 4.5f, 33f, 0f),
-                new Vector4(40.5f, 0f, 46f, 0f),
+                new Vector4(23f, 2f, 31.7f, 3.6f),      // للكورة (طايرة فوق راس رويدا)
+                new Vector4(34.2f, 0f, 38f, 1f),
+                new Vector4(44f, 2f, 49.5f, 3.6f),      // للكورة، والخروج يمشي
             },
-            hints = { new HintLine(new Vector3(30.8f, 0.15f, 0f), new Vector3(35.3f, 0.15f, 0f), new Color(1f, 0.6f, 0.25f)) },
+            portalMoves = { new Vector3(3f, 5f, 4f) },
+            gates =
+            {
+                new Vector3(30f, 32.3f, 3f),
+                new Vector3(48.5f, 54.2f, 3f),
+            },
+            hints = { new HintLine(new Vector3(37.2f, 0.9f, 0f), new Vector3(41.4f, 0.1f, 0f), new Color(1f, 0.6f, 0.25f)) },
         };
+        Oval(level, 23f, 4.7f, new Color(0.4f, 0.8f, 1f));
+        Oval(level, 44f, 4.7f, new Color(0.4f, 0.8f, 1f));
+        return level;
     }
 
     // صفحة الوادي: الخط الطويل ينكسر تحت رويدا، فترسمين جسور قصيرة بين حجارة طايرة
