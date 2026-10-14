@@ -12,7 +12,7 @@ public class FloatingPapers : MonoBehaviour
     Vector3[] spin;
     float[] offset;
     string currentTheme;
-    bool snowing;
+    bool snowing, rising;   // الثلج ينزل، والجمر والبالونات تطلع
 
     public void Build(GameManager manager)
     {
@@ -27,6 +27,7 @@ public class FloatingPapers : MonoBehaviour
         foreach (Transform child in transform) Destroy(child.gameObject);
 
         snowing = theme.floating == FloatKind.Snow;
+        rising = theme.floating == FloatKind.Embers || theme.floating == FloatKind.Balloons;
         int n = snowing ? 220 : count;   // الثلج: ندف كثيرة صغيرة
         papers = new Transform[n];
         basePos = new Vector3[n];
@@ -63,6 +64,14 @@ public class FloatingPapers : MonoBehaviour
                 return LevelBuilder.Visual("Sparkle", PrimitiveType.Sphere, transform, pos, Vector3.one * 0.09f * s, glow, false);
             case FloatKind.Cranes: return Props.OrigamiCrane(transform, pos, 0f, color, gm, 0.6f * s);
             case FloatKind.EraserBits: return LevelBuilder.Visual("Eraser Bit", PrimitiveType.Cube, transform, pos, new Vector3(0.14f, 0.09f, 0.11f) * s, mat, false);
+            case FloatKind.Balloons:
+            {
+                var b = LevelBuilder.Visual("Balloon", PrimitiveType.Sphere, transform, pos, new Vector3(0.32f, 0.38f, 0.32f) * s, gm.Mat("Balloon " + ColorUtility.ToHtmlStringRGB(color), color, 0.6f), false);
+                LevelBuilder.Visual("String", PrimitiveType.Cylinder, b.transform, new Vector3(0f, -1.3f, 0f), new Vector3(0.03f, 0.8f, 0.03f), gm.Mat("Balloon String", new Color(0.9f, 0.9f, 0.9f), 0.2f), false);
+                return b;
+            }
+            case FloatKind.Embers: return LevelBuilder.Visual("Ember", PrimitiveType.Sphere, transform, pos, Vector3.one * 0.06f * s, gm.Mat("Ember " + ColorUtility.ToHtmlStringRGB(color), color * 2.4f, 0.8f), false);
+            case FloatKind.Fireflies: return LevelBuilder.Visual("Firefly", PrimitiveType.Sphere, transform, pos, Vector3.one * 0.07f * s, gm.Mat("Firefly " + ColorUtility.ToHtmlStringRGB(color), color * 3f, 0.8f), false);
             case FloatKind.Snow: return LevelBuilder.Visual("Snowflake", PrimitiveType.Sphere, transform, pos, Vector3.one * 0.07f * s, mat, false);
             case FloatKind.InkDrops: return LevelBuilder.Visual("Ink Drop", PrimitiveType.Sphere, transform, pos, new Vector3(0.12f, 0.18f, 0.12f) * s, mat, false);
             default: return LevelBuilder.Visual("Paper", PrimitiveType.Cube, transform, pos, new Vector3(0.4f, 0.52f, 0.01f) * s, mat, false);
@@ -87,6 +96,13 @@ public class FloatingPapers : MonoBehaviour
                 basePos[i].y -= (0.5f + (o % 1f) * 0.6f) * Time.deltaTime;
                 float cy = cam != null ? cam.transform.position.y : 0f;
                 if (basePos[i].y < cy - 9f) basePos[i].y += 18f;
+            }
+            else if (rising)
+            {
+                // الجمر والبالونات تطلع لفوق ولما توصل فوق ترجع تحت
+                basePos[i].y += (0.4f + (o % 1f) * 0.5f) * Time.deltaTime;
+                float cy = cam != null ? cam.transform.position.y : 0f;
+                if (basePos[i].y > cy + 9f) basePos[i].y -= 18f;
             }
             if (basePos[i].x < cx - 35f) basePos[i].x += 85f;
             else if (basePos[i].x > cx + 50f) basePos[i].x -= 85f;

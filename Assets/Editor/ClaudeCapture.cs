@@ -277,6 +277,12 @@ public static class ClaudeCapture
                     for (int k = 0; k < int.Parse(arg); k++) { PlayerPrefs.SetInt("stars" + k, 1 + k % 3); }
                     PlayerPrefs.SetInt("unlocked", int.Parse(arg));
                     break;
+                case "setpref":
+                    // setpref:المفتاح;القيمة
+                    var kv = arg.Split(';');
+                    PlayerPrefs.SetInt(kv[0], int.Parse(kv[1]));
+                    PlayerPrefs.Save();
+                    break;
                 case "reset":
                     PlayerPrefs.DeleteAll();
                     break;

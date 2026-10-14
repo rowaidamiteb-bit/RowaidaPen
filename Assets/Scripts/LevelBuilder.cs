@@ -35,6 +35,7 @@ public static class LevelBuilder
         SnowFeatures.Build(root.transform, data, gm, rng);
         SpaceFeatures.Build(root.transform, data, gm);
         MemoryClouds.Build(root.transform, data, gm);
+        NewFeatures.Build(root.transform, data, gm, rng);
         return root;
     }
 

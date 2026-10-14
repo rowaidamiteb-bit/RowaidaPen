@@ -242,7 +242,7 @@ public class MenuUI : MonoBehaviour
     void BuildLevels()
     {
         levelsPanel = NotebookPage(canvasRect, "Levels", new Vector2(1560f, 960f), 0.8f);
-        Label(levelsPanel, ArabicText.Fix("المراحل"), 80, new Vector2(0f, 390f), new Vector2(800f, 110f));
+        Label(levelsPanel, ArabicText.Fix("المراحل"), 72, new Vector2(0f, 405f), new Vector2(800f, 100f));
 
         int cols = 5;
         for (int i = 0; i < Levels.All.Count; i++)
@@ -250,12 +250,12 @@ public class MenuUI : MonoBehaviour
             int index = i;
             int row = i / cols, col = i % cols;
             // من اليمين لليسار مثل الكتابة العربية
-            Vector2 pos = new Vector2(520f - col * 280f, 215f - row * 225f);
+            Vector2 pos = new Vector2(540f - col * 270f, 250f - row * 180f);
             var card = Panel(levelsPanel, "Level " + (i + 1), Secondary);
             card.sprite = rounded;
             card.type = Image.Type.Sliced;
             card.raycastTarget = true;
-            Place(card.rectTransform, pos, new Vector2(260f, 212f));
+            Place(card.rectTransform, pos, new Vector2(250f, 176f));
             var button = card.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => { if (index <= SaveData.Unlocked) gm.StartLevelFromMenu(index); });
@@ -266,18 +266,18 @@ public class MenuUI : MonoBehaviour
             thumb.transform.SetParent(card.rectTransform, false);
             thumb.raycastTarget = false;
             thumb.texture = Thumbnail(i);
-            Place(thumb.rectTransform, new Vector2(0f, 30f), new Vector2(238f, 134f));
+            Place(thumb.rectTransform, new Vector2(0f, 22f), new Vector2(196f, 110f));
             levelThumbs.Add(thumb);
-            lockedLabels.Add(Label(thumb.rectTransform, ArabicText.Fix("مقفلة"), 40, Vector2.zero, new Vector2(238f, 134f)));
+            lockedLabels.Add(Label(thumb.rectTransform, ArabicText.Fix("مقفلة"), 32, Vector2.zero, new Vector2(196f, 110f)));
 
             // رقم المرحلة في دايرة على زاوية الصورة
             var badge = Panel(card.rectTransform, "Badge", Primary);
             badge.sprite = rounded;
             badge.type = Image.Type.Sliced;
-            Place(badge.rectTransform, new Vector2(100f, 82f), new Vector2(54f, 54f));
-            levelNumbers.Add(Label(badge.rectTransform, "", 32, Vector2.zero, new Vector2(54f, 54f)));
+            Place(badge.rectTransform, new Vector2(100f, 62f), new Vector2(44f, 44f));
+            levelNumbers.Add(Label(badge.rectTransform, "", 26, Vector2.zero, new Vector2(44f, 44f)));
 
-            var name = Label(card.rectTransform, "", 24, new Vector2(0f, -58f), new Vector2(250f, 36f));
+            var name = Label(card.rectTransform, "", 22, new Vector2(0f, -48f), new Vector2(240f, 30f));
             name.color = new Color(0.3f, 0.28f, 0.36f);
             levelNames.Add(name);
             var stars = new Image[SaveData.MaxStars];
@@ -285,13 +285,13 @@ public class MenuUI : MonoBehaviour
             {
                 stars[s] = Panel(card.rectTransform, "Star", StarOff);
                 stars[s].sprite = star;
-                Place(stars[s].rectTransform, new Vector2((s - 1) * 38f, -88f), new Vector2(34f, 34f));
+                Place(stars[s].rectTransform, new Vector2((s - 1) * 30f, -73f), new Vector2(26f, 26f));
             }
             levelStars.Add(stars);
             levelCards.Add(card);
         }
 
-        Button(levelsPanel, "رجوع", new Vector2(0f, -400f), new Vector2(320f, 90f), Secondary, () =>
+        Button(levelsPanel, "رجوع", new Vector2(0f, -428f), new Vector2(300f, 76f), Secondary, () =>
         {
             if (levelsFromPause) ShowPause();
             else gm.BackToMain();

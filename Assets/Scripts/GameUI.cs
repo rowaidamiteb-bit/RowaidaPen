@@ -34,7 +34,8 @@ public class GameUI : MonoBehaviour
         Transform root = canvasGo.transform;
 
         // شريط الحبر
-        Label(root, ArabicText.Fix("الحبر"), 32, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(40f, -40f), new Vector2(100f, 44f));
+        // حافة بيضا عشان الكلام الأسود يبان حتى في المراحل الغامقة
+        Label(root, ArabicText.Fix("الحبر"), 32, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(40f, -40f), new Vector2(100f, 44f)).gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.85f);
         Image frame = Panel(root, "Ink Bar", Color.black);
         Place(frame.rectTransform, new Vector2(0f, 1f), new Vector2(120f, -40f), new Vector2(420f, 44f));
         Image inner = Panel(frame.transform, "Inner", Color.white);
@@ -50,6 +51,7 @@ public class GameUI : MonoBehaviour
         inkFill.offsetMin = inkFill.offsetMax = Vector2.zero;
 
         levelText = Label(root, "", 40, TextAnchor.MiddleRight, new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(400f, 50f));
+        levelText.gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.85f);
         BuildHearts(root);
         BuildWindArrow(root);
         BuildPalette(root);

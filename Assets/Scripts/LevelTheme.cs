@@ -2,7 +2,7 @@ using UnityEngine;
 
 // شكل المرحلة: لون الورق ونقشته، السما، الإضاءة، الأغراض، والأشياء الطايرة. كل مرحلة لها عالم مختلف
 public enum PaperPattern { Blank, Ruled, Grid, Dots, Kraft, Watercolor, Parchment, Origami, Splats }
-public enum FloatKind { Paper, Leaves, Crayons, Petals, Sparkles, Cranes, EraserBits, InkDrops, Snow }
+public enum FloatKind { Paper, Leaves, Crayons, Petals, Sparkles, Cranes, EraserBits, InkDrops, Snow, Balloons, Embers, Fireflies }
 public enum PropSet { Stationery, Crayons, Paint, Erasers, Ink, Origami, Snow, Space }
 
 public class LevelTheme
@@ -246,6 +246,81 @@ public class LevelTheme
         fog = new Color(1f, 0.86f, 0.93f), props = PropSet.Crayons, floating = FloatKind.Sparkles,
         floatColors = new[] { new Color(1f, 0.6f, 0.8f), new Color(1f, 0.85f, 0.4f), Color.white, new Color(0.8f, 0.65f, 1f) },
         ringColor = new Color(0.95f, 0.75f, 0.4f), glitter = true,
+    };
+
+    // البالونات: نهار صافي، ورق كريمي بنقاط ملونة، وبالونات طايرة
+    public static LevelTheme BalloonSky() => new LevelTheme
+    {
+        name = "BalloonSky",
+        paper = new Color(1f, 0.97f, 0.88f), pattern = PaperPattern.Dots, patternColor = new Color(0.95f, 0.6f, 0.5f), colorfulDoodles = true,
+        pageEdge = new Color(1f, 0.93f, 0.85f), pencil = new Color(0.6f, 0.35f, 0.3f),
+        skyTop = new Color(0.35f, 0.7f, 0.95f), skyMid = new Color(0.65f, 0.87f, 1f), skyBottom = new Color(1f, 0.95f, 0.8f),
+        sun = true, moonColor = new Color(2.8f, 2.5f, 1.8f), stars = 0f, cloudTint = new Color(1.12f, 1.12f, 1.12f), cloudAlpha = 0.9f,
+        sunLight = new Color(1f, 0.96f, 0.88f), sunIntensity = 1.5f, sunAngles = new Vector3(45f, -35f, 0f),
+        ambientSky = new Color(0.85f, 0.9f, 1f), ambientEquator = new Color(0.72f, 0.72f, 0.75f), ambientGround = new Color(0.4f, 0.38f, 0.38f),
+        fog = new Color(0.82f, 0.9f, 1f), props = PropSet.Crayons, floating = FloatKind.Balloons,
+        floatColors = new[] { new Color(1f, 0.4f, 0.45f), new Color(1f, 0.8f, 0.3f), new Color(0.45f, 0.75f, 1f), new Color(0.6f, 0.85f, 0.5f), new Color(0.85f, 0.6f, 1f) },
+        ringColor = new Color(0.85f, 0.4f, 0.4f),
+    };
+
+    // النار: ورق قديم محروق الأطراف، سما بركان حمرا، وجمر يطلع
+    public static LevelTheme Fire() => new LevelTheme
+    {
+        name = "Fire",
+        paper = new Color(0.9f, 0.78f, 0.6f), pattern = PaperPattern.Parchment, patternColor = new Color(0.55f, 0.32f, 0.18f),
+        pageEdge = new Color(0.6f, 0.35f, 0.2f), pencil = new Color(0.4f, 0.15f, 0.1f), doodleColor = new Color(0.45f, 0.2f, 0.12f),
+        skyTop = new Color(0.15f, 0.03f, 0.05f), skyMid = new Color(0.5f, 0.12f, 0.06f), skyBottom = new Color(0.95f, 0.45f, 0.15f),
+        showMoon = false, stars = 0.2f, cloudTint = new Color(0.45f, 0.2f, 0.2f), cloudAlpha = 0.7f,
+        sunLight = new Color(1f, 0.6f, 0.35f), sunIntensity = 1.3f, sunAngles = new Vector3(30f, -40f, 0f),
+        ambientSky = new Color(0.7f, 0.35f, 0.25f), ambientEquator = new Color(0.5f, 0.25f, 0.18f), ambientGround = new Color(0.2f, 0.08f, 0.05f),
+        fog = new Color(0.3f, 0.08f, 0.05f), props = PropSet.Ink, floating = FloatKind.Embers,
+        floatColors = new[] { new Color(1f, 0.55f, 0.15f), new Color(1f, 0.8f, 0.3f), new Color(1f, 0.35f, 0.1f) },
+        ringColor = new Color(0.35f, 0.25f, 0.2f),
+    };
+
+    // البوابات: سحري بنفسجي وفيروزي، ورق شبكة بنفسجي، ولمعات
+    public static LevelTheme Mystic() => new LevelTheme
+    {
+        name = "Mystic",
+        paper = new Color(0.93f, 0.9f, 1f), pattern = PaperPattern.Grid, patternColor = new Color(0.7f, 0.6f, 0.95f),
+        pageEdge = new Color(0.88f, 0.85f, 1f), pencil = new Color(0.35f, 0.25f, 0.6f), doodleColor = new Color(0.45f, 0.35f, 0.75f),
+        skyTop = new Color(0.1f, 0.08f, 0.3f), skyMid = new Color(0.3f, 0.15f, 0.5f), skyBottom = new Color(0.15f, 0.45f, 0.55f),
+        moonColor = new Color(1.8f, 2.2f, 2.6f), stars = 0.8f, cloudTint = new Color(0.5f, 0.35f, 0.8f), cloudAlpha = 0.5f,
+        sunLight = new Color(0.85f, 0.8f, 1f), sunIntensity = 1.3f,
+        ambientSky = new Color(0.6f, 0.55f, 0.85f), ambientEquator = new Color(0.4f, 0.35f, 0.6f), ambientGround = new Color(0.15f, 0.12f, 0.25f),
+        fog = new Color(0.12f, 0.08f, 0.25f), props = PropSet.Space, floating = FloatKind.Sparkles,
+        floatColors = new[] { new Color(0.7f, 0.5f, 1f), new Color(0.4f, 0.9f, 0.95f), Color.white },
+        ringColor = new Color(0.6f, 0.55f, 0.85f),
+    };
+
+    // الوادي: ورق رملي، غروب برتقالي، وأوراق شجر تطير
+    public static LevelTheme Canyon() => new LevelTheme
+    {
+        name = "Canyon",
+        paper = new Color(0.96f, 0.87f, 0.7f), pattern = PaperPattern.Ruled, patternColor = new Color(0.85f, 0.6f, 0.4f),
+        pageEdge = new Color(0.88f, 0.72f, 0.52f), pencil = new Color(0.5f, 0.3f, 0.15f), doodleColor = new Color(0.55f, 0.32f, 0.15f),
+        skyTop = new Color(0.4f, 0.55f, 0.85f), skyMid = new Color(0.95f, 0.7f, 0.5f), skyBottom = new Color(1f, 0.85f, 0.6f),
+        sun = true, moonColor = new Color(2.8f, 1.9f, 1.1f), stars = 0f, cloudTint = new Color(1f, 0.9f, 0.8f), cloudAlpha = 0.6f,
+        sunLight = new Color(1f, 0.8f, 0.6f), sunIntensity = 1.5f, sunAngles = new Vector3(20f, -60f, 0f),
+        ambientSky = new Color(0.95f, 0.8f, 0.65f), ambientEquator = new Color(0.75f, 0.6f, 0.5f), ambientGround = new Color(0.35f, 0.25f, 0.2f),
+        fog = new Color(0.95f, 0.8f, 0.65f), props = PropSet.Stationery, floating = FloatKind.Leaves,
+        floatColors = new[] { new Color(0.85f, 0.55f, 0.3f), new Color(0.7f, 0.4f, 0.2f), new Color(0.9f, 0.7f, 0.35f) },
+        ringColor = new Color(0.55f, 0.35f, 0.2f),
+    };
+
+    // اليراعات: ظلام غابة، رويدا ماسكة فانوس، وحشرات مضيئة
+    public static LevelTheme Fireflies() => new LevelTheme
+    {
+        name = "Fireflies",
+        paper = new Color(0.85f, 0.9f, 0.82f), pattern = PaperPattern.Ruled, patternColor = new Color(0.5f, 0.62f, 0.5f),
+        pageEdge = new Color(0.62f, 0.68f, 0.6f), pencil = new Color(0.3f, 0.36f, 0.3f), doodleColor = new Color(0.35f, 0.45f, 0.35f),
+        skyTop = new Color(0.01f, 0.02f, 0.04f), skyMid = new Color(0.02f, 0.05f, 0.06f), skyBottom = new Color(0.04f, 0.1f, 0.08f),
+        moonColor = new Color(1.2f, 1.35f, 1.2f), stars = 0.6f, cloudTint = new Color(0.1f, 0.15f, 0.15f), cloudAlpha = 0.5f,
+        sunLight = new Color(0.4f, 0.5f, 0.6f), sunIntensity = 0.12f,
+        ambientSky = new Color(0.06f, 0.07f, 0.09f), ambientEquator = new Color(0.04f, 0.05f, 0.06f), ambientGround = new Color(0.02f, 0.02f, 0.03f),
+        fog = new Color(0.01f, 0.02f, 0.03f), props = PropSet.Stationery, floating = FloatKind.Fireflies,
+        floatColors = new[] { new Color(0.8f, 1f, 0.4f), new Color(1f, 0.95f, 0.5f) },
+        ringColor = new Color(0.3f, 0.32f, 0.3f),
     };
 
     public Color PaperFor(int index)

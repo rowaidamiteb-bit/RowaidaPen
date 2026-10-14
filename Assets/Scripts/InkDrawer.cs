@@ -130,7 +130,8 @@ public class InkDrawer : MonoBehaviour
         stroke.transform.SetParent(Game.DrawingsRoot, false);
         strokeMesh = new Mesh { name = "Ink Tube" };
         stroke.AddComponent<MeshFilter>().sharedMesh = strokeMesh;
-        stroke.AddComponent<MeshRenderer>().sharedMaterial = erasing ? Game.pencilMaterial : ColorsAllowed ? ColorMaterial(CurrentColor) : PencilStyle.Material(Game);
+        stroke.AddComponent<MeshRenderer>().sharedMaterial = erasing ? Game.pencilMaterial : ColorsAllowed ? ColorMaterial(CurrentColor)
+            : Game.CurrentLevel != null && Game.CurrentLevel.darkness ? NewFeatures.GlowInk() : PencilStyle.Material(Game);
     }
 
     float nextGraphite;
@@ -273,6 +274,7 @@ public class InkDrawer : MonoBehaviour
         ApplyColor(points, false);
         if (!ColorsAllowed) PencilStyle.Decorate(stroke);
         AddWindDrift();
+        NewFeatures.OnLineMade(stroke, strokeLength, Game.CurrentLevel);
     }
 
     void MakeFallingShape()
@@ -305,6 +307,7 @@ public class InkDrawer : MonoBehaviour
                          | RigidbodyConstraints.FreezeRotationX
                          | RigidbodyConstraints.FreezeRotationY;
         AddWindDrift();
+        NewFeatures.OnShapeMade(stroke, Game.CurrentLevel);
     }
 
     // في مراحل المطر: الرسمة تنمسح بعد كم ثانية

@@ -131,6 +131,12 @@ public class LevelData
     public bool planets;                                    // الفضاء: كواكب كبيرة بالخلفية
     public bool drawDoor;                                   // الصفحة الأخيرة: ما فيه باب، اللاعبة ترسمه
     public bool memoryClouds;                               // الصفحة الأخيرة: غيوم فيها ذكريات (صور ورسومات)
+    public bool balloonInk;                                 // البالونات: الأشكال المغلقة تصير بالونات تطير برويدا
+    public List<Vector4> firePits = new List<Vector4>();    // النار: حفر نار (من x، لـ x، كل كم ثانية، تأخير البداية)
+    public List<Vector4> portals = new List<Vector4>();     // البوابات: (دخول x، دخول y، خروج x، خروج y) على سطح الأرض
+    public float maxSpan;                                   // الوادي: الخط أطول من كذا ينكسر تحت رويدا (0 = ما فيه)
+    public List<Vector3> pegs = new List<Vector3>();        // الوادي: حجارة طايرة (x، سطحها، عرضها)
+    public bool darkness;                                   // اليراعات: ظلام، فانوس مع رويدا، وخطوط تضوي
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
     public bool HasMeteors => meteorZone.y > meteorZone.x;
     public Vector3? blackHole;                              // الفضاء: مكان الثقب الأسود (null = ما فيه)
@@ -159,6 +165,11 @@ public static class Levels
         FoldingPage(),
         SnowLevel(),
         SpaceLevel(),
+        BalloonLevel(),
+        FireLevel(),
+        PortalLevel(),
+        CanyonLevel(),
+        FirefliesLevel(),
         LastPage(),
     };
 
@@ -410,6 +421,153 @@ public static class Levels
                 new FloaterSpec(19.5f, 3f, 1.2f, 4f, 0f),
                 new FloaterSpec(25.5f, 3f, 1.3f, 4.4f, 1.5f),
             },
+        };
+    }
+
+    // صفحة البالونات: الأشكال المغلقة تصير بالونات. ارسمي بالونة في الحفرة، توقف عليها رويدا وتطلع فيها فوق الجدار
+    static LevelData BalloonLevel()
+    {
+        var level = new LevelData
+        {
+            title = "صفحة البالونات",
+            theme = LevelTheme.BalloonSky(),
+            subtitle = "ارسمي دايرة تصير بالونة... وطيري فيها فوق الجدران!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(55f, 0f, 0f),
+            ink = 32f,
+            balloonInk = true,
+            blocks =
+            {
+                Page(-7f, 3f),              // حفرة: بالونة لفوق
+                Wall(6f, 13f, 3f),          // حفرة: بالونة أعلى
+                Wall(16f, 24f, 6f),         // حفرة: جسر لتحت
+                Page(27f, 34f, 3f),         // حفرة: بالونة لفوق
+                Wall(37f, 46f, 6f),         // حفرة: جسر لتحت
+                Page(49f, 58f),
+            },
+        };
+        // تلميح: بالونة منقطة في أول حفرة
+        for (int i = 0; i < 10; i++)
+        {
+            float a0 = i / 10f * Mathf.PI * 2f, a1 = (i + 1) / 10f * Mathf.PI * 2f;
+            level.hints.Add(new HintLine(new Vector3(4.5f + Mathf.Cos(a0) * 1.15f, -0.35f + Mathf.Sin(a0) * 0.45f, 0f),
+                                         new Vector3(4.5f + Mathf.Cos(a1) * 1.15f, -0.35f + Mathf.Sin(a1) * 0.45f, 0f), new Color(1f, 0.45f, 0.5f)));
+        }
+        return level;
+    }
+
+    // صفحة النار: حفر نار تشتعل وتنطفي. رويدا تستنى عند الطرف، وأنتِ ترسمين الجسر أول ما تنطفي النار
+    static LevelData FireLevel()
+    {
+        return new LevelData
+        {
+            title = "صفحة النار",
+            theme = LevelTheme.Fire(),
+            subtitle = "النار تحرق الرسم! ارسمي الجسر أول ما تنطفي",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(42f, 0f, 0f),
+            ink = 30f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(7f, 12f),
+                Page(15.5f, 19f),
+                Page(22f, 31f),
+                Page(35f, 45f),
+            },
+            // من x، لـ x، كل كم ثانية تشتعل، تأخير
+            firePits =
+            {
+                new Vector4(4f, 7f, 4.6f, 0f),
+                new Vector4(12f, 15.5f, 4.6f, 1.5f),
+                new Vector4(19f, 22f, 4.2f, 3f),
+                new Vector4(31f, 35f, 5f, 0.8f),
+            },
+        };
+    }
+
+    // صفحة البوابات: البوابة الزرقا توديك للبرتقالية. وحدة فوق الجدار، ووحدة تطلعك فوق حفرة (جهزي جسر تحتها)
+    static LevelData PortalLevel()
+    {
+        return new LevelData
+        {
+            title = "صفحة البوابات",
+            theme = LevelTheme.Mystic(),
+            subtitle = "البوابة الزرقا توديك للبرتقالية... شوفي وين بتطلعين!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(51f, 0f, 0f),
+            ink = 18f,
+            blocks =
+            {
+                Page(-7f, 8f),
+                Wall(10f, 18f, 4.5f),       // البوابة الأولى تطلعك فوقه
+                Page(21f, 28f, 4.5f),       // حفرة 3 قبلها
+                Page(35f, 42f),             // البوابة الثانية تطلعك فوق الحفرة اللي قبلها
+                Wall(42f, 44f, 5f),         // جدار عالي: البوابة الثالثة تعديك
+                Page(44f, 54f),
+            },
+            // (دخول x، دخول y، خروج x، خروج y)
+            portals =
+            {
+                new Vector4(6.5f, 0f, 11.5f, 4.5f),
+                new Vector4(26f, 4.5f, 33f, 0f),
+                new Vector4(40.5f, 0f, 46f, 0f),
+            },
+            hints = { new HintLine(new Vector3(30.8f, 0.15f, 0f), new Vector3(35.3f, 0.15f, 0f), new Color(1f, 0.6f, 0.25f)) },
+        };
+    }
+
+    // صفحة الوادي: الخط الطويل ينكسر تحت رويدا، فترسمين جسور قصيرة بين حجارة طايرة
+    static LevelData CanyonLevel()
+    {
+        return new LevelData
+        {
+            title = "صفحة الوادي",
+            theme = LevelTheme.Canyon(),
+            subtitle = "الخط الطويل ينكسر! ارسمي جسور قصيرة بين الحجارة",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(41f, 0f, 0f),
+            ink = 30f,
+            maxSpan = 3.4f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(10f, 15f),
+                Page(23f, 28f),
+                Page(34f, 44f),
+            },
+            // حجارة: x، سطحها، عرضها
+            pegs =
+            {
+                new Vector3(7f, -0.2f, 1f),
+                new Vector3(17.6f, 0.5f, 1f),
+                new Vector3(20.4f, 0.1f, 1f),
+                new Vector3(31f, -0.5f, 1f),
+            },
+        };
+    }
+
+    // صفحة اليراعات: ظلام، رويدا ماسكة فانوس، والحفر تبين بس لما تقربين. يراعات تعلّم أطراف الأرض، وخطوطك تضوي
+    static LevelData FirefliesLevel()
+    {
+        return new LevelData
+        {
+            title = "صفحة اليراعات",
+            theme = LevelTheme.Fireflies(),
+            subtitle = "الدنيا ظلام... اتبعي اليراعات، وخطوطك بتضوي الطريق",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(43f, 0f, 0f),
+            ink = 24f,
+            darkness = true,
+            blocks =
+            {
+                Page(-7f, 5f),
+                Page(8f, 14f, 0.6f),
+                Page(17.5f, 26f),
+                Page(29f, 33f, -0.5f),
+                Page(36f, 46f),
+            },
+            monsters = { Monster(ScribbleMonster.Kind.PurpleBlob, 22f, 19f, 25f) },
         };
     }
 
