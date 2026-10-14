@@ -18,8 +18,8 @@ public static class NewFeatures
                 if ((int)m.x == i) portal.MoveExit(m.y, m.z, gm);
         }
         foreach (Vector3 g in data.gates) PortalGate.Create(root, g, gm, rng, data);
-        foreach (Vector3 peg in data.pegs)
-            LevelBuilder.CreatePaperBlock(root, new Block(new Vector3(peg.x, peg.y - 0.3f, 0f), new Vector3(peg.z, 0.6f, 2.2f)), gm, rng, data, false);
+        foreach (Vector3 peg in data.pegs) StonePillar.Create(root, peg, gm);
+        foreach (Vector4 b in data.birds) PaperBird.Create(root, b, gm);
         if (data.darkness) BuildDarkness(root, data, gm);
     }
 
@@ -1081,5 +1081,226 @@ public class PortalBall : MonoBehaviour
         Fx.Sparkle(transform.position, new Color(0.7f, 0.6f, 1f), 14);
         if (GameManager.Instance != null) GameManager.Instance.Sound.PlayPoof();
         Destroy(gameObject);
+    }
+}
+
+// ---------- الوادي: أعمدة حجر وطير ورق ----------
+
+// عمود حجر طالع من قاع الوادي (حجارة فوق بعض، وفوقه عشب)
+public static class StonePillar
+{
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Stone Pillar");
+        go.transform.SetParent(root, false);
+        float x = spec.x, top = spec.y, w = spec.z, bottom = top - 14f;
+        go.transform.position = new Vector3(x, (top + bottom) * 0.5f, 0f);
+        var col = go.AddComponent<BoxCollider>();
+        col.size = new Vector3(w, top - bottom, 2f);
+
+        Material[] stone =
+        {
+            gm.Mat("Canyon Stone A", new Color(0.78f, 0.52f, 0.36f), 0.15f),
+            gm.Mat("Canyon Stone B", new Color(0.66f, 0.42f, 0.3f), 0.12f),
+            gm.Mat("Canyon Stone C", new Color(0.86f, 0.62f, 0.44f), 0.15f),
+        };
+        Material moss = gm.Mat("Canyon Moss", new Color(0.45f, 0.68f, 0.32f), 0.25f);
+        Material grass = gm.Mat("Canyon Grass", new Color(0.35f, 0.58f, 0.25f), 0.2f);
+        var rng = new System.Random((int)(x * 10f));
+        float y = top - 0.4f;
+        int k = 0;
+        while (y > bottom)
+        {
+            float h = 0.7f + (float)rng.NextDouble() * 0.4f;
+            float ww = w * (1.02f + (float)rng.NextDouble() * 0.18f) * (1f + k * 0.03f);
+            // أول حجر مسطح (عشان السطح)، والباقي حجارة مدورة
+            bool slab = k == 0;
+            var s = LevelBuilder.Visual("Stone", slab ? PrimitiveType.Cube : PrimitiveType.Sphere, go.transform, Vector3.zero,
+                slab ? new Vector3(ww, h, 1.9f) : new Vector3(ww * 1.3f, h * 1.35f, 2.2f + (float)rng.NextDouble() * 0.3f), stone[k % 3]);
+            s.transform.position = new Vector3(x + ((float)rng.NextDouble() - 0.5f) * 0.12f, y, 0f);
+            s.transform.rotation = Quaternion.Euler(0f, ((float)rng.NextDouble() - 0.5f) * 14f, ((float)rng.NextDouble() - 0.5f) * 6f);
+            y -= h * 0.92f;
+            k++;
+        }
+        // غطا عشب فوق
+        var cap = LevelBuilder.Visual("Moss", PrimitiveType.Sphere, go.transform, Vector3.zero, new Vector3(w * 1.15f, 0.22f, 2.1f), moss);
+        cap.transform.position = new Vector3(x, top - 0.02f, 0f);
+        for (int i = 0; i < 4; i++)
+        {
+            var blade = LevelBuilder.Visual("Grass", PrimitiveType.Cube, go.transform, Vector3.zero, new Vector3(0.05f, 0.28f, 0.05f), grass, false);
+            blade.transform.position = new Vector3(x - w * 0.4f + i * w * 0.27f, top + 0.15f, -0.85f);
+            blade.transform.rotation = Quaternion.Euler(0f, 0f, (i % 2 == 0 ? 1 : -1) * 15f);
+        }
+    }
+}
+
+// طير ورق (أوريغامي) كبير: يصيح، وبعدين ينقض على الحفرة ويخطف أي خط بطريقه.
+// رويدا تستنى عند الطرف لين يعدي، وأنتِ ترسمين الجسور وراه
+public class PaperBird : MonoBehaviour
+{
+    const float Period = 8f, Warn = 1.5f, Swoop = 1.9f;
+    float from, to, low, phase, start, nextCry;
+    Transform model, wingL, wingR, alert;
+    readonly List<GameObject> carried = new List<GameObject>();
+    bool holding, wasSwoop;
+
+    public static void Create(Transform root, Vector4 spec, GameManager gm)
+    {
+        var go = new GameObject("Paper Bird");
+        go.transform.SetParent(root, false);
+        var b = go.AddComponent<PaperBird>();
+        b.from = spec.x; b.to = spec.y; b.low = spec.z; b.phase = spec.w;
+        b.start = Time.time;
+        b.Build(gm);
+        go.transform.position = b.Park;
+    }
+
+    void Build(GameManager gm)
+    {
+        Material paper = gm.Mat("Bird Paper", new Color(0.97f, 0.95f, 0.9f), 0.2f);
+        Material fold = gm.Mat("Bird Fold", new Color(0.83f, 0.8f, 0.76f), 0.2f);
+        Material beak = gm.Mat("Bird Beak", new Color(1f, 0.62f, 0.25f), 0.3f);
+        Material black = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
+        Material red = gm.Mat("Bird Alert", new Color(1f, 0.25f, 0.25f), 0.4f);
+
+        model = new GameObject("Model").transform;
+        model.SetParent(transform, false);
+        // الجسم: معيّن ورق
+        var body = LevelBuilder.Visual("Body", PrimitiveType.Cube, model, Vector3.zero, new Vector3(1.1f, 1.1f, 0.5f), paper).transform;
+        body.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        body.localScale = new Vector3(1.3f, 0.7f, 0.5f);
+        LevelBuilder.Visual("Fold", PrimitiveType.Cube, model, new Vector3(0f, -0.05f, -0.26f), new Vector3(1.2f, 0.04f, 0.02f), fold, false);
+        // الرقبة والراس (لقدام فوق) والذيل (لورا فوق)
+        var neck = LevelBuilder.Visual("Neck", PrimitiveType.Cube, model, new Vector3(0.85f, 0.45f, 0f), new Vector3(1.1f, 0.18f, 0.2f), paper).transform;
+        neck.localRotation = Quaternion.Euler(0f, 0f, 40f);
+        var head = LevelBuilder.Visual("Head", PrimitiveType.Cube, model, new Vector3(1.38f, 0.82f, 0f), new Vector3(0.45f, 0.22f, 0.24f), paper).transform;
+        head.localRotation = Quaternion.Euler(0f, 0f, -20f);
+        var bk = LevelBuilder.Visual("Beak", PrimitiveType.Cube, model, new Vector3(1.7f, 0.7f, 0f), new Vector3(0.38f, 0.1f, 0.12f), beak).transform;
+        bk.localRotation = Quaternion.Euler(0f, 0f, -25f);
+        LevelBuilder.Visual("Eye", PrimitiveType.Sphere, model, new Vector3(1.4f, 0.86f, -0.13f), Vector3.one * 0.09f, black, false);
+        var tail = LevelBuilder.Visual("Tail", PrimitiveType.Cube, model, new Vector3(-0.95f, 0.4f, 0f), new Vector3(1.1f, 0.16f, 0.2f), paper).transform;
+        tail.localRotation = Quaternion.Euler(0f, 0f, -35f);
+        // الجناحات: مثلثات ورق ترفرف (واحد قدام، وواحد ورا)
+        wingL = Wing(model, paper, fold, -0.35f);
+        wingR = Wing(model, fold, paper, 0.35f);
+        // مخالب
+        for (int i = 0; i < 2; i++)
+        {
+            var claw = LevelBuilder.Visual("Claw", PrimitiveType.Cube, model, new Vector3(-0.05f + i * 0.25f, -0.55f, 0f), new Vector3(0.06f, 0.4f, 0.06f), beak, false).transform;
+            claw.localRotation = Quaternion.Euler(0f, 0f, 15f);
+        }
+        model.localScale = Vector3.one * 1.25f;
+
+        // علامة تعجب حمرا فوق الحفرة قبل لا ينقض
+        alert = new GameObject("Bird Alert").transform;
+        alert.SetParent(transform.parent, false);
+        alert.position = new Vector3((from + to) * 0.5f, 3.4f, -0.5f);
+        LevelBuilder.Visual("Bar", PrimitiveType.Cube, alert, new Vector3(0f, 0.25f, 0f), new Vector3(0.18f, 0.6f, 0.1f), red, false);
+        LevelBuilder.Visual("Dot", PrimitiveType.Sphere, alert, new Vector3(0f, -0.25f, 0f), Vector3.one * 0.2f, red, false);
+        alert.gameObject.SetActive(false);
+    }
+
+    static Transform Wing(Transform parent, Material a, Material b, float z)
+    {
+        var pivot = new GameObject("Wing").transform;
+        pivot.SetParent(parent, false);
+        pivot.localPosition = new Vector3(0f, 0.2f, z);
+        var w = LevelBuilder.Visual("Wing Sheet", PrimitiveType.Cube, pivot, new Vector3(0f, 0f, 0f), new Vector3(0.9f, 0.05f, 1.6f), a).transform;
+        w.localPosition = new Vector3(0f, 0f, Mathf.Sign(z) * 0.8f);
+        w.localRotation = Quaternion.Euler(0f, 35f, 0f);
+        LevelBuilder.Visual("Wing Fold", PrimitiveType.Cube, w, new Vector3(0f, 0.6f, 0f), new Vector3(0.05f, 1f, 0.9f), b, false);
+        return pivot;
+    }
+
+    Vector3 Park => new Vector3(from - 3f, 9.5f, 2f);
+    float Local => Mathf.Repeat(Time.time - start + phase, Period);
+    bool Swooping => Local < Swoop;
+    float UntilSwoop => Swooping ? 0f : Period - Local;
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        bool swooping = Swooping;
+        float until = UntilSwoop;
+
+        // رفرفة
+        float flap = Mathf.Sin(Time.time * (swooping ? 7f : 4f)) * (swooping ? 25f : 40f);
+        wingL.localRotation = Quaternion.Euler(-flap, 0f, 0f);
+        wingR.localRotation = Quaternion.Euler(flap, 0f, 0f);
+
+        // تحذير: صيحة وعلامة تعجب
+        bool warn = !swooping && until < Warn;
+        alert.gameObject.SetActive(warn && Mathf.Repeat(Time.time * 4f, 1f) < 0.65f);
+        if (warn && Time.time >= nextCry)
+        {
+            nextCry = Time.time + 0.45f;
+            gm.Sound.PlaySqueak(Random.Range(1.9f, 2.3f));
+        }
+
+        if (swooping)
+        {
+            // ينزل من فوق اليسار، يمر تحت مستوى الجسور، ويطلع فوق اليمين
+            float s = Local / Swoop;
+            float x = Mathf.Lerp(from - 2.5f, to + 2.5f, s);
+            float d = 2f * s - 1f;
+            float y = low + (9f - low) * d * d;
+            float slope = (9f - low) * 2f * d * 2f / (to - from + 5f);
+            transform.position = new Vector3(x, y, -1.4f);   // قدام الأعمدة عشان يبان وهو ينقض
+            model.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan(slope) * Mathf.Rad2Deg);
+            if (!wasSwoop) gm.Sound.PlayLaser();
+            Snatch(gm);
+        }
+        else
+        {
+            if (wasSwoop) DropCarried();
+            // يحوم بعيد فوق
+            transform.position = Vector3.Lerp(transform.position, Park + new Vector3(Mathf.Sin(Time.time * 0.6f) * 2f, Mathf.Sin(Time.time * 1.1f) * 0.5f, 0f), Time.deltaTime * 1.5f);
+            model.localRotation = Quaternion.Slerp(model.localRotation, Quaternion.identity, Time.deltaTime * 3f);
+        }
+        wasSwoop = swooping;
+
+        // رويدا تستنى عند الطرف لين يكون عندها وقت تعدي قبل الطير الجاي
+        RowaidaController rowaida = gm.Rowaida;
+        if (rowaida == null) return;
+        Vector3 r = rowaida.transform.position;
+        float cross = (to - from + 1.4f) / Mathf.Max(0.1f, rowaida.walkSpeed);
+        bool atEdge = r.x > from - 1.1f && r.x < from - 0.1f && r.y > -0.5f;
+        if (atEdge && until < cross && gm.IsPlaying) { rowaida.Held = true; rowaida.CarryX = 0f; holding = true; }
+        else if (holding) { rowaida.Held = false; holding = false; }
+    }
+
+    // يخطف الخطوط اللي قريبة منه (فوق الحفرة)
+    void Snatch(GameManager gm)
+    {
+        Vector3 p = transform.position;
+        p.z = 0f;
+        foreach (InkMark mark in Object.FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+        {
+            if (carried.Contains(mark.gameObject)) continue;
+            var rend = mark.GetComponent<MeshRenderer>();
+            if (rend == null) continue;
+            Bounds b = rend.bounds;
+            if (b.center.x < from - 0.5f || b.center.x > to + 0.5f) continue;
+            if (b.SqrDistance(p) > 1.6f * 1.6f) continue;
+            foreach (Collider c in mark.GetComponentsInChildren<Collider>()) c.enabled = false;
+            var body = mark.GetComponent<Rigidbody>();
+            if (body != null) body.isKinematic = true;
+            mark.transform.SetParent(transform, true);
+            carried.Add(mark.gameObject);
+            Fx.Sparkle(b.center, new Color(1f, 1f, 0.9f), 10);
+            gm.Sound.PlayChomp();
+        }
+    }
+
+    void DropCarried()
+    {
+        foreach (GameObject g in carried)
+            if (g != null)
+            {
+                Fx.Sparkle(g.transform.position, new Color(1f, 1f, 0.9f), 8);
+                Destroy(g);
+            }
+        carried.Clear();
     }
 }

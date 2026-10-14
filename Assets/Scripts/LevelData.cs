@@ -139,6 +139,7 @@ public class LevelData
     public List<Vector3> gates = new List<Vector3>();       // البوابات: باب مقفل (x الباب، x الزر، ارتفاع الرف)
     public float maxSpan;                                   // الوادي: الخط أطول من كذا ينكسر تحت رويدا (0 = ما فيه)
     public List<Vector3> pegs = new List<Vector3>();        // الوادي: حجارة طايرة (x، سطحها، عرضها)
+    public List<Vector4> birds = new List<Vector4>();       // الوادي: طير ورق ينقض على حفرة (من x، لـ x، أوطى نقطة، تأخير)
     public List<Vector3> pins = new List<Vector3>();        // البالونات: دبابيس معلقة تفجر البالونة (من x، لـ x، ارتفاعها)
     public List<Vector3> fans = new List<Vector3>();        // البالونات: مروحة تدف البالونة لليمين (من x، لـ x، ارتفاع الطيران)
     public bool darkness;                                   // اليراعات: ظلام، فانوس مع رويدا، وخطوط تضوي
@@ -549,17 +550,18 @@ public static class Levels
         return level;
     }
 
-    // صفحة الوادي: الخط الطويل ينكسر تحت رويدا، فترسمين جسور قصيرة بين حجارة طايرة
+    // صفحة الوادي: أعمدة حجر بين الحفر، والخط الطويل ينكسر. وطير ورق كبير يصيح وينقض ويخطف الخطوط:
+    // رويدا تستنى لين يعدي، وأنتِ ترسمين الجسور وراه بسرعة
     static LevelData CanyonLevel()
     {
         return new LevelData
         {
             title = "صفحة الوادي",
             theme = LevelTheme.Canyon(),
-            subtitle = "الخط الطويل ينكسر! ارسمي جسور قصيرة بين الحجارة",
+            subtitle = "طير الورق يخطف الخطوط! خليه يعدي وارسمي وراه",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(41f, 0f, 0f),
-            ink = 30f,
+            ink = 32f,
             maxSpan = 3.4f,
             blocks =
             {
@@ -568,13 +570,18 @@ public static class Levels
                 Page(23f, 28f),
                 Page(34f, 44f),
             },
-            // حجارة: x، سطحها، عرضها
+            // أعمدة حجر: x، سطحها، عرضها
             pegs =
             {
-                new Vector3(7f, -0.2f, 1f),
-                new Vector3(17.6f, 0.5f, 1f),
-                new Vector3(20.4f, 0.1f, 1f),
-                new Vector3(31f, -0.5f, 1f),
+                new Vector3(7f, -0.2f, 1.2f),
+                new Vector3(17.6f, 0.5f, 1.2f),
+                new Vector3(20.4f, 0.1f, 1.2f),
+                new Vector3(31f, -0.5f, 1.2f),
+            },
+            birds =
+            {
+                new Vector4(15f, 23f, -0.8f, 0f),
+                new Vector4(28f, 34f, -0.8f, 4f),
             },
         };
     }
