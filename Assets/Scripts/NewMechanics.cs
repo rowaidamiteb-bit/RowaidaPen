@@ -7,6 +7,7 @@ public static class NewFeatures
     public static void Build(Transform root, LevelData data, GameManager gm, System.Random rng)
     {
         foreach (Vector4 f in data.firePits) FirePit.Create(root, f, gm);
+        foreach (Vector4 d in data.dragons) Dragon.Create(root, d, gm);
         foreach (Vector3 p in data.pins) PinRow.Create(root, p, gm);
         foreach (Vector3 f in data.fans) FanZone.Create(root, f, gm);
         foreach (Vector4 p in data.portals) Portal.Create(root, new Vector3(p.x, p.y, 0f), new Vector3(p.z, p.w, 0f));
@@ -683,4 +684,264 @@ public class FragileInk : MonoBehaviour
         gm.Sound.PlayPoof();
         Destroy(gameObject);
     }
+}
+
+// ---------- التنين ----------
+
+// تنين شخبطة على صخرة طايرة: يتنفس، يرجع راسه، وينفخ نار مايلة على الطريق.
+// الخط اللي ترسمينه فوق راس رويدا يصير درع يصد النار (ويتفحم شوي شوي لين يحترق)
+public class Dragon : MonoBehaviour
+{
+    const float Period = 4.2f, WarnTime = 1.1f, BreathTime = 1.4f, BurnHeat = 4.5f, Speed = 16f;
+    float phase, start, nextFlame, nextSmoke;
+    bool wasWarn, wasBreath;
+    Vector3 target;
+    Transform head, jaw, wings, tail;
+    Light mouthLight;
+    Material fireMat, fireMat2, smokeMat;
+    static readonly Dictionary<InkMark, float> heat = new Dictionary<InkMark, float>();
+
+    public static void Create(Transform root, Vector4 spec, GameManager gm)
+    {
+        var go = new GameObject("Dragon");
+        go.transform.SetParent(root, false);
+        go.transform.position = new Vector3(spec.x, spec.y, 0f);
+        var d = go.AddComponent<Dragon>();
+        d.target = new Vector3(spec.z, 0f, 0f);
+        d.phase = spec.w;
+        d.start = Time.time;
+        heat.Clear();
+        d.Build(gm);
+    }
+
+    Transform Part(string name, PrimitiveType type, Transform parent, Vector3 pos, Vector3 scale, Material mat, float rotZ = 0f)
+    {
+        var t = LevelBuilder.Visual(name, type, parent, pos, scale, mat).transform;
+        t.localRotation = Quaternion.Euler(0f, 0f, rotZ);
+        return t;
+    }
+
+    void Build(GameManager gm)
+    {
+        Material rock = gm.Mat("Dragon Rock", new Color(0.36f, 0.27f, 0.25f), 0.15f);
+        Material rockDark = gm.Mat("Dragon Rock Dark", new Color(0.24f, 0.17f, 0.16f), 0.1f);
+        Material skin = gm.Mat("Dragon Skin", new Color(0.93f, 0.3f, 0.22f), 0.35f);
+        Material belly = gm.Mat("Dragon Belly", new Color(1f, 0.82f, 0.4f), 0.3f);
+        Material spike = gm.Mat("Dragon Spike", new Color(0.55f, 0.12f, 0.15f), 0.3f);
+        Material wing = gm.Mat("Dragon Wing", new Color(0.75f, 0.2f, 0.32f), 0.25f);
+        Material horn = gm.Mat("Dragon Horn", new Color(0.98f, 0.92f, 0.75f), 0.5f);
+        Material white = gm.Mat("Monster Eye", Color.white, 0.7f);
+        Material black = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
+        Material mouthIn = gm.Mat("Dragon Mouth", new Color(0.35f, 0.05f, 0.08f), 0.4f);
+
+        // الصخرة الطايرة (مع حصى تحتها)
+        Part("Rock", PrimitiveType.Sphere, transform, new Vector3(0.3f, -0.45f, 0.3f), new Vector3(3.4f, 1.1f, 2f), rock);
+        Part("Rock Bottom", PrimitiveType.Sphere, transform, new Vector3(0.4f, -0.95f, 0.3f), new Vector3(2f, 1f, 1.5f), rockDark);
+        Part("Rock Tip", PrimitiveType.Sphere, transform, new Vector3(0.5f, -1.45f, 0.3f), new Vector3(0.8f, 0.7f, 0.7f), rockDark);
+        for (int i = 0; i < 3; i++)
+            Part("Pebble", PrimitiveType.Sphere, transform, new Vector3(-0.5f + i * 0.75f, -1.55f - i * 0.15f, 0.3f), Vector3.one * (0.3f - i * 0.06f), rock).gameObject.AddComponent<Bob>();
+
+        // الجسم والذيل والرجول
+        var body = new GameObject("Body").transform;
+        body.SetParent(transform, false);
+        Part("Torso", PrimitiveType.Sphere, body, new Vector3(0.45f, 0.6f, 0f), new Vector3(1.6f, 1.1f, 1f), skin);
+        Part("Belly", PrimitiveType.Sphere, body, new Vector3(0.25f, 0.45f, -0.3f), new Vector3(1.05f, 0.75f, 0.5f), belly);
+        for (int s = 0; s < 2; s++)
+            Part("Leg", PrimitiveType.Capsule, body, new Vector3(-0.05f + s * 0.85f, 0.15f, -0.25f + s * 0.1f), new Vector3(0.32f, 0.3f, 0.32f), skin);
+        for (int i = 0; i < 4; i++)
+            Part("Back Spike", PrimitiveType.Cube, body, new Vector3(0.05f + i * 0.33f, 1.15f - Mathf.Abs(i - 1.2f) * 0.07f, 0f), Vector3.one * 0.2f, spike, 45f);
+        tail = new GameObject("Tail").transform;
+        tail.SetParent(body, false);
+        tail.localPosition = new Vector3(1.15f, 0.5f, 0f);
+        Part("Tail 1", PrimitiveType.Capsule, tail, new Vector3(0.35f, -0.05f, 0f), new Vector3(0.3f, 0.45f, 0.3f), skin, 70f);
+        Part("Tail 2", PrimitiveType.Capsule, tail, new Vector3(0.8f, 0.12f, 0f), new Vector3(0.2f, 0.35f, 0.2f), skin, 120f);
+        Part("Tail Tip", PrimitiveType.Cube, tail, new Vector3(1.07f, 0.35f, 0f), new Vector3(0.28f, 0.28f, 0.08f), spike, 45f);
+
+        // الجناحات تحت الجسم ورا (ترفرف)
+        wings = new GameObject("Wings").transform;
+        wings.SetParent(body, false);
+        wings.localPosition = new Vector3(0.55f, 0.95f, 0.35f);
+        Part("Wing", PrimitiveType.Sphere, wings, new Vector3(0.2f, 0.55f, 0f), new Vector3(0.7f, 1.3f, 0.08f), wing, -25f);
+        Part("Wing Bone", PrimitiveType.Capsule, wings, new Vector3(0.05f, 0.65f, -0.05f), new Vector3(0.09f, 0.6f, 0.09f), spike, -25f);
+
+        // الرقبة والراس
+        Part("Neck", PrimitiveType.Capsule, body, new Vector3(-0.35f, 1.05f, 0f), new Vector3(0.48f, 0.6f, 0.48f), skin, 35f);
+        head = new GameObject("Head").transform;
+        head.SetParent(transform, false);
+        head.localPosition = new Vector3(-0.7f, 1.55f, 0f);
+        Part("Skull", PrimitiveType.Sphere, head, new Vector3(0f, 0.05f, 0f), new Vector3(0.85f, 0.7f, 0.7f), skin);
+        Part("Snout", PrimitiveType.Capsule, head, new Vector3(-0.5f, 0.08f, 0f), new Vector3(0.42f, 0.38f, 0.45f), skin, 90f);
+        for (int s = -1; s <= 1; s += 2)
+            Part("Nostril", PrimitiveType.Sphere, head, new Vector3(-0.82f, 0.18f, s * 0.12f - 0.08f), Vector3.one * 0.08f, black);
+        Part("Eye", PrimitiveType.Sphere, head, new Vector3(-0.15f, 0.22f, -0.3f), new Vector3(0.28f, 0.3f, 0.12f), white);
+        Part("Pupil", PrimitiveType.Sphere, head, new Vector3(-0.2f, 0.2f, -0.36f), new Vector3(0.12f, 0.17f, 0.05f), black);
+        Part("Brow", PrimitiveType.Cube, head, new Vector3(-0.15f, 0.4f, -0.3f), new Vector3(0.32f, 0.07f, 0.06f), spike, -15f);
+        for (int s = 0; s < 2; s++)
+            Part("Horn", PrimitiveType.Capsule, head, new Vector3(0.2f + s * 0.15f, 0.45f, 0.1f - s * 0.2f), new Vector3(0.12f, 0.25f, 0.12f), horn, -40f);
+        jaw = new GameObject("Jaw").transform;
+        jaw.SetParent(head, false);
+        jaw.localPosition = new Vector3(-0.05f, -0.12f, 0f);
+        Part("Jaw Inside", PrimitiveType.Sphere, jaw, new Vector3(-0.4f, 0.02f, -0.05f), new Vector3(0.6f, 0.15f, 0.35f), mouthIn);
+        Part("Jaw Skin", PrimitiveType.Capsule, jaw, new Vector3(-0.42f, -0.08f, 0f), new Vector3(0.24f, 0.36f, 0.36f), belly, 90f);
+        for (int t = 0; t < 3; t++)
+            Part("Tooth", PrimitiveType.Cube, head, new Vector3(-0.72f + t * 0.17f, -0.1f, -0.15f), Vector3.one * 0.07f, white, 45f);
+
+        // ضو بالفم
+        mouthLight = new GameObject("Mouth Light").AddComponent<Light>();
+        mouthLight.transform.SetParent(head, false);
+        mouthLight.transform.localPosition = new Vector3(-0.9f, 0f, -0.6f);
+        mouthLight.type = LightType.Point;
+        mouthLight.color = new Color(1f, 0.55f, 0.18f);
+        mouthLight.range = 6f;
+        mouthLight.intensity = 0f;
+
+        var soft = NightSky.DotTexture();
+        fireMat = NightSky.Transparent("Dragon Flame", soft, new Color(2.4f, 0.45f, 0.06f, 0.9f));
+        fireMat2 = NightSky.Transparent("Dragon Flame Core", soft, new Color(2.6f, 1.6f, 0.4f, 0.95f));
+        smokeMat = NightSky.Transparent("Dragon Smoke", soft, new Color(0.35f, 0.32f, 0.33f, 0.55f));
+    }
+
+    float Local => Mathf.Repeat(Time.time - start + phase, Period);
+    // بداية الدورة: ينفخ. آخر الدورة: يحذر (يرجع راسه ويطلع دخان)
+    bool Breathing => Local < BreathTime;
+    bool Warning => Local > Period - WarnTime;
+
+    Vector3 Mouth => head.TransformPoint(new Vector3(-0.95f, 0f, 0f));
+    // وين يطالع: رويدا (بين حدود)، ووقت النفخ يلحقها بسرعة قريبة من مشيها
+    Vector3 aimPoint;
+    Vector3 Aim => (aimPoint - head.position).normalized;
+
+    void Track(GameManager gm, bool breathing)
+    {
+        float lo = target.x - 3f, hi = transform.position.x - 2.5f;
+        float want = gm.Rowaida != null ? Mathf.Clamp(gm.Rowaida.transform.position.x + 0.3f, lo, hi) : target.x;
+        if (aimPoint == Vector3.zero) aimPoint = new Vector3(lo, 0f, 0f);
+        aimPoint.x = breathing ? Mathf.MoveTowards(aimPoint.x, want, 3.1f * Time.deltaTime) : Mathf.Lerp(aimPoint.x, want, Time.deltaTime * 4f);
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        bool breathing = Breathing, warning = Warning;
+        Track(gm, breathing);
+        if (gm.Rowaida != null)
+        {
+            float dx = gm.Rowaida.transform.position.x - transform.position.x;
+            if (dx > -14f && dx < 3f) CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f);
+        }
+        float t = Time.time;
+
+        // الحركة: يتنفس، الجناح يرفرف، الذيل يتمايل
+        wings.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * (warning ? 9f : 2.5f)) * 18f);
+        tail.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 1.7f) * 12f);
+
+        float aimAngle = Mathf.Atan2(Aim.y, Aim.x) * Mathf.Rad2Deg - 180f;
+        float headAngle, jawOpen;
+        if (breathing) { headAngle = aimAngle + Mathf.Sin(t * 20f) * 2f; jawOpen = 32f; }
+        else if (warning)
+        {
+            float k = Mathf.InverseLerp(Period - WarnTime, Period, Local);
+            headAngle = Mathf.Lerp(-10f, -38f, k);   // يرجع راسه لورا ويشهق
+            jawOpen = 6f + k * 10f;
+        }
+        else { headAngle = -8f + Mathf.Sin(t * 1.3f) * 4f; jawOpen = 0f; }
+        head.localRotation = Quaternion.Slerp(head.localRotation, Quaternion.Euler(0f, 0f, headAngle), Time.deltaTime * (breathing ? 18f : 6f));
+        jaw.localRotation = Quaternion.Slerp(jaw.localRotation, Quaternion.Euler(0f, 0f, jawOpen), Time.deltaTime * 12f);
+        mouthLight.intensity = breathing ? 6f + Mathf.PerlinNoise(t * 9f, 1f) * 3f : warning ? 1.5f + Mathf.Sin(t * 25f) : 0f;
+
+        if (warning && !wasWarn) gm.Sound.PlayRumble(0.45f);
+        if (breathing && !wasBreath) { gm.Sound.PlayPoof(); gm.Sound.PlayRumble(0.6f); }
+        wasWarn = warning; wasBreath = breathing;
+
+        // دخان من الخشم وهو يحذر
+        if (warning && t >= nextSmoke)
+        {
+            nextSmoke = t + 0.09f;
+            var s = LevelBuilder.Visual("Smoke", PrimitiveType.Quad, null, head.TransformPoint(new Vector3(-0.85f, 0.2f, -0.1f)), Vector3.one * Random.Range(0.3f, 0.5f), smokeMat, false);
+            var fx = s.AddComponent<FxParticle>();
+            fx.velocity = new Vector3(Random.Range(-0.6f, 0.2f), Random.Range(0.8f, 1.4f), 0f);
+            fx.grow = 1.8f; fx.drag = 1f; fx.life = 0.8f;
+        }
+
+        if (!breathing) return;
+
+        // النفخة: توقف عند أول درع (خط حبر) أو الأرض
+        Vector3 from = Mouth, dir = (aimPoint - from).normalized;
+        float reach = 14f;
+        InkMark shield = null;
+        foreach (RaycastHit h in Physics.SphereCastAll(from, 0.3f, dir, reach, ~0, QueryTriggerInteraction.Ignore))
+        {
+            var mark = h.collider.GetComponentInParent<InkMark>();
+            if (h.collider.GetComponentInParent<RowaidaController>() != null) continue;
+            if (mark == null && h.collider.attachedRigidbody != null) continue;   // أشياء تتحرك (بالونات، وحوش) ما توقفها
+            if (h.distance <= 0f || h.distance >= reach) continue;
+            reach = h.distance;
+            shield = mark;
+        }
+        Vector3 end = from + dir * reach;
+
+        if (t >= nextFlame)
+        {
+            nextFlame = t + 0.01f;
+            for (int i = 0; i < 3; i++)
+            {
+                bool core = Random.value < 0.35f;
+                var p = LevelBuilder.Visual("Dragon Flame", PrimitiveType.Quad, null, from + (Vector3)Random.insideUnitCircle * 0.1f + new Vector3(0f, 0f, -0.3f),
+                    Vector3.one * (core ? 0.75f : 1.05f), core ? fireMat2 : fireMat, false);
+                var fx = p.AddComponent<FxParticle>();
+                float speed = Speed * Random.Range(0.85f, 1.1f);
+                fx.velocity = (dir + (Vector3)Random.insideUnitCircle * 0.08f) * speed;
+                fx.grow = core ? 1.4f : 2.2f;
+                fx.life = Mathf.Max(0.05f, reach / speed * 1.1f);
+            }
+            // شرار وين ما توقف
+            // وين ما توقف: لهب يتطاير لفوق
+            var splash = LevelBuilder.Visual("Flame Splash", PrimitiveType.Quad, null, end + new Vector3(Random.Range(-0.4f, 0.4f), 0.1f, -0.4f), Vector3.one * Random.Range(0.6f, 1f), fireMat, false);
+            var sfx = splash.AddComponent<FxParticle>();
+            sfx.velocity = new Vector3(Random.Range(-1.5f, 1.5f), Random.Range(1.5f, 3f), 0f);
+            sfx.grow = 1f; sfx.drag = 2f; sfx.life = 0.35f;
+            if (Random.value < 0.4f) Fx.Sparkle(end, new Color(1f, 0.55f, 0.15f), 2);
+        }
+
+        // الدرع يسخن ويتفحم، وبعدين يحترق
+        if (shield != null)
+        {
+            heat.TryGetValue(shield, out float h0);
+            float h1 = h0 + Time.deltaTime;
+            heat[shield] = h1;
+            var rend = shield.GetComponent<MeshRenderer>();
+            if (rend != null)
+            {
+                rend.material.color = Color.Lerp(rend.material.color, new Color(0.12f, 0.06f, 0.05f), Time.deltaTime * 0.6f);
+            }
+            if (h1 >= BurnHeat)
+            {
+                Fx.Sparkle(end, new Color(1f, 0.45f, 0.15f), 20);
+                gm.Sound.PlayPoof();
+                heat.Remove(shield);
+                Destroy(shield.gameObject);
+            }
+        }
+
+        // رويدا بطريق النار؟
+        RowaidaController rowaida = gm.Rowaida;
+        if (rowaida == null || !gm.IsPlaying || Local < 0.12f) return;
+        Vector3 r = rowaida.transform.position + Vector3.up * 0.3f;
+        float along = Mathf.Clamp(Vector3.Dot(r - from, dir), 0f, reach);
+        if ((from + dir * along - r).magnitude < 0.7f)
+        {
+            Fx.Sparkle(r, new Color(1f, 0.5f, 0.2f), 16);
+            gm.KillRowaida();
+        }
+    }
+}
+
+// حصى تطفو تحت الصخرة
+public class Bob : MonoBehaviour
+{
+    Vector3 home;
+    float seed;
+    void Start() { home = transform.localPosition; seed = Random.value * 10f; }
+    void Update() => transform.localPosition = home + Vector3.up * Mathf.Sin(Time.time * 1.6f + seed) * 0.12f;
 }

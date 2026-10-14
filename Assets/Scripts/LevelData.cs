@@ -133,6 +133,7 @@ public class LevelData
     public bool memoryClouds;                               // الصفحة الأخيرة: غيوم فيها ذكريات (صور ورسومات)
     public bool balloonInk;                                 // البالونات: الأشكال المغلقة تصير بالونات تطير برويدا
     public List<Vector4> firePits = new List<Vector4>();    // النار: حفر نار (من x، لـ x، كل كم ثانية، تأخير البداية)
+    public List<Vector4> dragons = new List<Vector4>();     // النار: تنين على صخرة (x، y، وين ينفخ x، تأخير)
     public List<Vector4> portals = new List<Vector4>();     // البوابات: (دخول x، دخول y، خروج x، خروج y) على سطح الأرض
     public float maxSpan;                                   // الوادي: الخط أطول من كذا ينكسر تحت رويدا (0 = ما فيه)
     public List<Vector3> pegs = new List<Vector3>();        // الوادي: حجارة طايرة (x، سطحها، عرضها)
@@ -469,34 +470,41 @@ public static class Levels
         }
     }
 
-    // صفحة النار: حفر نار تشتعل وتنطفي. رويدا تستنى عند الطرف، وأنتِ ترسمين الجسر أول ما تنطفي النار
+    // صفحة النار: حفر نار تشتغل وتطفي، وتنينين على صخور طايرة ينفخون نار مايلة.
+    // الجسر فوق الحفرة أول ما تنطفي، والدرع (خط فوق راسها) يصد نفخة التنين
     static LevelData FireLevel()
     {
-        return new LevelData
+        var level = new LevelData
         {
             title = "صفحة النار",
             theme = LevelTheme.Fire(),
-            subtitle = "النار تحرق الرسم! ارسمي الجسر أول ما تنطفي",
+            subtitle = "التنين ينفخ نار! ارسمي فوق راسك درع يصدها",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(42f, 0f, 0f),
-            ink = 30f,
+            door = new Vector3(49f, 0f, 0f),
+            ink = 32f,
             blocks =
             {
                 Page(-7f, 4f),
-                Page(7f, 12f),
-                Page(15.5f, 19f),
-                Page(22f, 31f),
-                Page(35f, 45f),
+                Page(7f, 24f),
+                Page(27.5f, 38f),
+                Page(41.5f, 52f),
             },
             // من x، لـ x، كل كم ثانية تشتعل، تأخير
             firePits =
             {
                 new Vector4(4f, 7f, 4.6f, 0f),
-                new Vector4(12f, 15.5f, 4.6f, 1.5f),
-                new Vector4(19f, 22f, 4.2f, 3f),
-                new Vector4(31f, 35f, 5f, 0.8f),
+                new Vector4(24f, 27.5f, 4.4f, 1.5f),
+                new Vector4(38f, 41.5f, 5f, 0.8f),
+            },
+            dragons =
+            {
+                new Vector4(21f, 4.8f, 13f, 0f),
+                new Vector4(37.5f, 5.2f, 31f, 2.1f),
             },
         };
+        level.hints.Add(new HintLine(new Vector3(14f, 2.6f, 0f), new Vector3(19.6f, 2.6f, 0f), new Color(1f, 0.6f, 0.2f)));
+        level.hints.Add(new HintLine(new Vector3(31.2f, 2.6f, 0f), new Vector3(36f, 2.6f, 0f), new Color(1f, 0.6f, 0.2f)));
+        return level;
     }
 
     // صفحة البوابات: البوابة الزرقا توديك للبرتقالية. وحدة فوق الجدار، ووحدة تطلعك فوق حفرة (جهزي جسر تحتها)
