@@ -15,6 +15,7 @@ public static class MusicFeatures
     public static void Build(Transform root, LevelData data, GameManager gm, System.Random rng)
     {
         foreach (PianoSpec p in data.pianos) PianoPuzzle.Create(root, p, gm);
+        foreach (Vector3 d in data.drumPits) DrumPit.Create(root, d, gm);
     }
 }
 
@@ -178,5 +179,101 @@ public class PianoPuzzle : MonoBehaviour
         key.localPosition = home + Vector3.down * 0.15f;
         yield return new WaitForSeconds(0.25f);
         key.localPosition = home;
+    }
+}
+
+// حفرة طبول: رويدا تنزل لقاع الحفرة وقدامها جدار عالي. ارسمي دايرة بالقاع: تصير طبل، ورويدا تنط عليه لفوق الجدار
+public class DrumPit : MonoBehaviour
+{
+    float from, to, floorY;
+    Transform drum, skin;
+    float drumX, drumW, squash, nextBounce;
+    bool holding;
+    int prompted;
+
+    // spec: (من x، لـ x، قاع الحفرة)
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Drum Pit");
+        go.transform.SetParent(root, false);
+        var d = go.AddComponent<DrumPit>();
+        d.from = spec.x; d.to = spec.y; d.floorY = spec.z;
+    }
+
+    void MakeDrum(InkMark mark, GameManager gm)
+    {
+        var r = mark.GetComponent<MeshRenderer>();
+        Bounds b = r.bounds;
+        drumX = Mathf.Clamp(b.center.x, from + 2.2f, to - 1.6f);   // بعيد شوي عن الجدار عشان تلحق تطلع فوقه
+        drumW = Mathf.Clamp(b.size.x, 1f, 2.2f);
+        Destroy(mark.gameObject);
+        Material red = gm.Mat("Drum Red", new Color(0.9f, 0.2f, 0.25f), 0.5f);
+        Material gold = gm.Mat("Drum Gold", new Color(1f, 0.8f, 0.3f), 0.8f, 0.5f);
+        Material white = gm.Mat("Drum Skin", new Color(0.98f, 0.96f, 0.9f), 0.3f);
+        drum = new GameObject("Drum").transform;
+        drum.SetParent(transform, false);
+        drum.position = new Vector3(drumX, floorY, 0f);
+        LevelBuilder.Visual("Body", PrimitiveType.Cylinder, drum, new Vector3(0f, 0.45f, 0f), new Vector3(drumW, 0.45f, drumW), red);
+        LevelBuilder.Visual("Rim Top", PrimitiveType.Cylinder, drum, new Vector3(0f, 0.88f, 0f), new Vector3(drumW + 0.08f, 0.05f, drumW + 0.08f), gold);
+        LevelBuilder.Visual("Rim Bottom", PrimitiveType.Cylinder, drum, new Vector3(0f, 0.04f, 0f), new Vector3(drumW + 0.08f, 0.05f, drumW + 0.08f), gold);
+        skin = LevelBuilder.Visual("Skin", PrimitiveType.Cylinder, drum, new Vector3(0f, 0.92f, 0f), new Vector3(drumW - 0.05f, 0.02f, drumW - 0.05f), white).transform;
+        for (int i = 0; i < 6; i++)
+        {
+            var zig = LevelBuilder.Visual("Zigzag", PrimitiveType.Cube, drum, new Vector3(-drumW * 0.4f + i * drumW * 0.16f, 0.45f, -drumW * 0.5f - 0.01f), new Vector3(0.05f, 0.7f, 0.02f), gold, false).transform;
+            zig.localRotation = Quaternion.Euler(0f, 0f, i % 2 == 0 ? 25f : -25f);
+        }
+        gm.Sound.PlayBoing();
+        Fx.Sparkle(drum.position + Vector3.up, new Color(1f, 0.8f, 0.3f), 16);
+        gm.UI.ShowMessage("", 1.6f, "صار طبل!");
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        // دايرة نزلت لقاع الحفرة؟ تصير طبل
+        if (drum == null)
+            foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                if (!mark.closed) continue;
+                var r = mark.GetComponent<MeshRenderer>();
+                if (r == null) continue;
+                Bounds b = r.bounds;
+                if (b.center.x < from || b.center.x > to || b.min.y > floorY + 0.4f) continue;
+                MakeDrum(mark, gm);
+                break;
+            }
+
+        if (drum != null)
+        {
+            squash = Mathf.Max(0f, squash - Time.deltaTime * 4f);
+            drum.localScale = new Vector3(1f + squash * 0.15f, 1f - squash * 0.25f, 1f + squash * 0.15f);
+        }
+
+        RowaidaController r0 = gm.Rowaida;
+        if (r0 == null) return;
+        Vector3 p = r0.transform.position;
+        // نطت على الطبل؟ تطير لفوق
+        if (drum != null && Time.time >= nextBounce && Mathf.Abs(p.x - drumX) < drumW * 0.5f + 0.2f && p.y < floorY + 2.2f)
+        {
+            nextBounce = Time.time + 0.5f;
+            if (r0.Bounce(11.5f))
+            {
+                squash = 1f;
+                gm.Sound.PlayBoing();
+                gm.Sound.PlayRumble(0.3f);
+                Fx.Sparkle(drum.position + Vector3.up, new Color(1f, 0.85f, 0.3f), 12);
+            }
+        }
+        // بقاع الحفرة بدون طبل: تستنى قبل الجدار
+        bool inPit = p.x > from && p.x < to && p.y < floorY + 1.5f;
+        bool wait = inPit && drum == null && gm.IsPlaying && p.x > from + 0.6f;   // توقف أول ما تنزل، والطبل يكون قدامها
+        if (inPit && drum == null && prompted == 0)
+        {
+            prompted = 1;
+            gm.UI.ShowMessage("", 2.8f, "الجدار عالي! ارسمي دايرة بقاع الحفرة تصير طبل وتنطين عليه");
+        }
+        if (wait) { r0.Held = true; r0.CarryX = 0f; holding = true; }
+        else if (holding) { r0.Held = false; holding = false; }
     }
 }

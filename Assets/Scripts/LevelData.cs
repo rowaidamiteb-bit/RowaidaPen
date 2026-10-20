@@ -176,6 +176,7 @@ public class LevelData
 
     // الجزء الثاني: الموسيقى
     public List<PianoSpec> pianos = new List<PianoSpec>();  // بيانو: لحن بالألوان لازم ينعزف بالترتيب
+    public List<Vector3> drumPits = new List<Vector3>();    // حفرة طبول (من x، لـ x، قاعها)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -228,6 +229,7 @@ public static class Levels
         AlarmLevel(),
         DayNightLevel(),
         PianoLevel(),
+        DrumsLevel(),
         LastPage(),
     };
 
@@ -1009,6 +1011,38 @@ public static class Levels
                 new PianoSpec(53f, 54.6f, 2, 0, 4, 1),
             },
         };
+    }
+
+    // الطبول: رويدا تنزل لقاع الحفرة وقدامها جدار عالي. ارسمي دايرة بالقاع تصير طبل وتنط عليه لفوق
+    static LevelData DrumsLevel()
+    {
+        var level = new LevelData
+        {
+            title = "الطبول",
+            theme = LevelTheme.CandySunset(),
+            subtitle = "الجدار عالي! ارسمي دايرة بقاع الحفرة تصير طبل... وتنطين عليه",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(49f, 3f, 0f),
+            ink = 18f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(4f, 11f, -2.5f),       // قاع الحفرة
+                Wall(11f, 19f, 2f, -3.7f),  // جدار عالي
+                Page(19f, 27f, -2.5f),
+                Wall(27f, 35f, 2.5f, -3.7f),
+                Page(35f, 42f, -2f),
+                Wall(42f, 52f, 3f, -3.7f),
+            },
+            drumPits =
+            {
+                new Vector3(4f, 11f, -2.5f),
+                new Vector3(19f, 27f, -2.5f),
+                new Vector3(35f, 42f, -2f),
+            },
+        };
+        Oval(level, 7.5f, -1.2f, new Color(0.95f, 0.3f, 0.35f));
+        return level;
     }
 
     // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.
