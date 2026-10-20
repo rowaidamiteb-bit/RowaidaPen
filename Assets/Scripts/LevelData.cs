@@ -170,6 +170,7 @@ public class LevelData
     // الجزء الثاني: الوقت
     public List<Vector3> clocks = new List<Vector3>();      // ساعة على حفرة (من x، لـ x، سرعة العقرب درجة بالثانية)
     public List<Vector4> hourglasses = new List<Vector4>(); // ساعة رملية فوق حفرة (من x، لـ x، مكانها x، y)
+    public List<GearSpec> gearBridges = new List<GearSpec>(); // تروس وجسر متحرك
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -218,6 +219,7 @@ public static class Levels
         PencilCaseLevel(),
         ClockLevel(),
         HourglassLevel(),
+        GearsLevel(),
         LastPage(),
     };
 
@@ -873,6 +875,35 @@ public static class Levels
             },
             hints = { new HintLine(new Vector3(5.3f, 2.1f, 0f), new Vector3(6.3f, 3.4f, 0f), new Color(0.6f, 0.4f, 0.25f)) },
         };
+    }
+
+    // التروس: الترس الأزرق موتور يلف. ارسمي خط يلمس ترسين ورا بعض (مثل السير)، ولما توصل الحركة لترس الجسر ينزل الجسر
+    static LevelData GearsLevel()
+    {
+        var level = new LevelData
+        {
+            title = "التروس",
+            theme = LevelTheme.InkParchment(),
+            subtitle = "الترس الأزرق يلف... ارسمي خط يوصله بالترس الثاني عشان ينزل الجسر",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(42f, 0f, 0f),
+            ink = 30f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(10f, 16f),
+                Page(22f, 28f),
+                Page(35f, 45f),
+            },
+            gearBridges =
+            {
+                new GearSpec(4f, 10f, new Vector3(6.2f, 3.8f, 0.9f), new Vector3(10.9f, 2.7f, 0.8f)),
+                new GearSpec(16f, 22f, new Vector3(17f, 4.4f, 0.8f), new Vector3(19.6f, 3f, 0.7f), new Vector3(22.9f, 2.7f, 0.8f)),
+                new GearSpec(28f, 35f, new Vector3(29.6f, 3f, 1f), new Vector3(32.2f, 5.2f, 0.8f), new Vector3(35.9f, 2.7f, 0.8f)),
+            },
+        };
+        level.hints.Add(new HintLine(new Vector3(7f, 3.6f, 0f), new Vector3(10.2f, 2.9f, 0f), new Color(0.35f, 0.6f, 0.85f)));
+        return level;
     }
 
     // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.

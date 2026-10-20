@@ -8,6 +8,7 @@ public static class TimeFeatures
     {
         foreach (Vector3 c in data.clocks) ClockBridge.Create(root, c, gm);
         foreach (Vector4 h in data.hourglasses) Hourglass.Create(root, h, gm);
+        foreach (GearSpec g in data.gearBridges) GearBridge.Create(root, g, gm);
     }
 
     // نص بالأرقام (TextMesh) يواجه الكاميرا
@@ -295,5 +296,140 @@ public class Hourglass : MonoBehaviour
             }
         }
 
+    }
+}
+
+// تروس وجسر متحرك: الترس الأول (موتور) يلف، وآخر ترس جنب جسر مرفوع.
+// كل خط يلمس ترسين ورا بعض يصير سير يوصلهم. لما توصل الحركة لآخر ترس، الجسر ينزل
+public class GearSpec
+{
+    public float from, to;
+    public Vector3[] gears;   // (x، y، نص القطر) — الأول موتور، والأخير ترس الجسر
+    public GearSpec(float from, float to, params Vector3[] gears) { this.from = from; this.to = to; this.gears = gears; }
+}
+
+public class GearBridge : MonoBehaviour
+{
+    GearSpec spec;
+    readonly List<Transform> gears = new List<Transform>();
+    bool[] linked;
+    float lowerT = -1f;
+    Transform plank;
+    BoxCollider plankCol;
+    bool holding;
+    int prompted = -1;
+
+    public static void Create(Transform root, GearSpec spec, GameManager gm)
+    {
+        var go = new GameObject("Gear Bridge");
+        go.transform.SetParent(root, false);
+        var g = go.AddComponent<GearBridge>();
+        g.spec = spec;
+        g.linked = new bool[spec.gears.Length - 1];
+        Material brass = gm.Mat("Gear Brass", new Color(0.85f, 0.65f, 0.3f), 0.7f, 0.5f);
+        Material motor = gm.Mat("Gear Motor", new Color(0.35f, 0.6f, 0.85f), 0.6f, 0.4f);
+        Material dark = gm.Mat("Gear Axle", new Color(0.25f, 0.22f, 0.2f), 0.5f);
+        for (int i = 0; i < spec.gears.Length; i++)
+        {
+            Vector3 s = spec.gears[i];
+            var gear = new GameObject("Gear").transform;
+            gear.SetParent(go.transform, false);
+            gear.position = new Vector3(s.x, s.y, 0.5f);
+            Material m = i == 0 ? motor : brass;
+            var disc = LevelBuilder.Visual("Disc", PrimitiveType.Cylinder, gear, Vector3.zero, new Vector3(s.z * 2f, 0.2f, s.z * 2f), m).transform;
+            disc.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            int teeth = Mathf.RoundToInt(s.z * 10f);
+            for (int k = 0; k < teeth; k++)
+            {
+                float a = k * Mathf.PI * 2f / teeth;
+                var tooth = LevelBuilder.Visual("Tooth", PrimitiveType.Cube, gear, new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * (s.z + 0.12f), new Vector3(0.28f, 0.28f, 0.2f), m).transform;
+                tooth.localRotation = Quaternion.Euler(0f, 0f, a * Mathf.Rad2Deg);
+            }
+            var axle = LevelBuilder.Visual("Axle", PrimitiveType.Cylinder, gear, new Vector3(0f, 0f, -0.12f), new Vector3(0.35f, 0.05f, 0.35f), dark, false).transform;
+            axle.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            g.gears.Add(gear);
+        }
+
+        // الجسر: لوح خشب معلق على طرف الصفحة اليمين، مرفوع لفوق
+        Material wood = gm.Mat("Bridge Wood", new Color(0.65f, 0.45f, 0.28f), 0.3f);
+        Material plankLine = gm.Mat("Bridge Line", new Color(0.45f, 0.3f, 0.18f), 0.3f);
+        float len = spec.to - spec.from + 0.3f;
+        g.plank = new GameObject("Drawbridge").transform;
+        g.plank.SetParent(go.transform, false);
+        g.plank.position = new Vector3(spec.to, 0f, 0f);
+        LevelBuilder.Visual("Plank", PrimitiveType.Cube, g.plank, new Vector3(-len * 0.5f, -0.15f, 0f), new Vector3(len, 0.3f, 1.8f), wood);
+        for (int k = 1; k < 6; k++)
+            LevelBuilder.Visual("Board", PrimitiveType.Cube, g.plank, new Vector3(-len * k / 6f, 0.005f, 0f), new Vector3(0.04f, 0.02f, 1.7f), plankLine, false);
+        g.plankCol = g.plank.gameObject.AddComponent<BoxCollider>();
+        g.plankCol.center = new Vector3(-len * 0.5f, -0.15f, 0f);
+        g.plankCol.size = new Vector3(len, 0.3f, 2f);
+        g.plankCol.enabled = false;
+        g.plank.localRotation = Quaternion.Euler(0f, 0f, -80f);
+    }
+
+    bool Touches(Bounds b, int i)
+    {
+        Vector3 s = spec.gears[i];
+        Vector3 c = new Vector3(s.x, s.y, b.center.z);
+        return b.SqrDistance(c) < (s.z + 0.35f) * (s.z + 0.35f);
+    }
+
+    int Turning()
+    {
+        int n = 1;
+        while (n < spec.gears.Length && linked[n - 1]) n++;
+        return n;   // كم ترس يلف من البداية
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        // خط يلمس ترسين ورا بعض = سير
+        foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+        {
+            var r = mark.GetComponent<MeshRenderer>();
+            if (r == null || mark.closed) continue;
+            for (int i = 0; i < linked.Length; i++)
+                if (!linked[i] && Touches(r.bounds, i) && Touches(r.bounds, i + 1))
+                {
+                    linked[i] = true;
+                    gm.Sound.PlayBoing();
+                    Fx.Sparkle(r.bounds.center, new Color(1f, 0.8f, 0.4f), 16);
+                }
+        }
+        int turning = Turning();
+        for (int i = 0; i < gears.Count; i++)
+            if (i < turning) gears[i].Rotate(0f, 0f, (i % 2 == 0 ? -1f : 1f) * 120f / spec.gears[i].z * Time.deltaTime, Space.Self);
+
+        if (turning == gears.Count && lowerT < 0f)
+        {
+            lowerT = 0f;
+            gm.Sound.PlayRumble(0.4f);
+        }
+        if (lowerT >= 0f && lowerT < 1f)
+        {
+            lowerT += Time.deltaTime / 1.6f;
+            plank.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-80f, 0f, Mathf.SmoothStep(0f, 1f, lowerT)));
+            if (lowerT >= 1f)
+            {
+                plankCol.enabled = true;
+                Fx.Dust(new Vector3(spec.from, 0f, 0f), 0.6f);
+                gm.UI.ShowMessage("", 1.6f, "نزل الجسر!");
+            }
+        }
+
+        RowaidaController rw = gm.Rowaida;
+        if (rw == null) return;
+        Vector3 rp = rw.transform.position;
+        bool atEdge = rp.x > spec.from - 1.6f && rp.x < spec.from - 0.4f && rp.y > 0.3f;
+        bool wait = atEdge && lowerT < 1f && gm.IsPlaying;
+        if (wait && prompted != turning)
+        {
+            prompted = turning;
+            gm.UI.ShowMessage("", 2.8f, turning == 1 ? "ارسمي خط يلمس الترسين... يصير سير ويدورهم" : "باقي ترس! وصليه بخط بعد");
+        }
+        if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
+        else if (holding) { rw.Held = false; holding = false; }
     }
 }
