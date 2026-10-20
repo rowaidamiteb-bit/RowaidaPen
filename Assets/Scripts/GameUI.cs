@@ -58,6 +58,7 @@ public class GameUI : MonoBehaviour
         BuildSideButtons(root);
         timerText = Label(root, "", 38, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0f, -45f), new Vector2(400f, 50f));
         timerText.gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.8f);
+        BuildAirBar(root);
         messageText = Label(root, "", 80, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
         subtitleText = Label(root, "", 40, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1700f, 70f));
         subtitleText.color = Color.white;
@@ -72,6 +73,45 @@ public class GameUI : MonoBehaviour
     float shownInk = 1f;
 
     // الشريط ينزل بنعومة، ولما يقل الحبر يصير أحمر وينبض
+
+    // ---------- شريط الهوا (تحت الماي) ----------
+
+    RectTransform airRoot, airFill;
+    Image airFillImage;
+    float shownAir = 1f;
+
+    void BuildAirBar(Transform root)
+    {
+        airRoot = new GameObject("Air", typeof(RectTransform)).GetComponent<RectTransform>();
+        airRoot.SetParent(root, false);
+        Place(airRoot, new Vector2(0.5f, 1f), new Vector2(0f, -45f), new Vector2(560f, 50f));
+        Label(airRoot, ArabicText.Fix("الهوا"), 34, TextAnchor.MiddleRight, new Vector2(1f, 0.5f), new Vector2(0f, 0f), new Vector2(110f, 50f)).gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.85f);
+        Image frame = Panel(airRoot, "Air Bar", new Color(0.1f, 0.3f, 0.5f));
+        Place(frame.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0f), new Vector2(430f, 40f));
+        Image inner = Panel(frame.transform, "Inner", Color.white);
+        Stretch(inner.rectTransform, 4f);
+        Image area = Panel(inner.transform, "Fill Area", Color.clear);
+        Stretch(area.rectTransform, 4f);
+        airFillImage = Panel(area.transform, "Fill", new Color(0.35f, 0.75f, 1f));
+        airFill = airFillImage.rectTransform;
+        airFill.anchorMin = Vector2.zero;
+        airFill.anchorMax = Vector2.one;
+        airFill.offsetMin = airFill.offsetMax = Vector2.zero;
+        airRoot.gameObject.SetActive(false);
+    }
+
+    public void SetAir(bool visible, float fraction)
+    {
+        if (airRoot == null) return;
+        airRoot.gameObject.SetActive(visible);
+        if (!visible) return;
+        shownAir = Mathf.Lerp(shownAir, fraction, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 10f));
+        airFill.anchorMax = new Vector2(shownAir, 1f);
+        bool low = fraction < 0.3f;
+        float pulse = low ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 10f) : 0f;
+        airFillImage.color = low ? Color.Lerp(new Color(0.9f, 0.3f, 0.3f), new Color(1f, 0.6f, 0.4f), pulse) : new Color(0.35f, 0.75f, 1f);
+        airRoot.localScale = Vector3.one * (1f + pulse * 0.04f);
+    }
     public void SetInk(float fraction)
     {
         if (inkFill == null) return;
