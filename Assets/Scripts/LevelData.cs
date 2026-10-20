@@ -211,6 +211,7 @@ public static class Levels
         CrayonBoxLevel(),
         CalculatorLevel(),
         ScissorsLevel(),
+        PencilCaseLevel(),
         LastPage(),
     };
 
@@ -774,6 +775,36 @@ public static class Levels
         Oval(level, 6.5f, 1.6f, new Color(1f, 0.45f, 0.55f));
         level.hints.Add(new HintLine(new Vector3(3.8f, 0.1f, 0f), new Vector3(9.7f, 0.1f, 0f), new Color(0.5f, 0.5f, 0.55f)));
         return level;
+    }
+
+    // المقلمة (نهاية فصل أدوات المدرسة): كل الأدوات مع بعض: مسطرة، باب ملون، مقص، آلة حاسبة، ومسطرة أثقل
+    static LevelData PencilCaseLevel()
+    {
+        return new LevelData
+        {
+            title = "المقلمة",
+            theme = LevelTheme.KraftDawn(),
+            subtitle = "كل أدوات المدرسة مع بعض... وريها وش تعلمتي!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(59f, 0f, 0f),
+            ink = 46f,
+            colors = true,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(12f, 22f),
+                Page(27.5f, 44f),
+                Page(52f, 62f),
+            },
+            rulers =
+            {
+                new Vector4(4.1f, 12.9f, 6.6f, 1.5f),
+                new Vector4(44.1f, 52.9f, 46.4f, 2.6f),
+            },
+            colorGates = { new Vector3(17f, 2f, -1f) },
+            scissors = { new Vector3(22f, 27.5f, 0f) },
+            calcs = { new CalcSpec(33f, 34.6f, 6, 1, 2, 4, 5) },
+        };
     }
 
     // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.
