@@ -41,6 +41,7 @@ public static class NewFeatures
     {
         if (level == null) return;
         if (level.balloonInk) stroke.AddComponent<BalloonLift>();
+        if (level.boatRide) stroke.AddComponent<SeaBoat>();
         if (level.darkness) AddGlow(stroke, 3f);
     }
 

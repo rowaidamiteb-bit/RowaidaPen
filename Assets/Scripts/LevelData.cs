@@ -155,6 +155,9 @@ public class LevelData
     public List<Vector3> jellies = new List<Vector3>();     // قناديل بحر (x، y، كم تطلع وتنزل)
     public List<Vector3> tentacles = new List<Vector3>();   // أذرع أخطبوط (من x، لـ x، تأخير)
     public List<Vector3> whirlpools = new List<Vector3>();  // دوامات (x، نص القطر اللي تسحب منه)
+    public bool boatRide;                                   // المنارة: الشكل المغلق بالبحر يصير قارب يشيل رويدا
+    public List<Vector3> sharks = new List<Vector3>();      // قروش (من x، لـ x)
+    public Vector3? lighthouse;                             // المنارة (x، سطح الأرض، أبعد x يوصله الضو)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -195,6 +198,7 @@ public static class Levels
         UnderwaterLevel(),
         OctopusLevel(),
         WhirlpoolLevel(),
+        LighthouseLevel(),
         LastPage(),
     };
 
@@ -589,6 +593,38 @@ public static class Levels
             level.hints.Add(new HintLine(prev, p, new Color(0.3f, 0.5f, 0.6f)));
             prev = p;
         }
+        return level;
+    }
+
+    // المنارة (نهاية فصل البحر): ليل. ارسمي كورة بالبحر تصير قارب بشراع يشيل رويدا لين أول صخرة،
+    // وبعدين قارب ثاني... والقرش يعض القوارب إلا لو ضو المنارة عليه (يخاف ويغطس)
+    static LevelData LighthouseLevel()
+    {
+        var level = new LevelData
+        {
+            title = "المنارة",
+            theme = LevelTheme.LighthouseNight(),
+            subtitle = "ارسمي قارب بالبحر يوصلك للمنارة... والقرش يخاف من ضوها!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(49f, -0.4f, 0f),
+            ink = 28f,
+            sea = true, seaLevel = -0.7f, tidePeriod = 1f,
+            boatRide = true,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(44f, 58f, -0.4f),
+            },
+            pegs =
+            {
+                new Vector3(13f, -0.45f, 1.8f),
+                new Vector3(24f, -0.45f, 1.8f),
+                new Vector3(35f, -0.45f, 1.8f),
+            },
+            sharks = { new Vector3(25.5f, 33.5f, 0f) },
+            lighthouse = new Vector3(54f, -0.4f, 40f),
+        };
+        Oval(level, 5.4f, 0.4f, new Color(0.6f, 0.75f, 1f));
         return level;
     }
 

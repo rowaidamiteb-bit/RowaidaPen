@@ -14,6 +14,9 @@ public static class SeaFeatures
         foreach (Vector3 j in data.jellies) Jellyfish.Create(root, j, gm);
         foreach (Vector3 t in data.tentacles) Tentacle.Create(root, t, gm);
         foreach (Vector3 w in data.whirlpools) Whirlpool.Create(root, w, gm);
+        foreach (Vector3 s in data.sharks) Shark.Create(root, s, gm);
+        if (data.lighthouse.HasValue) Lighthouse.Create(root, data.lighthouse.Value, gm);
+        if (data.boatRide) new GameObject("Boat Dock").AddComponent<BoatDock>().transform.SetParent(root, false);
         if (data.tentacles.Count > 0) GiantOctopus.Create(root, new Vector3(data.door.x * 0.5f, 0.7f, 12f), gm);
         if (data.underwater)
         {
@@ -30,8 +33,9 @@ public class SeaWater : MonoBehaviour
 {
     public static SeaWater Instance;
     float baseLevel, amp, period, start, touch;
-    Transform body, foam;
+    Transform body, foam, edge;
     readonly List<Transform> waves = new List<Transform>();
+    readonly List<Vector3> waveBase = new List<Vector3>();
     GameManager gm;
     const float Depth = 40f;
 
@@ -50,19 +54,74 @@ public class SeaWater : MonoBehaviour
         s.period = data.tidePeriod;
         s.start = Time.time;
 
-        Material water = manager.Mat("Sea Water", data.theme.seaColor, 0.55f);
-        Material crest = manager.Mat("Sea Crest", Color.Lerp(data.theme.seaColor, Color.white, 0.35f), 0.6f);
-        Material foamMat = manager.Mat("Sea Foam", new Color(0.92f, 0.97f, 1f), 0.6f);
+        // البحر ورقة زرقا من الدفتر: سطور وتظليل بالألوان الخشبية، وحافة أوراق قدام
+        Color sea = data.theme.seaColor;
+        var water = new Material(manager.paperMaterial) { name = "Sea Paper" };
+        water.SetTexture("_BaseMap", SeaPaperTexture(sea));
+        water.SetColor("_BaseColor", Color.Lerp(sea, Color.white, 0.25f) * 1.15f);
+        water.SetFloat("_Smoothness", 0.15f);
+        water.mainTextureScale = new Vector2(60f, 4f);
         s.body = LevelBuilder.Visual("Water", PrimitiveType.Cube, go.transform, Vector3.zero, new Vector3(200f, Depth, 16f), water, false).transform;
-        s.foam = LevelBuilder.Visual("Foam", PrimitiveType.Cube, go.transform, Vector3.zero, new Vector3(200f, 0.08f, 0.35f), foamMat, false).transform;
-        // موجات صغيرة على السطح
-        for (int i = 0; i < 90; i++)
-            s.waves.Add(LevelBuilder.Visual("Wave", PrimitiveType.Sphere, go.transform, Vector3.zero, new Vector3(1.3f, 0.22f, 0.6f), i % 2 == 0 ? crest : water, false).transform);
+        s.edge = LevelBuilder.Visual("Paper Edge", PrimitiveType.Cube, go.transform, Vector3.zero, new Vector3(200f, 0.9f, 0.05f), manager.pageEdgeMaterial, false).transform;
+        // موج مرسوم بالقلم: خطوط ~ على السطح، وحافة مموجة بيضا قدام
+        Material pencilBlue = manager.Mat("Sea Pencil " + ColorUtility.ToHtmlStringRGB(sea), Color.Lerp(sea, Color.black, 0.35f), 0.2f);
+        Material foamMat = manager.Mat("Sea Foam", new Color(0.97f, 0.98f, 1f), 0.3f);
+        var foamPts = new List<Vector3>();
+        for (float x = -40f; x <= 120f; x += 0.1f)
+            foamPts.Add(new Vector3(x, Mathf.Abs(Mathf.Sin(x * Mathf.PI / 0.8f)) * 0.12f, 0f));
+        s.foam = DoodleLine("Foam Edge", go.transform, foamPts, 0.05f, foamMat).transform;
+        var rng = new System.Random(5);
+        for (int i = 0; i < 48; i++)
+        {
+            var pts = new List<Vector3>();
+            float len = 1.6f + (float)rng.NextDouble() * 1.6f;
+            for (float x = 0f; x <= len; x += 0.08f)
+                pts.Add(new Vector3(x, Mathf.Sin(x * Mathf.PI * 2f / 0.8f) * 0.07f, 0f));
+            var w = DoodleLine("Wave Doodle", go.transform, pts, 0.035f, pencilBlue).transform;
+            s.waves.Add(w);
+            s.waveBase.Add(new Vector3(-35f + (float)rng.NextDouble() * 150f, 0f, -1.4f + (float)rng.NextDouble() * 9f));
+        }
         manager.Respawned += s.OnRespawned;
         s.Place();
         return s;
     }
 
+
+    // خط مرسوم (أنبوب رفيع) من نقاط
+    public static GameObject DoodleLine(string name, Transform parent, List<Vector3> pts, float radius, Material mat)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var mesh = new Mesh { name = name };
+        TubeMesh.Build(mesh, pts, radius, false, 6);
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = go.AddComponent<MeshRenderer>();
+        r.sharedMaterial = mat;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        return go;
+    }
+
+    // نسيج ورقة البحر: سطور دفتر خفيفة وتظليل مايل مثل الألوان الخشبية
+    static Texture2D SeaPaperTexture(Color sea)
+    {
+        const int size = 128;
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Repeat };
+        var rng = new System.Random(11);
+        var px = new Color[size * size];
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float v = 0.93f + (float)rng.NextDouble() * 0.05f;
+                // تظليل مايل
+                if ((x + y * 2) % 9 < 2) v -= 0.07f;
+                // سطر الدفتر
+                if (y % 32 == 0) v -= 0.12f;
+                px[y * size + x] = new Color(v, v, v, 1f);
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        return tex;
+    }
     void OnDestroy()
     {
         if (Instance == this) Instance = null;
@@ -76,13 +135,10 @@ public class SeaWater : MonoBehaviour
     {
         float level = Level, t = Time.time;
         body.position = new Vector3(40f, level - Depth * 0.5f, 6f);
-        foam.position = new Vector3(40f, level + 0.02f, -2.1f);
+        edge.position = new Vector3(40f, level - 0.45f, -2.03f);
+        foam.position = new Vector3(Mathf.Sin(t * 0.7f) * 0.15f, level, -2.06f);
         for (int i = 0; i < waves.Count; i++)
-        {
-            float x = -30f + i * 1.4f;
-            float z = -1.8f + (i % 3) * 2.5f;
-            waves[i].position = new Vector3(x + Mathf.Sin(t * 0.8f + i) * 0.3f, level + Mathf.Sin(t * 2.2f + i * 0.9f) * 0.08f, z);
-        }
+            waves[i].position = waveBase[i] + new Vector3(Mathf.Sin(t * 0.5f + i) * 0.4f, level + 0.03f + Mathf.Sin(t * 1.5f + i) * 0.03f, 0f);
     }
 
     void Update()
@@ -654,22 +710,23 @@ public class Whirlpool : MonoBehaviour
         go.transform.position = new Vector3(spec.x, 0f, 0f);
         var w = go.AddComponent<Whirlpool>();
         w.radius = spec.y;
-        Material dark = gm.Mat("Whirl Dark", new Color(0.05f, 0.15f, 0.3f), 0.7f);
+        Material dark = gm.Mat("Whirl Dark", new Color(0.08f, 0.2f, 0.35f), 0.2f);
         Material mid = gm.Mat("Whirl Mid", new Color(0.15f, 0.4f, 0.6f), 0.7f);
         w.foamMat = gm.Mat("Sea Foam", new Color(0.92f, 0.97f, 1f), 0.6f);
-        // حلقات تلف (من برا فاتحة، ومن جوا غامقة)
-        for (int i = 0; i < 5; i++)
+        // دوامة مرسومة بالقلم: خطين حلزون (غامق وأبيض) يلفون
+        for (int i = 0; i < 2; i++)
         {
-            float r = w.radius * (1f - i * 0.18f);
-            var ring = new GameObject("Ring").transform;
-            var holder = new GameObject("Ring Holder").transform;   // يسطّحها شوي بالعمق
+            var holder = new GameObject("Spiral Holder").transform;   // يسطّحها شوي بالعمق
             holder.SetParent(go.transform, false);
             holder.localScale = new Vector3(1f, 1f, 0.55f);
-            ring.SetParent(holder, false);
-            ring.gameObject.AddComponent<MeshFilter>().sharedMesh = PaperMeshes.Ring(r, 0.09f + i * 0.02f, 40, 6);
-            ring.gameObject.AddComponent<MeshRenderer>().sharedMaterial = i == 0 ? w.foamMat : i % 2 == 0 ? mid : dark;
-
-            w.rings.Add(ring);
+            var pts = new List<Vector3>();
+            for (float k = 0f; k <= 1f; k += 0.005f)
+            {
+                float r = w.radius * (1f - k * 0.92f), a = k * Mathf.PI * 2f * 3f + i * Mathf.PI;
+                pts.Add(new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r));
+            }
+            var spiral = SeaWater.DoodleLine("Spiral", holder, pts, i == 0 ? 0.06f : 0.045f, i == 0 ? dark : w.foamMat).transform;
+            w.rings.Add(spiral);
         }
         w.eye = LevelBuilder.Visual("Eye", PrimitiveType.Sphere, go.transform, Vector3.zero, new Vector3(w.radius * 0.55f, 0.05f, w.radius * 0.3f), dark, false).transform;
         // خشب وبراميل تلف حولها
@@ -691,7 +748,7 @@ public class Whirlpool : MonoBehaviour
         for (int i = 0; i < rings.Count; i++)
         {
             rings[i].parent.position = c + Vector3.up * (0.05f + i * 0.01f);
-            rings[i].localRotation = Quaternion.Euler(0f, -t * (60f + i * 45f), 0f) * Quaternion.Euler(0f, 0f, 90f);   // نايمة على سطح الماي وتلف
+            rings[i].localRotation = Quaternion.Euler(0f, t * (110f + i * 30f), 0f);   // تلف على سطح الماي
         }
         eye.position = c + Vector3.up * 0.04f;
         for (int i = 0; i < debris.Count; i++)
@@ -752,5 +809,273 @@ public class SuckedInk : MonoBehaviour
         transform.RotateAround(center, Vector3.up, 360f * Time.deltaTime);
         transform.position += Vector3.down * 2.2f * Time.deltaTime;
         if (age > 1.6f) Destroy(gameObject);
+    }
+}
+
+// ---------- المنارة: قوارب، قرش، وضو المنارة ----------
+
+// الشكل المغلق بالبحر يصير قارب بشراع. لما تركب رويدا يمشي لليمين لين يصدم صخرة أو جزيرة
+public class SeaBoat : MonoBehaviour
+{
+    public const float Speed = 2.2f;
+    public static readonly List<SeaBoat> All = new List<SeaBoat>();
+    Rigidbody rb;
+    MeshRenderer rend;
+    bool floating, sailing, done, sinking;
+    float sinkT;
+    Transform rig;
+
+    public Bounds Box => rend.bounds;
+    public bool Idle => floating && !sailing && !done && !sinking;
+
+    void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+        rend = GetComponent<MeshRenderer>();
+        All.Add(this);
+    }
+
+    void OnDestroy() => All.Remove(this);
+
+    float Water => SeaWater.Instance != null ? SeaWater.Instance.Level : -0.7f;
+
+    void FixedUpdate()
+    {
+        if (rb == null || rend == null) return;
+        Bounds b = Box;
+        if (sinking)
+        {
+            sinkT += Time.fixedDeltaTime;
+            rb.MovePosition(rb.position + Vector3.down * 1.5f * Time.fixedDeltaTime);
+            if (sinkT > 1.5f) Destroy(gameObject);
+            return;
+        }
+        if (!floating)
+        {
+            // أول ما يلمس الماي يصير قارب يطفو
+            if (b.min.y > Water + 0.05f) return;
+            floating = true;
+            rb.isKinematic = true;
+            rb.rotation = Quaternion.identity;
+            BuildRig(b);
+            GameManager.Instance.Sound.PlayPoof();
+            Fx.Sparkle(new Vector3(b.center.x, Water, 0f), new Color(0.7f, 0.9f, 1f), 10);
+        }
+        // يطفو: قاعه فوق الماي بشوي، ويتمايل مع الموج
+        // يطفو: نصه بمستوى سطح الصخور (عشان رويدا تدخل وتطلع منه بسهولة)، ويتمايل مع الموج
+        float targetY = rb.position.y + (Water + 0.25f + Mathf.Sin(Time.time * 2f) * 0.03f - b.center.y);
+        Vector3 p = rb.position;
+        p.y = Mathf.Lerp(p.y, targetY, 0.3f);
+
+        GameManager gm = GameManager.Instance;
+        RowaidaController rowaida = gm.Rowaida;
+        bool riding = rowaida != null && !done && Riding(rowaida, b);
+        if (riding && !sailing) { sailing = true; gm.Sound.PlaySqueak(1.3f); }
+
+        if (sailing && !done)
+        {
+            // يصدم صخرة أو جزيرة قدامه؟ يوقف وتنزل رويدا
+            bool blocked = false;
+            foreach (RaycastHit h in Physics.RaycastAll(new Vector3(b.max.x - 0.1f, Water + 0.15f, 0f), Vector3.right, 0.35f, ~0, QueryTriggerInteraction.Ignore))
+                if (h.collider.GetComponentInParent<InkMark>() == null && h.collider.GetComponentInParent<RowaidaController>() == null) blocked = true;
+            if (blocked || (rowaida != null && !riding && Mathf.Abs(rowaida.transform.position.x - b.center.x) > b.extents.x + 1f))
+            {
+                done = true;
+                if (rowaida != null) { rowaida.Held = false; rowaida.CarryX = 0f; }
+            }
+            else
+            {
+                p.x += Speed * Time.fixedDeltaTime;
+                if (rowaida != null) { rowaida.Held = true; rowaida.CarryX = Speed; }
+            }
+        }
+        rb.MovePosition(p);
+    }
+
+    bool Riding(RowaidaController r, Bounds b)
+    {
+        Vector3 rp = r.transform.position;
+        return rp.x > b.min.x + 0.45f && rp.x < b.max.x + 0.2f && rp.y > b.min.y && rp.y < b.max.y + 1.6f;
+    }
+
+    // صاري وشراع فوق القارب
+    void BuildRig(Bounds b)
+    {
+        GameManager gm = GameManager.Instance;
+        rig = new GameObject("Rig").transform;
+        rig.SetParent(transform, true);
+        rig.position = new Vector3(b.center.x - b.extents.x * 0.35f, b.center.y, 0.35f);
+        Material wood = gm.Mat("Debris Wood", new Color(0.6f, 0.42f, 0.25f), 0.3f);
+        Material sail = gm.Mat("Sail", new Color(0.97f, 0.95f, 0.88f), 0.3f);
+        Material flag = gm.Mat("Flag", new Color(1f, 0.4f, 0.45f), 0.4f);
+        LevelBuilder.Visual("Mast", PrimitiveType.Cylinder, rig, new Vector3(0f, 1.3f, 0f), new Vector3(0.07f, 1.3f, 0.07f), wood);
+        var s = LevelBuilder.Visual("Sail", PrimitiveType.Cube, rig, new Vector3(0.45f, 1.55f, 0f), new Vector3(0.8f, 1.5f, 0.03f), sail);
+        s.transform.localRotation = Quaternion.Euler(0f, 0f, -8f);
+        LevelBuilder.Visual("Flag", PrimitiveType.Cube, rig, new Vector3(0.18f, 2.65f, 0f), new Vector3(0.3f, 0.16f, 0.02f), flag, false);
+    }
+
+    // القرش عضه: يغرق
+    public void Sink()
+    {
+        if (sinking) return;
+        sinking = true;
+        var rowaida = GameManager.Instance.Rowaida;
+        if (rowaida != null && sailing && !done) { rowaida.Held = false; rowaida.CarryX = 0f; }
+        foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
+        GameManager.Instance.Sound.PlayChomp();
+        Fx.Sparkle(Box.center, new Color(0.7f, 0.9f, 1f), 18);
+    }
+
+    public bool Sailing => sailing && !done && !sinking;
+}
+
+// رويدا تستنى على طرف الصخرة/الجزيرة لين يصير فيه قارب جنبها
+public class BoatDock : MonoBehaviour
+{
+    bool holding;
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null || gm.Rowaida == null) return;
+        RowaidaController r = gm.Rowaida;
+        Vector3 p = r.transform.position;
+        bool wait = false;
+        if (gm.IsPlaying && !SeaBoatCarrying())
+        {
+            // واقفة على أرض (مو حبر) والأرض تخلص قدامها؟
+            bool onGround = Physics.Raycast(p, Vector3.down, out RaycastHit hit, 1.2f, ~0, QueryTriggerInteraction.Ignore) && hit.collider.GetComponentInParent<InkMark>() == null && hit.collider.GetComponentInParent<RowaidaController>() == null;
+            bool groundAhead = Physics.Raycast(p + Vector3.right * 1.1f, Vector3.down, 1.6f, ~0, QueryTriggerInteraction.Ignore);
+            if (onGround && !groundAhead)
+            {
+                wait = true;
+                foreach (SeaBoat boat in SeaBoat.All)
+                    if (boat != null && boat.Idle && boat.Box.min.x < p.x + 2.2f && boat.Box.max.x > p.x + 1f) wait = false;
+            }
+        }
+        if (wait) { r.Held = true; r.CarryX = 0f; holding = true; }
+        else if (holding) { r.Held = false; holding = false; }
+    }
+
+    static bool SeaBoatCarrying()
+    {
+        foreach (SeaBoat b in SeaBoat.All) if (b != null && b.Sailing) return true;
+        return false;
+    }
+}
+
+// المنارة: برج مخطط وفوقه ضو يلف ويمسح البحر
+public class Lighthouse : MonoBehaviour
+{
+    public static Lighthouse Instance;
+    const float Period = 7f;
+    float minX, maxX;
+    Transform beam, lamp;
+    Light spot;
+    Vector3 top;
+
+    // وين ضو المنارة يلمس البحر الحين
+    public float BeamX => Mathf.Lerp(minX, maxX, 0.5f + 0.5f * Mathf.Sin(Time.time * Mathf.PI * 2f / Period));
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Lighthouse");
+        go.transform.SetParent(root, false);
+        go.transform.position = new Vector3(spec.x, spec.y, 0.8f);
+        var l = go.AddComponent<Lighthouse>();
+        Instance = l;
+        l.minX = spec.z - 22f; l.maxX = spec.z;
+        Material white = gm.Mat("Tower White", new Color(0.95f, 0.94f, 0.9f), 0.3f);
+        Material red = gm.Mat("Tower Red", new Color(0.85f, 0.2f, 0.22f), 0.35f);
+        Material dark = gm.Mat("Tower Dark", new Color(0.15f, 0.15f, 0.18f), 0.5f);
+        var glass = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = "Lamp" };
+        glass.SetColor("_BaseColor", new Color(3f, 2.7f, 1.5f));
+        for (int i = 0; i < 6; i++)
+            LevelBuilder.Visual("Stripe", PrimitiveType.Cylinder, go.transform, new Vector3(0f, 0.6f + i * 1.1f, 0f), new Vector3(1.7f - i * 0.1f, 0.55f, 1.7f - i * 0.1f), i % 2 == 0 ? white : red);
+        LevelBuilder.Visual("Balcony", PrimitiveType.Cylinder, go.transform, new Vector3(0f, 7.1f, 0f), new Vector3(1.6f, 0.1f, 1.6f), dark);
+        l.lamp = LevelBuilder.Visual("Lamp", PrimitiveType.Sphere, go.transform, new Vector3(0f, 7.7f, 0f), Vector3.one * 0.9f, glass, false).transform;
+        LevelBuilder.Visual("Roof", PrimitiveType.Cylinder, go.transform, new Vector3(0f, 8.35f, 0f), new Vector3(1.2f, 0.25f, 1.2f), red);
+        LevelBuilder.Visual("Door", PrimitiveType.Cube, go.transform, new Vector3(0f, 0.55f, -0.8f), new Vector3(0.6f, 1.1f, 0.1f), dark, false);
+        l.top = go.transform.position + Vector3.up * 7.7f;
+        // شعاع: مربع شفاف طويل من اللمبة للبحر
+        // نسيج للشعاع: يخف من الجنبين بس (مو من الأطراف)
+        var tex = new Texture2D(4, 32, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        for (int y = 0; y < 32; y++)
+        {
+            float a = Mathf.SmoothStep(0f, 1f, 1f - Mathf.Abs(y / 31f - 0.5f) * 2f);
+            for (int x = 0; x < 4; x++) tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+        }
+        tex.Apply();
+        var beamMat = NightSky.Transparent("Beam", tex, new Color(1.6f, 1.45f, 0.8f, 0.3f));
+        l.beam = LevelBuilder.Visual("Beam", PrimitiveType.Quad, root, Vector3.zero, Vector3.one, beamMat, false).transform;
+        l.spot = new GameObject("Beam Light").AddComponent<Light>();
+        l.spot.transform.SetParent(root, false);
+        l.spot.type = LightType.Point;
+        l.spot.color = new Color(1f, 0.92f, 0.6f);
+        l.spot.range = 7f;
+        l.spot.intensity = 3f;
+    }
+
+    void OnDestroy() { if (Instance == this) Instance = null; }
+
+    void Update()
+    {
+        float water = SeaWater.Instance != null ? SeaWater.Instance.Level : -0.7f;
+        Vector3 hit = new Vector3(BeamX, water, 0f);
+        Vector3 d = hit - top;
+        beam.position = (top + hit) * 0.5f + new Vector3(0f, 0f, -0.2f);
+        beam.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
+        beam.localScale = new Vector3(d.magnitude * 1.1f, 3.2f, 1f);
+        spot.transform.position = hit + Vector3.up * 1.5f;
+        lamp.localScale = Vector3.one * (0.9f + Mathf.Sin(Time.time * 6f) * 0.05f);
+    }
+}
+
+// قرش (زعنفة بس تبان): يسبح رايح جاي، ويعض أي قارب يمر جنبه. يخاف من ضو المنارة ويغطس
+public class Shark : MonoBehaviour
+{
+    float from, to, dir = 1f, down;
+    Transform fin;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Shark");
+        go.transform.SetParent(root, false);
+        go.transform.position = new Vector3((spec.x + spec.y) * 0.5f, 0f, -0.3f);
+        var s = go.AddComponent<Shark>();
+        s.from = spec.x; s.to = spec.y;
+        Material grey = gm.Mat("Shark", new Color(0.6f, 0.66f, 0.75f), 0.6f);
+        s.fin = new GameObject("Fin").transform;
+        s.fin.SetParent(go.transform, false);
+        var f = LevelBuilder.Visual("Fin", PrimitiveType.Cube, s.fin, new Vector3(0f, 0.5f, 0f), new Vector3(0.8f, 0.8f, 0.1f), grey).transform;
+        f.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        LevelBuilder.Visual("Back", PrimitiveType.Sphere, s.fin, new Vector3(0f, -0.05f, 0f), new Vector3(1.6f, 0.35f, 0.5f), grey);
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        float water = SeaWater.Instance != null ? SeaWater.Instance.Level : -0.7f;
+        Vector3 p = transform.position;
+        p.x += dir * 2f * Time.deltaTime;
+        if (p.x > to) dir = -1f;
+        if (p.x < from) dir = 1f;
+        fin.localRotation = Quaternion.Euler(0f, dir > 0 ? 0f : 180f, 0f);
+
+        // ضو المنارة عليه؟ يغطس شوي
+        bool lit = Lighthouse.Instance != null && Mathf.Abs(Lighthouse.Instance.BeamX - p.x) < 2.5f;
+        down = lit ? 1.6f : Mathf.Max(0f, down - Time.deltaTime);
+        float depth = down > 0f ? -1.2f : 0f;
+        p.y = Mathf.Lerp(p.y, water + depth, Time.deltaTime * 5f);
+        transform.position = p;
+
+        // قارب ماشي جنبه وهو طالع؟ يعضه
+        if (down > 0f || gm == null) return;
+        foreach (SeaBoat boat in SeaBoat.All)
+        {
+            if (boat == null || !boat.Sailing) continue;
+            Bounds b = boat.Box;
+            if (p.x > b.min.x - 0.6f && p.x < b.max.x + 0.6f) boat.Sink();
+        }
     }
 }

@@ -384,6 +384,21 @@ public class LevelTheme
         ringColor = new Color(0.25f, 0.35f, 0.4f), seaColor = new Color(0.12f, 0.38f, 0.5f),
     };
 
+    // المنارة: ليل بحر، قمر ونجوم، وورق أزرق غامق
+    public static LevelTheme LighthouseNight() => new LevelTheme
+    {
+        name = "LighthouseNight",
+        paper = new Color(0.82f, 0.86f, 0.95f), pattern = PaperPattern.Ruled, patternColor = new Color(0.45f, 0.55f, 0.8f),
+        pageEdge = new Color(0.6f, 0.65f, 0.8f), pencil = new Color(0.2f, 0.25f, 0.45f), doodleColor = new Color(0.3f, 0.38f, 0.6f),
+        skyTop = new Color(0.02f, 0.03f, 0.1f), skyMid = new Color(0.06f, 0.1f, 0.25f), skyBottom = new Color(0.15f, 0.22f, 0.4f),
+        moonColor = new Color(2.4f, 2.4f, 2.1f), stars = 1f, cloudTint = new Color(0.25f, 0.3f, 0.45f), cloudAlpha = 0.5f,
+        sunLight = new Color(0.65f, 0.75f, 1f), sunIntensity = 0.55f, sunAngles = new Vector3(40f, -30f, 0f),
+        ambientSky = new Color(0.25f, 0.3f, 0.5f), ambientEquator = new Color(0.15f, 0.18f, 0.32f), ambientGround = new Color(0.05f, 0.06f, 0.12f),
+        fog = new Color(0.05f, 0.08f, 0.18f), props = PropSet.Stationery, floating = FloatKind.Sparkles,
+        floatColors = new[] { new Color(0.8f, 0.85f, 1f) },
+        ringColor = new Color(0.25f, 0.3f, 0.5f), seaColor = new Color(0.05f, 0.15f, 0.32f),
+    };
+
     public Color PaperFor(int index)
     {
         return pageColors != null && pageColors.Length > 0 ? pageColors[index % pageColors.Length] : paper;

@@ -228,11 +228,20 @@ public class GameManager : MonoBehaviour
         return lowest;
     }
 
+    // الأماكن اللي ترجع لها رويدا: الصفحات، والحجارة (أعمدة الحجر بالوادي والبحر) مرتبة من اليسار
+    static List<Block> CheckpointBlocks(LevelData data)
+    {
+        var list = new List<Block>(data.blocks);
+        foreach (Vector3 peg in data.pegs) list.Add(new Block(new Vector3(peg.x, peg.y - 0.3f, 0f), new Vector3(peg.z, 0.6f, 2f)));
+        if (data.pegs.Count > 0) list.Sort((a, b) => a.center.x.CompareTo(b.center.x));
+        return list;
+    }
+
     // لما توقف رويدا على صفحة جديدة (أبعد من اللي قبل) نحفظها كنقطة رجوع
     void UpdateCheckpoint()
     {
         Vector3 p = Rowaida.transform.position;
-        var blocks = Levels.All[levelIndex].blocks;
+        var blocks = CheckpointBlocks(Levels.All[levelIndex]);
         for (int i = checkpointPage + 1; i < blocks.Count; i++)
         {
             Block b = blocks[i];
@@ -306,7 +315,7 @@ public class GameManager : MonoBehaviour
         Vector3 pos = data.spawn;
         if (checkpointPage > 0)
         {
-            Block b = data.blocks[checkpointPage];
+            Block b = CheckpointBlocks(data)[checkpointPage];
             pos = new Vector3(b.center.x - b.size.x * 0.5f + 1f, Surface(b) + Up, 0f);
         }
         Rowaida.Respawn(pos);
