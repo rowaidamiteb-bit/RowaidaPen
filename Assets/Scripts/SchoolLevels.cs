@@ -7,6 +7,7 @@ public static class SchoolFeatures
     public static void Build(Transform root, LevelData data, GameManager gm, System.Random rng)
     {
         foreach (Vector4 r in data.rulers) RulerSeesaw.Create(root, r, gm);
+        foreach (Vector3 g in data.colorGates) ColorGate.Create(root, g, gm);
     }
 }
 
@@ -129,5 +130,130 @@ public class RulerSeesaw : MonoBehaviour
         }
         if (wait) { r.Held = true; r.CarryX = 0f; holding = true; }
         else if (holding) { r.Held = false; holding = false; }
+    }
+}
+
+// باب ملوّن (صندوق الألوان): ما ينفتح إلا إذا رسمتي عليه بلونه. الباب البنفسجي يبي أحمر وأزرق
+public class ColorGate : MonoBehaviour
+{
+    float x, openT = -1f, shake;
+    InkColor colorA, colorB;
+    bool needB, gotA, gotB, holding;
+    int prompted;
+    Transform door;
+    BoxCollider col;
+    Renderer halfA, halfB;
+    Material dull;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Color Gate");
+        go.transform.SetParent(root, false);
+        go.transform.position = new Vector3(spec.x, 0f, 0f);
+        var g = go.AddComponent<ColorGate>();
+        g.x = spec.x;
+        g.colorA = (InkColor)(int)spec.y;
+        g.needB = spec.z >= 0f;
+        g.colorB = g.needB ? (InkColor)(int)spec.z : g.colorA;
+
+        Material frame = gm.Mat("Gate Frame", new Color(0.97f, 0.95f, 0.9f), 0.3f);
+        g.dull = gm.Mat("Gate Dull", new Color(0.82f, 0.8f, 0.78f), 0.3f);
+        g.door = new GameObject("Door").transform;
+        g.door.SetParent(go.transform, false);
+        g.col = go.AddComponent<BoxCollider>();
+        g.col.center = new Vector3(0f, 1.7f, 0f);
+        g.col.size = new Vector3(0.6f, 3.4f, 2.4f);
+        // الباب: نصين، كل نص بلون (لو باب بلون واحد النصين نفس اللون)
+        Material ma = gm.Mat("Gate " + g.colorA, InkColorEffect.ColorOf(g.colorA), 0.4f);
+        Material mb = gm.Mat("Gate " + g.colorB, InkColorEffect.ColorOf(g.colorB), 0.4f);
+        g.halfA = LevelBuilder.Visual("Top", PrimitiveType.Cube, g.door, new Vector3(0f, 2.55f, 0f), new Vector3(0.55f, 1.7f, 2.3f), ma).GetComponent<Renderer>();
+        g.halfB = LevelBuilder.Visual("Bottom", PrimitiveType.Cube, g.door, new Vector3(0f, 0.85f, 0f), new Vector3(0.55f, 1.7f, 2.3f), mb).GetComponent<Renderer>();
+        // شخابيط بيضا على الباب (مثل ورق ملون)
+        for (int i = 0; i < 4; i++)
+            LevelBuilder.Visual("Stripe", PrimitiveType.Cube, g.door, new Vector3(-0.29f, 0.4f + i * 0.85f, 0f), new Vector3(0.02f, 0.06f, 2f), frame, false);
+        // إطار وفوقه أقلام شمع بالألوان المطلوبة
+        LevelBuilder.Visual("Frame Top", PrimitiveType.Cube, go.transform, new Vector3(0f, 3.55f, 0f), new Vector3(0.8f, 0.3f, 2.6f), frame);
+        AddCrayon(go.transform, g.colorA, gm, g.needB ? -0.45f : 0f);
+        if (g.needB) AddCrayon(go.transform, g.colorB, gm, 0.45f);
+    }
+
+    static void AddCrayon(Transform parent, InkColor c, GameManager gm, float z)
+    {
+        Material m = gm.Mat("Crayon " + c, InkColorEffect.ColorOf(c), 0.35f);
+        var body = LevelBuilder.Visual("Crayon", PrimitiveType.Cylinder, parent, new Vector3(0f, 4.1f, z - 0.3f), new Vector3(0.28f, 0.45f, 0.28f), m).transform;
+        var tip = LevelBuilder.Visual("Crayon Tip", PrimitiveType.Cylinder, parent, new Vector3(0f, 4.65f, z - 0.3f), new Vector3(0.18f, 0.12f, 0.18f), m).transform;
+        body.localRotation = tip.localRotation = Quaternion.identity;
+    }
+
+    static string Name(InkColor c) => c == InkColor.Red ? "الأحمر (2)" : c == InkColor.Blue ? "الأزرق (3)" : c == InkColor.Green ? "الأخضر (4)" : "الأسود (1)";
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        if (openT >= 0f)
+        {
+            // ينفتح: يطلع لفوق
+            openT += Time.deltaTime;
+            door.localPosition = Vector3.up * Mathf.SmoothStep(0f, 5f, Mathf.Clamp01(openT / 0.8f));
+        }
+        else
+        {
+            if (shake > 0f) shake -= Time.deltaTime;
+            door.localPosition = new Vector3(shake > 0f ? Mathf.Sin(Time.time * 60f) * 0.06f : 0f, 0f, 0f);
+            // خط لامس الباب؟
+            foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                var r = mark.GetComponent<MeshRenderer>();
+                if (r == null) continue;
+                Bounds b = r.bounds;
+                if (b.max.x < x - 0.5f || b.min.x > x + 0.5f || b.min.y > 3.6f || b.max.y < 0f) continue;
+                var fx = mark.GetComponent<InkColorEffect>();
+                InkColor c = fx != null ? fx.color : InkColor.Black;
+                bool used = false;
+                if (c == colorA && !gotA) { gotA = true; used = true; }
+                else if (needB && c == colorB && !gotB) { gotB = true; used = true; }
+                Fx.Sparkle(b.center, InkColorEffect.ColorOf(c), used ? 22 : 8);
+                if (used) gm.Sound.PlayBoing();
+                else
+                {
+                    shake = 0.4f;
+                    gm.Sound.PlayPoof();
+                    gm.UI.ShowMessage("", 2f, "لون غلط! الباب يبي " + Wanted());
+                }
+                Destroy(mark.gameObject);
+            }
+            // النص اللي انصبغ يلمع، واللي باقي باهت شوي
+            halfA.transform.localScale = new Vector3(gotA ? 0.6f : 0.55f, 1.7f, 2.3f);
+            halfB.transform.localScale = new Vector3(gotB || (!needB && gotA) ? 0.6f : 0.55f, 1.7f, 2.3f);
+            if (gotA && (!needB || gotB))
+            {
+                openT = 0f;
+                col.enabled = false;
+                gm.Sound.PlayBoing();
+                Fx.Confetti(new Vector3(x, 2.5f, -0.5f), 30);
+            }
+        }
+
+        // رويدا تستنى عند الباب المقفل
+        RowaidaController r0 = gm.Rowaida;
+        if (r0 == null) return;
+        float px = r0.transform.position.x;
+        bool wait = openT < 0f && px > x - 1.6f && px < x - 0.3f && gm.IsPlaying;
+        if (wait && prompted == 0)
+        {
+            prompted = 1;
+            gm.UI.ShowMessage("", 2.8f, "الباب يبي " + Wanted() + "... اختاري اللون وارسمي عليه");
+        }
+        if (wait) { r0.Held = true; r0.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
+        else if (holding) { r0.Held = false; holding = false; }
+    }
+
+    string Wanted()
+    {
+        if (!needB) return Name(colorA);
+        if (gotA) return Name(colorB);
+        if (gotB) return Name(colorA);
+        return Name(colorA) + " و" + Name(colorB);
     }
 }

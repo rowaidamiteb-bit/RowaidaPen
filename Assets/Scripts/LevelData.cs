@@ -163,6 +163,7 @@ public class LevelData
 
     // الجزء الثاني: أدوات المدرسة
     public List<Vector4> rulers = new List<Vector4>();      // مسطرة ميزان (من x، لـ x، مكان القلم اللي تحتها، ثقل الممحاة)
+    public List<Vector3> colorGates = new List<Vector3>();  // أبواب ملونة (x، اللون، اللون الثاني أو -1). الألوان: 1 أحمر، 2 أزرق، 3 أخضر
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -205,6 +206,7 @@ public static class Levels
         WhirlpoolLevel(),
         LighthouseLevel(),
         RulerLevel(),
+        CrayonBoxLevel(),
         LastPage(),
     };
 
@@ -678,6 +680,39 @@ public static class Levels
         };
         Oval(level, 11.2f, 4f, new Color(1f, 0.55f, 0.3f));
         return level;
+    }
+
+    // صندوق الألوان: كل باب ما ينفتح إلا إذا رسمتي عليه بلونه (الأرقام تختار اللون).
+    // الباب البنفسجي يبي الأحمر والأزرق مع بعض
+    static LevelData CrayonBoxLevel()
+    {
+        return new LevelData
+        {
+            title = "صندوق الألوان",
+            theme = LevelTheme.PastelPaint(),
+            subtitle = "كل باب يبي لونه! اختاري اللون بالأرقام وارسمي على الباب",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(45f, 0f, 0f),
+            ink = 30f,
+            colors = true,
+            waitForBridge = true,
+            blocks =
+            {
+                Page(-7f, 8f),
+                Page(11f, 21f),
+                Page(24.5f, 35f),
+                Page(38f, 48f),
+            },
+            // x، اللون (1 أحمر، 2 أزرق، 3 أخضر)، اللون الثاني (-1 = ما فيه)
+            colorGates =
+            {
+                new Vector3(5f, 1f, -1f),
+                new Vector3(17f, 2f, -1f),
+                new Vector3(30f, 1f, 2f),
+                new Vector3(41.5f, 3f, -1f),
+            },
+            hints = { new HintLine(new Vector3(4.6f, 0.8f, 0f), new Vector3(4.6f, 2.6f, 0f), InkColorEffect.ColorOf(InkColor.Red)) },
+        };
     }
 
     // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.
