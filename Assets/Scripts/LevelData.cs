@@ -153,6 +153,7 @@ public class LevelData
     public bool underwater;                                 // تحت الماي: هوا ينقص، وجاذبية خفيفة
     public List<Vector3> vents = new List<Vector3>();       // فتحات فقاعات (x، y، كل كم ثانية)
     public List<Vector3> jellies = new List<Vector3>();     // قناديل بحر (x، y، كم تطلع وتنزل)
+    public List<Vector3> tentacles = new List<Vector3>();   // أذرع أخطبوط (من x، لـ x، تأخير)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -491,7 +492,7 @@ public static class Levels
     {
         return new LevelData
         {
-            title = "تحت الماي",
+            title = "أعماق البحر",
             theme = LevelTheme.Underwater(),
             subtitle = "الهوا يخلص! الفقاعات تتزحلق تحت خطوطك، والقناديل تخاف من الحبر",
             spawn = new Vector3(-5f, 1f, 0f),
