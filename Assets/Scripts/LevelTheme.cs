@@ -354,6 +354,21 @@ public class LevelTheme
         ringColor = new Color(0.2f, 0.4f, 0.5f), seaColor = new Color(0.1f, 0.4f, 0.65f),
     };
 
+    // الأخطبوط: بحر وقت الغروب، سما وردية وبرتقالية
+    public static LevelTheme SunsetSea() => new LevelTheme
+    {
+        name = "SunsetSea",
+        paper = new Color(1f, 0.93f, 0.85f), pattern = PaperPattern.Ruled, patternColor = new Color(0.9f, 0.6f, 0.65f),
+        pageEdge = new Color(0.95f, 0.82f, 0.75f), pencil = new Color(0.45f, 0.25f, 0.4f), doodleColor = new Color(0.55f, 0.3f, 0.5f),
+        skyTop = new Color(0.35f, 0.3f, 0.65f), skyMid = new Color(0.95f, 0.55f, 0.6f), skyBottom = new Color(1f, 0.8f, 0.5f),
+        sun = true, moonColor = new Color(2.8f, 1.8f, 1.2f), stars = 0.1f, cloudTint = new Color(1f, 0.75f, 0.8f), cloudAlpha = 0.7f,
+        sunLight = new Color(1f, 0.78f, 0.65f), sunIntensity = 1.4f, sunAngles = new Vector3(18f, -55f, 0f),
+        ambientSky = new Color(0.85f, 0.7f, 0.8f), ambientEquator = new Color(0.7f, 0.55f, 0.6f), ambientGround = new Color(0.3f, 0.22f, 0.3f),
+        fog = new Color(0.95f, 0.7f, 0.7f), props = PropSet.Crayons, floating = FloatKind.Sparkles,
+        floatColors = new[] { new Color(1f, 0.85f, 0.7f), Color.white },
+        ringColor = new Color(0.55f, 0.3f, 0.5f), seaColor = new Color(0.2f, 0.35f, 0.6f),
+    };
+
     public Color PaperFor(int index)
     {
         return pageColors != null && pageColors.Length > 0 ? pageColors[index % pageColors.Length] : paper;

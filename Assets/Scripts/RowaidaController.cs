@@ -154,7 +154,7 @@ public class RowaidaController : MonoBehaviour
         return false;
     }
 
-    static bool BridgeCovers(float x0, float x1, float top)
+    public static bool BridgeCovers(float x0, float x1, float top)
     {
         foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
         {

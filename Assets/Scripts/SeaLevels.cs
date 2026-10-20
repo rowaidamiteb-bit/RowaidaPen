@@ -12,6 +12,8 @@ public static class SeaFeatures
         foreach (Vector3 c in data.crabs) Crab.Create(root, c, gm);
         foreach (Vector3 v in data.vents) BubbleVent.Create(root, v, gm);
         foreach (Vector3 j in data.jellies) Jellyfish.Create(root, j, gm);
+        foreach (Vector3 t in data.tentacles) Tentacle.Create(root, t, gm);
+        if (data.tentacles.Count > 0) GiantOctopus.Create(root, new Vector3(data.door.x * 0.5f, 0.7f, 12f), gm);
         if (data.underwater)
         {
             SeaDecor.Create(root, data, gm, rng);
@@ -440,5 +442,193 @@ public class SeaDecor : MonoBehaviour
             if (p.x > 70f) p.x = -15f;
             fish[i].position = p;
         }
+    }
+}
+
+// ---------- الأخطبوط ----------
+
+// ذراع أخطبوط تطلع من البحر في الحفرة كل شوي، وتلف على أي جسر فوقها وتسحبه تحت.
+// لو فيه شكل مغلق (كورة) طايف قريب، تاخذه هو بدال الجسر. رويدا تستنى عند الطرف إذا الذراع جاية
+public class Tentacle : MonoBehaviour
+{
+    const float Period = 6f, Warn = 1.2f, Rise = 0.6f, Hold = 1f, Height = 4.2f;
+    float from, to, phase, start, nextBubble;
+    bool grabbed, holding;
+    readonly List<Transform> segs = new List<Transform>();
+    readonly List<GameObject> carried = new List<GameObject>();
+    Material bubbleMat;
+
+    float Cx => (from + to) * 0.5f;
+    float Local => Mathf.Repeat(Time.time - start + phase, Period);
+    // كم طالعة (0 تحت الماي، 1 فوق)
+    float Up
+    {
+        get
+        {
+            float l = Local;
+            if (l < Rise) return Mathf.SmoothStep(0f, 1f, l / Rise);
+            if (l < Rise + Hold) return 1f;
+            if (l < Rise * 2f + Hold) return Mathf.SmoothStep(1f, 0f, (l - Rise - Hold) / Rise);
+            return 0f;
+        }
+    }
+    float UntilRise => Local < Rise * 2f + Hold ? 0f : Period - Local;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Tentacle");
+        go.transform.SetParent(root, false);
+        var t = go.AddComponent<Tentacle>();
+        t.from = spec.x; t.to = spec.y; t.phase = spec.z;
+        t.start = Time.time;
+        Material skin = gm.Mat("Octopus Skin", new Color(0.75f, 0.3f, 0.6f), 0.5f);
+        Material sucker = gm.Mat("Octopus Sucker", new Color(1f, 0.75f, 0.8f), 0.4f);
+        t.bubbleMat = gm.Mat("Air Bubble", new Color(0.8f, 0.95f, 1f), 0.98f);
+        for (int i = 0; i < 14; i++)
+        {
+            float k = 1f - i / 14f;
+            var s = LevelBuilder.Visual("Segment", PrimitiveType.Sphere, go.transform, Vector3.zero, Vector3.one * (0.25f + 0.55f * k), skin).transform;
+            LevelBuilder.Visual("Sucker", PrimitiveType.Sphere, s, new Vector3(-0.35f, 0f, -0.25f), new Vector3(0.35f, 0.35f, 0.2f), sucker, false);
+            t.segs.Add(s);
+        }
+    }
+
+    // شكل مغلق طايف قريب من الحفرة (طُعم)
+    InkMark Decoy()
+    {
+        float water = SeaWater.Instance != null ? SeaWater.Instance.Level : 0f;
+        foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+        {
+            if (!mark.closed || carried.Contains(mark.gameObject)) continue;
+            Vector3 c = mark.transform.position;
+            if (c.x > from - 2.5f && c.x < to + 2.5f && c.y < water + 2.6f) return mark;   // بالماي أو على الجسر
+        }
+        return null;
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time, up = Up, water = SeaWater.Instance != null ? SeaWater.Instance.Level : -0.6f;
+
+        // شكل الذراع: تطلع من الماي وتتلوى
+        Vector3 basePos = new Vector3(Cx, water - 1.2f, -0.3f);
+        Vector3 tip = basePos;
+        for (int i = 0; i < segs.Count; i++)
+        {
+            float k = i / (float)(segs.Count - 1);
+            float curl = Mathf.Sin(t * 3f + k * 4f) * 0.6f * k + k * k * 1.2f;
+            Vector3 p = basePos + new Vector3(curl, k * Height * up, 0f);
+            segs[i].position = p;
+            segs[i].gameObject.SetActive(p.y > water - 0.6f);
+            tip = p;
+        }
+
+        // تحذير: فقاعات من الماي
+        if (UntilRise < Warn && UntilRise > 0f && t >= nextBubble)
+        {
+            nextBubble = t + 0.08f;
+            AirBubbleFx(new Vector3(Cx + Random.Range(-1f, 1f), water, -0.5f));
+            if (Random.value < 0.1f) gm.Sound.PlayRumble(0.25f);
+        }
+
+        // تمسك أول ما تطلع
+        if (up > 0.6f && !grabbed)
+        {
+            grabbed = true;
+            gm.Sound.PlayChomp();
+            InkMark decoy = Decoy();
+            if (decoy != null) Take(decoy.gameObject);
+            else
+                foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+                {
+                    if (mark.closed) continue;
+                    var r = mark.GetComponent<MeshRenderer>();
+                    if (r == null) continue;
+                    Bounds b = r.bounds;
+                    if (b.max.x > from + 0.3f && b.min.x < to - 0.3f && b.min.y < water + 3f) Take(mark.gameObject);
+                }
+        }
+        // الأشياء اللي ماسكتها تمشي مع طرفها
+        foreach (GameObject g in carried) if (g != null) g.transform.position = Vector3.Lerp(g.transform.position, tip, Time.deltaTime * 8f);
+        if (up <= 0f && grabbed)
+        {
+            grabbed = false;
+            foreach (GameObject g in carried)
+                if (g != null)
+                {
+                    Fx.Sparkle(new Vector3(Cx, water, 0f), new Color(0.6f, 0.85f, 1f), 14);
+                    Destroy(g);
+                }
+            if (carried.Count > 0) gm.Sound.PlayPoof();
+            carried.Clear();
+        }
+
+        // رويدا: تستنى عند الطرف إذا الذراع بتطلع قبل ما تعدي (إلا لو فيه طُعم)
+        RowaidaController rowaida = gm.Rowaida;
+        if (rowaida == null) return;
+        Vector3 rp = rowaida.transform.position;
+        float cross = (to - from + 1.4f) / Mathf.Max(0.1f, rowaida.walkSpeed);
+        bool atEdge = rp.x > from - 1.6f && rp.x < from - 0.5f && rp.y > water;   // توقف بعيد شوي عن الطرف عشان الجسر ما يلمسها
+        // تستنى لين يصير فيه جسر، والذراع ما بتطلع قبل ما تعدي (إلا لو فيه طُعم)
+        bool unsafeNow = (UntilRise < cross && Decoy() == null) || !RowaidaController.BridgeCovers(from, to, 0f);
+        if (atEdge && unsafeNow && gm.IsPlaying) { rowaida.Held = true; rowaida.CarryX = 0f; holding = true; }
+        else if (holding) { rowaida.Held = false; holding = false; }
+    }
+
+    void Take(GameObject g)
+    {
+        foreach (Collider c in g.GetComponentsInChildren<Collider>()) c.enabled = false;
+        var body = g.GetComponent<Rigidbody>();
+        if (body != null) body.isKinematic = true;
+        carried.Add(g);
+    }
+
+    void AirBubbleFx(Vector3 pos)
+    {
+        var b = LevelBuilder.Visual("Bubble", PrimitiveType.Sphere, null, pos, Vector3.one * Random.Range(0.12f, 0.3f), bubbleMat, false);
+        var fx = b.AddComponent<FxParticle>();
+        fx.velocity = new Vector3(Random.Range(-0.3f, 0.3f), Random.Range(0.8f, 1.6f), 0f);
+        fx.life = 0.6f;
+    }
+}
+
+// راس أخطبوط كبير يطالع من بعيد (زينة)
+public class GiantOctopus : MonoBehaviour
+{
+    Transform head;
+    readonly List<Transform> pupils = new List<Transform>();
+
+    public static void Create(Transform root, Vector3 pos, GameManager gm)
+    {
+        var go = new GameObject("Giant Octopus");
+        go.transform.SetParent(root, false);
+        go.transform.position = pos;
+        var o = go.AddComponent<GiantOctopus>();
+        Material skin = gm.Mat("Octopus Skin", new Color(0.75f, 0.3f, 0.6f), 0.5f);
+        Material spot = gm.Mat("Octopus Spot", new Color(0.6f, 0.2f, 0.5f), 0.4f);
+        Material white = gm.Mat("Monster Eye", Color.white, 0.7f);
+        Material black = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
+        o.head = LevelBuilder.Visual("Head", PrimitiveType.Sphere, go.transform, Vector3.zero, new Vector3(7f, 6f, 5f), skin, false).transform;
+        for (int i = 0; i < 6; i++)
+            LevelBuilder.Visual("Spot", PrimitiveType.Sphere, o.head, new Vector3(-0.25f + i * 0.1f, 0.3f + (i % 2) * 0.08f, -0.3f).normalized * 0.49f, Vector3.one * 0.08f, spot, false);   // على سطح الراس
+        for (int s = -1; s <= 1; s += 2)
+        {
+            LevelBuilder.Visual("Eye", PrimitiveType.Sphere, o.head, new Vector3(s * 0.18f, -0.05f, -0.42f), new Vector3(0.22f, 0.26f, 0.12f), white, false);
+            o.pupils.Add(LevelBuilder.Visual("Pupil", PrimitiveType.Sphere, o.head, new Vector3(s * 0.18f, -0.07f, -0.48f), new Vector3(0.1f, 0.14f, 0.06f), black, false).transform);
+        }
+    }
+
+    void Update()
+    {
+        float t = Time.time;
+        head.localPosition = new Vector3(0f, Mathf.Sin(t * 0.6f) * 0.3f, 0f);
+        // العيون تطالع رويدا
+        GameManager gm = GameManager.Instance;
+        if (gm == null || gm.Rowaida == null) return;
+        float dx = Mathf.Clamp((gm.Rowaida.transform.position.x - transform.position.x) * 0.004f, -0.05f, 0.05f);
+        for (int i = 0; i < pupils.Count; i++)
+            pupils[i].localPosition = new Vector3((i == 0 ? -0.18f : 0.18f) + dx, -0.07f, -0.48f);
     }
 }

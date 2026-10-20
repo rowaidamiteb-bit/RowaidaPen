@@ -192,6 +192,7 @@ public static class Levels
         EraserFinale(),
         TideLevel(),
         UnderwaterLevel(),
+        OctopusLevel(),
         LastPage(),
     };
 
@@ -521,6 +522,35 @@ public static class Levels
                 new Vector3(35f, 1.6f, 1f),
             },
             hints = { new HintLine(new Vector3(3.6f, 0.1f, 0f), new Vector3(7.9f, 0.1f, 0f), new Color(0.3f, 0.6f, 0.8f)) },
+        };
+    }
+
+    // الأخطبوط العملاق: في كل حفرة ذراع تطلع من البحر وتسحب الجسر تحت.
+    // ارسمي الجسر أول ما تنزل الذراع... أو ارمي لها كورة بالماي تاخذها بدال الجسر
+    static LevelData OctopusLevel()
+    {
+        return new LevelData
+        {
+            title = "الأخطبوط العملاق",
+            theme = LevelTheme.SunsetSea(),
+            subtitle = "الذراع تسحب الجسور! ارسمي بعد ما تنزل... أو ارمي لها كورة بالماي",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(43f, 0f, 0f),
+            ink = 30f,
+            sea = true, seaLevel = -0.7f, tidePeriod = 1f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(9f, 17f),
+                Page(22f, 30f),
+                Page(35f, 46f),
+            },
+            tentacles =
+            {
+                new Vector3(4f, 9f, 0f),
+                new Vector3(17f, 22f, 2f),
+                new Vector3(30f, 35f, 4f),
+            },
         };
     }
 
