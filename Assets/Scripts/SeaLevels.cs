@@ -261,7 +261,7 @@ public class Crab : MonoBehaviour
 // هوا رويدا: ينقص مع الوقت (فقاعات صغيرة فوق راسها تختفي وحدة وحدة). إذا خلص تخسر قلب
 public class AirTank : MonoBehaviour
 {
-    public const float Drain = 1f / 11f;
+    public const float Drain = 1f / 15f;
     public static AirTank Instance;
     public float air = 1f;
     readonly List<Transform> dots = new List<Transform>();
@@ -379,6 +379,12 @@ public class AirBubble : MonoBehaviour
             if (along.magnitude < 0.25f) along = Vector3.right;
             move = along.normalized * 1.8f;
         }
+        // قريبة من رويدا؟ تنجذب لها (مثل المغناطيس) عشان تاخذها بسهولة
+        if (gm != null && gm.Rowaida != null && AirTank.Instance != null)
+        {
+            Vector3 toHer = gm.Rowaida.transform.position + Vector3.up * 0.4f - p;
+            if (toHer.sqrMagnitude < 3.5f * 3.5f) move = toHer.normalized * 5f;
+        }
         transform.position = p + move * Time.deltaTime;
         transform.localScale = Vector3.one * (0.75f + Mathf.Sin(age * 6f) * 0.04f);
 
@@ -387,7 +393,7 @@ public class AirBubble : MonoBehaviour
             Vector3 r = gm.Rowaida.transform.position + Vector3.up * 0.3f;
             if ((r - transform.position).sqrMagnitude < 1.3f * 1.3f)
             {
-                AirTank.Instance.Refill(0.45f);
+                AirTank.Instance.Refill(0.6f);
                 Destroy(gameObject);
                 return;
             }
