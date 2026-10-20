@@ -177,6 +177,7 @@ public class LevelData
     // الجزء الثاني: الموسيقى
     public List<PianoSpec> pianos = new List<PianoSpec>();  // بيانو: لحن بالألوان لازم ينعزف بالترتيب
     public List<Vector3> drumPits = new List<Vector3>();    // حفرة طبول (من x، لـ x، قاعها)
+    public List<NoteSpec> noteSections = new List<NoteSpec>(); // نوتات تنجمع عشان ينفتح الباب
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -230,6 +231,7 @@ public static class Levels
         DayNightLevel(),
         PianoLevel(),
         DrumsLevel(),
+        NotesLevel(),
         LastPage(),
     };
 
@@ -1042,6 +1044,31 @@ public static class Levels
             },
         };
         Oval(level, 7.5f, -1.2f, new Color(0.95f, 0.3f, 0.35f));
+        return level;
+    }
+
+    // النوتات: نوتات طايرة فوق الطريق، والباب ما ينفتح إلا إذا جمعتها. ارسمي طريق مثل التلة يوصل رويدا لها
+    static LevelData NotesLevel()
+    {
+        var level = new LevelData
+        {
+            title = "النوتات",
+            theme = LevelTheme.Mystic(),
+            subtitle = "جمعي النوتات! ارسمي طريق مثل التلة يوصل رويدا لها",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(55f, 0f, 0f),
+            ink = 50f,
+            blocks = { Page(-7f, 58f) },
+            noteSections =
+            {
+                new NoteSpec(2f, 14f, new Vector2(8f, 3f)),
+                new NoteSpec(18f, 33f, new Vector2(22.5f, 3f), new Vector2(28.5f, 3.3f)),
+                new NoteSpec(37f, 52f, new Vector2(42.5f, 3.8f), new Vector2(48f, 2.8f)),
+            },
+        };
+        Color c = new Color(0.7f, 0.5f, 1f);
+        level.hints.Add(new HintLine(new Vector3(4f, 0.15f, 0f), new Vector3(8f, 2.3f, 0f), c));
+        level.hints.Add(new HintLine(new Vector3(8f, 2.3f, 0f), new Vector3(12f, 0.15f, 0f), c));
         return level;
     }
 

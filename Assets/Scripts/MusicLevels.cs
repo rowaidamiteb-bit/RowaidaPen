@@ -16,6 +16,7 @@ public static class MusicFeatures
     {
         foreach (PianoSpec p in data.pianos) PianoPuzzle.Create(root, p, gm);
         foreach (Vector3 d in data.drumPits) DrumPit.Create(root, d, gm);
+        foreach (NoteSpec n in data.noteSections) NoteSection.Create(root, n, gm);
     }
 }
 
@@ -275,5 +276,138 @@ public class DrumPit : MonoBehaviour
         }
         if (wait) { r0.Held = true; r0.CarryX = 0f; holding = true; }
         else if (holding) { r0.Held = false; holding = false; }
+    }
+}
+
+// قسم نوتات: نوتات طايرة فوق الطريق، وباب ما ينفتح إلا إذا جمعتها كلها.
+// رويدا تستنى عند بداية القسم لين ترسمين طريق (مثل التلة) يوصلها للنوتات. لو فاتتها نوتة ترجع للبداية
+public class NoteSpec
+{
+    public float startX, gateX;
+    public Vector2[] notes;
+    public NoteSpec(float startX, float gateX, params Vector2[] notes) { this.startX = startX; this.gateX = gateX; this.notes = notes; }
+}
+
+public class NoteSection : MonoBehaviour
+{
+    NoteSpec spec;
+    readonly List<Transform> notes = new List<Transform>();
+    readonly List<Transform> icons = new List<Transform>();
+    Transform door;
+    BoxCollider doorCol;
+    float openT = -1f;
+    bool started, holding;
+    int prompted;
+
+    public static void Create(Transform root, NoteSpec spec, GameManager gm)
+    {
+        var go = new GameObject("Note Section");
+        go.transform.SetParent(root, false);
+        var s = go.AddComponent<NoteSection>();
+        s.spec = spec;
+        Material black = gm.Mat("Note Black", new Color(0.12f, 0.1f, 0.15f), 0.6f);
+        for (int i = 0; i < spec.notes.Length; i++)
+        {
+            Color c = MusicFeatures.KeyColors[(i * 2 + (int)spec.startX) % MusicFeatures.KeyColors.Length];
+            Material m = gm.Mat("Note Glow " + i % 5, c * 1.3f, 0.6f);
+            var n = new GameObject("Note").transform;
+            n.SetParent(go.transform, false);
+            n.position = new Vector3(spec.notes[i].x, spec.notes[i].y, 0f);
+            LevelBuilder.Visual("Head", PrimitiveType.Sphere, n, new Vector3(-0.12f, -0.3f, 0f), new Vector3(0.55f, 0.42f, 0.25f), m);
+            LevelBuilder.Visual("Stem", PrimitiveType.Cube, n, new Vector3(0.12f, 0.15f, 0f), new Vector3(0.08f, 0.9f, 0.08f), black);
+            var flag = LevelBuilder.Visual("Flag", PrimitiveType.Cube, n, new Vector3(0.3f, 0.5f, 0f), new Vector3(0.35f, 0.12f, 0.08f), black).transform;
+            flag.localRotation = Quaternion.Euler(0f, 0f, -35f);
+            var light = n.gameObject.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = c;
+            light.range = 2.5f;
+            light.intensity = 1.2f;
+            s.notes.Add(n);
+        }
+        // الباب: عليه نوتات صغيرة (وحدة لكل نوتة لازم تنجمع)
+        Material wood = gm.Mat("Piano Wood", new Color(0.15f, 0.12f, 0.14f), 0.7f);
+        Material dim = gm.Mat("Note Dim", new Color(0.5f, 0.5f, 0.55f), 0.3f);
+        s.door = new GameObject("Note Door").transform;
+        s.door.SetParent(go.transform, false);
+        s.door.position = new Vector3(spec.gateX, 0f, 0f);
+        LevelBuilder.Visual("Door", PrimitiveType.Cube, s.door, new Vector3(0f, 1.6f, 0f), new Vector3(0.6f, 3.2f, 2.3f), wood);
+        for (int i = 0; i < spec.notes.Length; i++)
+            s.icons.Add(LevelBuilder.Visual("Slot", PrimitiveType.Sphere, s.door, new Vector3(-0.32f, 2.6f - i * 0.6f, 0f), new Vector3(0.05f, 0.35f, 0.45f), dim, false).transform);
+        s.doorCol = s.door.gameObject.AddComponent<BoxCollider>();
+        s.doorCol.center = new Vector3(0f, 1.6f, 0f);
+        s.doorCol.size = new Vector3(0.6f, 3.2f, 2.3f);
+    }
+
+    int Collected() { int c = 0; foreach (Transform n in notes) if (!n.gameObject.activeSelf) c++; return c; }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time;
+        RowaidaController r = gm.Rowaida;
+
+        // النوتات تتمايل، ورويدا تجمعها إذا لمستها
+        for (int i = 0; i < notes.Count; i++)
+        {
+            Transform n = notes[i];
+            if (!n.gameObject.activeSelf) continue;
+            n.position = new Vector3(spec.notes[i].x, spec.notes[i].y + Mathf.Sin(t * 2f + i) * 0.12f, 0f);
+            n.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 1.5f + i) * 10f);
+            if (r != null && (r.transform.position + Vector3.up * 0.3f - n.position).sqrMagnitude < 1.1f * 1.1f)
+            {
+                n.gameObject.SetActive(false);
+                gm.Sound.PlaySqueak(MusicFeatures.KeyPitch[i % MusicFeatures.KeyPitch.Length] * 1.2f);
+                Fx.Sparkle(n.position, MusicFeatures.KeyColors[i % 5], 18);
+                // النوتة تنحط على الباب
+                icons[Collected() - 1].GetComponent<Renderer>().sharedMaterial = n.GetComponentInChildren<Renderer>().sharedMaterial;
+            }
+        }
+        if (openT < 0f && Collected() == notes.Count)
+        {
+            openT = 0f;
+            doorCol.enabled = false;
+            gm.Sound.PlayBoing();
+            Fx.Confetti(new Vector3(spec.gateX, 2f, -0.5f), 30);
+        }
+        if (openT >= 0f && openT < 1f)
+        {
+            openT += Time.deltaTime / 0.8f;
+            door.position = new Vector3(spec.gateX, -Mathf.SmoothStep(0f, 3.6f, Mathf.Clamp01(openT)), 0f);
+        }
+
+        if (r == null) return;
+        Vector3 p = r.transform.position;
+        // بداية القسم: تستنى لين ينرسم خط بالقسم
+        if (!started)
+        {
+            bool line = false;
+            foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                var rd = mark.GetComponent<MeshRenderer>();
+                if (rd != null && rd.bounds.max.x > spec.startX && rd.bounds.min.x < spec.gateX) { line = true; break; }
+            }
+            bool atStart = p.x > spec.startX - 1.2f && p.x < spec.startX && gm.IsPlaying;
+            if (atStart && prompted == 0)
+            {
+                prompted = 1;
+                gm.UI.ShowMessage("", 2.8f, "جمعي النوتات! ارسمي طريق مثل التلة يوصل رويدا لها");
+            }
+            if (line) started = true;
+            if (atStart && !line) { r.Held = true; r.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
+            else if (holding) { r.Held = false; holding = false; }
+            return;
+        }
+        if (holding) { r.Held = false; holding = false; }
+        // وصلت الباب وفاتتها نوتة: ترجع لبداية القسم
+        if (openT < 0f && p.x > spec.gateX - 1.2f && p.x < spec.gateX && gm.IsPlaying)
+        {
+            Fx.Sparkle(p, new Color(0.8f, 0.7f, 1f), 16);
+            gm.Sound.PlayPoof();
+            r.Respawn(new Vector3(spec.startX - 1f, 1f, 0f));
+            started = false;
+            Camera.main.GetComponent<CameraFollow>().SetTarget(r.transform, true);
+            gm.UI.ShowMessage("", 2.4f, "فاتتك نوتة! ارسمي طريق يوصلك لها");
+        }
     }
 }
