@@ -15,6 +15,9 @@ public class CameraFollow : MonoBehaviour
 
     // شي كبير قريب (مثل التنين) يطلب الكاميرا ترجع لورا وتطلع فوق شوي عشان يبان
     public static float PullRequest;
+    // وشي يلحقها من ورا (مثل الممحاة) يطلب الكاميرا تطالع لورا شوي
+    public static float ShiftRequest;
+    float shift, shiftVel;
     float pull, pullVel;
 
     public void SetTarget(Transform newTarget, bool snap)
@@ -43,6 +46,8 @@ public class CameraFollow : MonoBehaviour
         focus = Vector3.SmoothDamp(focus, Focus(), ref velocity, smoothTime);
         pull = Mathf.SmoothDamp(pull, PullRequest, ref pullVel, 0.6f);
         PullRequest = 0f;
+        shift = Mathf.SmoothDamp(shift, ShiftRequest, ref shiftVel, 0.8f);
+        ShiftRequest = 0f;
         Apply();
     }
 
@@ -64,7 +69,8 @@ public class CameraFollow : MonoBehaviour
             float k = shake * Mathf.Clamp01(shakeTime * 4f);
             jitter = new Vector3(Mathf.PerlinNoise(t, 0.3f) - 0.5f, Mathf.PerlinNoise(0.7f, t) - 0.5f, 0f) * 2f * k;
         }
-        transform.position = focus + offset + new Vector3(0f, 1.6f, -5f) * pull + jitter;
-        transform.LookAt(focus + lookOffset + new Vector3(1f, 1.8f, 0f) * pull + jitter * 0.5f);
+        Vector3 back = new Vector3(shift, 0f, 0f);
+        transform.position = focus + back + offset + new Vector3(0f, 1.6f, -5f) * pull + jitter;
+        transform.LookAt(focus + back + lookOffset + new Vector3(1f, 1.8f, 0f) * pull + jitter * 0.5f);
     }
 }

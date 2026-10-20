@@ -21,6 +21,7 @@ public static class NewFeatures
         foreach (Vector3 peg in data.pegs) StonePillar.Create(root, peg, gm);
         foreach (Vector4 b in data.birds) PaperBird.Create(root, b, gm);
         if (data.darkness) BuildDarkness(root, data, gm);
+        if (data.eraserChase) GiantEraser.Create(root, data.spawn.x - 8f, data.door.x - 2f, gm);
         foreach (Vector3 s in data.swarms) FireflySwarm.Create(root, s, gm);
         foreach (Vector3 s in data.shadows) ShadowCreature.Create(root, s, gm);
     }

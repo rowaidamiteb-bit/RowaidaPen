@@ -143,6 +143,7 @@ public class LevelData
     public List<Vector3> pins = new List<Vector3>();        // البالونات: دبابيس معلقة تفجر البالونة (من x، لـ x، ارتفاعها)
     public List<Vector3> fans = new List<Vector3>();        // البالونات: مروحة تدف البالونة لليمين (من x، لـ x، ارتفاع الطيران)
     public bool darkness;                                   // اليراعات: ظلام، فانوس مع رويدا، وخطوط تضوي
+    public bool eraserChase;                                // نهاية الجزء الأول: ممحاة عملاقة تلحق رويدا
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -178,6 +179,7 @@ public static class Levels
         PortalLevel(),
         CanyonLevel(),
         FirefliesLevel(),
+        EraserFinale(),
         LastPage(),
     };
 
@@ -584,6 +586,41 @@ public static class Levels
             {
                 new Vector4(15f, 23f, -0.8f, 0f),
                 new Vector4(28f, 34f, -0.8f, 4f),
+            },
+        };
+    }
+
+    // نهاية الجزء الأول: ممحاة عملاقة تلحقك وتمسح كل شي وراك، وفيها شوي من كل شي تعلمتيه:
+    // جسر فوق حفرة، وحش شخابيط، جدار عالي (أحمر ينطط)، جسر مايل، وأرض تختفي
+    static LevelData EraserFinale()
+    {
+        return new LevelData
+        {
+            title = "الممحاة الكبيرة",
+            theme = LevelTheme.EraserAfternoon(),
+            subtitle = "الممحاة تلحقك وتمسح كل شي وراك... لا توقفين!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(47f, 0f, 0f),
+            ink = 30f,
+            colors = true,
+            eraserChase = true,
+            blocks =
+            {
+                Page(-7f, 4f),              // حفرة 3
+                Page(7f, 17f),              // وحش شخابيط
+                Wall(17f, 23f, 2.5f),       // جدار عالي: أحمر ينطط
+                Page(26.5f, 50f),           // حفرة مايلة لتحت، وبعدين أرض تختفي
+            },
+            monsters = { new MonsterSpawn(ScribbleMonster.Kind.FuzzyBall, 11f, 8.5f, 13f) },
+            vanishTiles =
+            {
+                new Vector3(31f, 34f, 4.5f),
+                new Vector3(37f, 40f, 4f),
+            },
+            hints =
+            {
+                new HintLine(new Vector3(3.6f, 0.12f, 0f), new Vector3(7.4f, 0.12f, 0f), new Color(0.3f, 0.3f, 0.35f)),
+                new HintLine(new Vector3(15.4f, 0.18f, 0f), new Vector3(16.7f, 0.18f, 0f), InkColorEffect.ColorOf(InkColor.Red)),
             },
         };
     }

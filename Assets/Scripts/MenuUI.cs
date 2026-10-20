@@ -119,6 +119,7 @@ public class MenuUI : MonoBehaviour
     {
         levelsFromPause = fromPause;
         RefreshLevels();
+        ShowPart(SaveData.Unlocked / PerPart);
         Open(levelsPanel);
     }
 
@@ -227,6 +228,22 @@ public class MenuUI : MonoBehaviour
     readonly List<RawImage> levelThumbs = new List<RawImage>();
     readonly List<Text> lockedLabels = new List<Text>();
 
+    const int PerPart = 20;
+    static readonly string[] PartNames = { "الجزء الأول", "الجزء الثاني", "الجزء الثالث", "الجزء الرابع" };
+    readonly List<RectTransform> partPages = new List<RectTransform>();
+    Text levelsTitle;
+    GameObject nextPart, prevPart;
+    int part;
+
+    void ShowPart(int p)
+    {
+        part = Mathf.Clamp(p, 0, partPages.Count - 1);
+        for (int i = 0; i < partPages.Count; i++) partPages[i].gameObject.SetActive(i == part);
+        levelsTitle.text = ArabicText.Fix(partPages.Count > 1 ? "المراحل — " + PartNames[Mathf.Min(part, PartNames.Length - 1)] : "المراحل");
+        nextPart.SetActive(part < partPages.Count - 1);
+        prevPart.SetActive(part > 0);
+    }
+
     // صورة المرحلة (لقطة من المرحلة نفسها)، ولو ما فيه صورة نسوي تدرج بألوان سماها
     static Texture Thumbnail(int index)
     {
@@ -242,16 +259,26 @@ public class MenuUI : MonoBehaviour
     void BuildLevels()
     {
         levelsPanel = NotebookPage(canvasRect, "Levels", new Vector2(1560f, 960f), 0.8f);
-        Label(levelsPanel, ArabicText.Fix("المراحل"), 72, new Vector2(0f, 405f), new Vector2(800f, 100f));
+        levelsTitle = Label(levelsPanel, "", 64, new Vector2(0f, 405f), new Vector2(1000f, 100f));
+
+        // كل جزء (20 مرحلة) بصفحة لحاله
+        int partCount = (Levels.All.Count + PerPart - 1) / PerPart;
+        for (int p = 0; p < partCount; p++)
+        {
+            var page = new GameObject("Part " + (p + 1), typeof(RectTransform)).GetComponent<RectTransform>();
+            page.SetParent(levelsPanel, false);
+            Stretch(page);
+            partPages.Add(page);
+        }
 
         int cols = 5;
         for (int i = 0; i < Levels.All.Count; i++)
         {
             int index = i;
-            int row = i / cols, col = i % cols;
+            int row = i % PerPart / cols, col = i % cols;
             // من اليمين لليسار مثل الكتابة العربية
             Vector2 pos = new Vector2(540f - col * 270f, 250f - row * 180f);
-            var card = Panel(levelsPanel, "Level " + (i + 1), Secondary);
+            var card = Panel(partPages[i / PerPart], "Level " + (i + 1), Secondary);
             card.sprite = rounded;
             card.type = Image.Type.Sliced;
             card.raycastTarget = true;
@@ -290,6 +317,10 @@ public class MenuUI : MonoBehaviour
             levelStars.Add(stars);
             levelCards.Add(card);
         }
+
+        // أسهم بين الأجزاء: اليسار للجزء اللي بعده (مثل قلب صفحات كتاب عربي)
+        nextPart = Button(levelsPanel, "<", new Vector2(-735f, 0f), new Vector2(76f, 150f), Primary, () => ShowPart(part + 1), 60).transform.parent.gameObject;
+        prevPart = Button(levelsPanel, ">", new Vector2(735f, 0f), new Vector2(76f, 150f), Primary, () => ShowPart(part - 1), 60).transform.parent.gameObject;
 
         Button(levelsPanel, "رجوع", new Vector2(0f, -428f), new Vector2(300f, 76f), Secondary, () =>
         {

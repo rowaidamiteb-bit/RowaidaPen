@@ -1,20 +1,50 @@
 using UnityEngine;
 
 // حفظ التقدم: آخر مرحلة مفتوحة، ونجوم كل مرحلة، وهل شافت البداية (يبقى حتى لو سكرتي اللعبة)
+// النجوم محفوظة باسم المرحلة (مو برقمها) عشان لو انضافت مراحل بالنص ما تتلخبط
 public static class SaveData
 {
     public const int MaxStars = 3;
 
-    // أبعد مرحلة مفتوحة (رقمها من 0)
-    // (أي مرحلة خلصتيها تفتح اللي بعدها، حتى لو انضافت مراحل جديدة بعدين)
+    // ترتيب المراحل القديم (لما كانت النجوم محفوظة بالرقم): ننقلها مرة وحدة للحفظ الجديد
+    static readonly string[] oldOrder =
+    {
+        "الصفحات الأولى", "صفحات المطر", "تحت المطر", "صفحات الريح", "العاصفة",
+        "صفحات الشخابيط", "شخابيط أكثر", "صفحة الألوان", "الأرض الطايرة", "الصفحة المقلوبة",
+        "صفحة الحبر المنسكب", "الصفحة المتلاشية", "زيزو", "صفحة الفضاء", "صفحة البالونات",
+        "صفحة النار", "صفحة البوابات", "صفحة الوادي", "صفحة اليراعات", "الصفحة الأخيرة",
+    };
+
+    static void Migrate()
+    {
+        if (PlayerPrefs.GetInt("starsByName", 0) == 1) return;
+        for (int i = 0; i < oldOrder.Length; i++)
+        {
+            int s = PlayerPrefs.GetInt("stars" + i, 0);
+            if (s > 0) PlayerPrefs.SetInt(Key(oldOrder[i]), s);
+            PlayerPrefs.DeleteKey("stars" + i);
+        }
+        PlayerPrefs.DeleteKey("unlocked");   // كان رقم بالترتيب القديم، والحين نحسبه من النجوم
+        PlayerPrefs.SetInt("starsByName", 1);
+        PlayerPrefs.Save();
+    }
+
+    // مفتاح ثابت من اسم المرحلة (أرقام وحروف إنجليزي بس)
+    static string Key(string title)
+    {
+        uint h = 2166136261;
+        foreach (char c in title) { h ^= c; h *= 16777619; }
+        return "stars_" + h.ToString("x8");
+    }
+
+    // أبعد مرحلة مفتوحة (رقمها من 0): المرحلة اللي بعد آخر وحدة خلصتيها من البداية ورا بعض
     public static int Unlocked
     {
         get
         {
-            int unlocked = PlayerPrefs.GetInt("unlocked", 0);
-            for (int i = 0; i < Levels.All.Count; i++)
-                if (Stars(i) > 0) unlocked = Mathf.Max(unlocked, i + 1);
-            return Mathf.Clamp(unlocked, 0, Levels.All.Count - 1);
+            int unlocked = 0;
+            while (unlocked < Levels.All.Count - 1 && Stars(unlocked) > 0) unlocked++;
+            return unlocked;
         }
     }
 
@@ -25,13 +55,25 @@ public static class SaveData
         PlayerPrefs.Save();
     }
 
-    public static int Stars(int index) => PlayerPrefs.GetInt("stars" + index, 0);
+    public static int Stars(int index)
+    {
+        Migrate();
+        return PlayerPrefs.GetInt(Key(Levels.All[index].title), 0);
+    }
 
     // نحفظ أحسن نتيجة بس
     public static void SetStars(int index, int stars)
     {
         if (stars <= Stars(index)) return;
-        PlayerPrefs.SetInt("stars" + index, stars);
+        PlayerPrefs.SetInt(Key(Levels.All[index].title), stars);
+        PlayerPrefs.Save();
+    }
+
+    // للتجربة: نحط نجوم لمرحلة بدون ما نلعبها (أو نمسحها بصفر)
+    public static void ForceStars(int index, int stars)
+    {
+        Migrate();
+        PlayerPrefs.SetInt(Key(Levels.All[index].title), stars);
         PlayerPrefs.Save();
     }
 
@@ -54,11 +96,12 @@ public static class SaveData
     // من جديد: نمسح المراحل المفتوحة والنجوم والبداية (لون وشكل القلم يظلون)
     public static void ResetProgress()
     {
+        Migrate();
         PlayerPrefs.DeleteKey("unlocked");
         PlayerPrefs.DeleteKey("introSeen");
-        for (int i = 0; i < 64; i++) PlayerPrefs.DeleteKey("stars" + i);
+        foreach (LevelData level in Levels.All) PlayerPrefs.DeleteKey(Key(level.title));
         PlayerPrefs.Save();
     }
 
-    public static bool HasProgress => IntroSeen || PlayerPrefs.GetInt("unlocked", 0) > 0;
+    public static bool HasProgress => IntroSeen || Unlocked > 0;
 }

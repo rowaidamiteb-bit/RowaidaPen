@@ -274,8 +274,12 @@ public static class ClaudeCapture
                     break;
                 case "stars":
                     // يعطي نجوم وهمية للتجربة: stars:عدد المراحل المفتوحة
-                    for (int k = 0; k < int.Parse(arg); k++) { PlayerPrefs.SetInt("stars" + k, 1 + k % 3); }
-                    PlayerPrefs.SetInt("unlocked", int.Parse(arg));
+                    for (int k = 0; k < int.Parse(arg); k++) SaveData.ForceStars(k, 1 + k % 3);
+                    break;
+                case "setstars":
+                    // setstars:رقم المرحلة;عدد النجوم (0 يمسحها)
+                    var ss = arg.Split(';');
+                    SaveData.ForceStars(int.Parse(ss[0]), int.Parse(ss[1]));
                     break;
                 case "setpref":
                     // setpref:المفتاح;القيمة
