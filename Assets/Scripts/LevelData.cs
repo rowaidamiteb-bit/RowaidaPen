@@ -169,6 +169,7 @@ public class LevelData
 
     // الجزء الثاني: الوقت
     public List<Vector3> clocks = new List<Vector3>();      // ساعة على حفرة (من x، لـ x، سرعة العقرب درجة بالثانية)
+    public List<Vector4> hourglasses = new List<Vector4>(); // ساعة رملية فوق حفرة (من x، لـ x، مكانها x، y)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -216,6 +217,7 @@ public static class Levels
         ScissorsLevel(),
         PencilCaseLevel(),
         ClockLevel(),
+        HourglassLevel(),
         LastPage(),
     };
 
@@ -841,6 +843,36 @@ public static class Levels
         };
         level.hints.Add(new HintLine(new Vector3(7.6f, -0.5f, 0f), new Vector3(9.4f, -0.5f, 0f), new Color(0.35f, 0.3f, 0.45f)));
         return level;
+    }
+
+    // الساعة الرملية: فوق كل حفرة ساعة رملية مقلوبة. المسيها بخط تنقلب، والرمل يملي الحفرة لين تقدر رويدا تمشي عليه
+    static LevelData HourglassLevel()
+    {
+        return new LevelData
+        {
+            title = "الساعة الرملية",
+            theme = LevelTheme.Canyon(),
+            subtitle = "المسي الساعة الرملية بخط... تنقلب والرمل يملي الحفرة",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(46f, 0f, 0f),
+            ink = 22f,
+            blocks =
+            {
+                Wall(-7f, 4f, 0f, -6f),
+                Wall(10f, 18f, 0f, -6f),
+                Wall(25f, 33f, 0f, -6f),
+                Wall(39f, 50f, 0f, -6f),
+            },
+            // الحفرة (من x، لـ x)، ومكان الساعة الرملية
+            hourglasses =
+            {
+                new Vector4(4f, 10f, 7f, 3.9f),
+                new Vector4(18f, 25f, 20f, 4f),
+                new Vector4(18f, 25f, 23f, 4f),
+                new Vector4(33f, 39f, 36f, 5.6f),
+            },
+            hints = { new HintLine(new Vector3(5.3f, 2.1f, 0f), new Vector3(6.3f, 3.4f, 0f), new Color(0.6f, 0.4f, 0.25f)) },
+        };
     }
 
     // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.
