@@ -234,6 +234,7 @@ public static class Levels
         DrumsLevel(),
         NotesLevel(),
         StringsLevel(),
+        ConcertLevel(),
         LastPage(),
     };
 
@@ -1103,6 +1104,33 @@ public static class Levels
             pegs = { new Vector3(35.5f, 0f, 1f) },
         };
         level.hints.Add(new HintLine(new Vector3(7f, 1.4f, 0f), new Vector3(7f, 0.4f, 0f), new Color(0.6f, 0.4f, 0.2f)));
+        return level;
+    }
+
+    // الحفلة (نهاية الجزء الثاني): بيانو، طبل، وتر، ونوتات... كل الموسيقى مع بعض
+    static LevelData ConcertLevel()
+    {
+        var level = new LevelData
+        {
+            title = "الحفلة",
+            theme = LevelTheme.Cosmic(),
+            subtitle = "الحفلة بدت! اعزفي، نطي، سكتي الوتر، وجمعي النوتات",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(67f, 0f, 0f),
+            ink = 50f,
+            blocks =
+            {
+                Page(-7f, 20f),
+                Page(20f, 27f, -2.5f),      // حفرة الطبل
+                Wall(27f, 35f, 2f, -3.7f),
+                Page(35f, 40f),
+                Page(46f, 70f),
+            },
+            pianos = { new PianoSpec(9f, 10.6f, 3, 1) },
+            drumPits = { new Vector3(20f, 27f, -2.5f) },
+            strings = { new Vector3(40f, 46f, 3.5f) },
+            noteSections = { new NoteSpec(48f, 62f, new Vector2(53f, 3f), new Vector2(58f, 3.2f)) },
+        };
         return level;
     }
 
