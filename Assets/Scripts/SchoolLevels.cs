@@ -8,6 +8,7 @@ public static class SchoolFeatures
     {
         foreach (Vector4 r in data.rulers) RulerSeesaw.Create(root, r, gm);
         foreach (Vector3 g in data.colorGates) ColorGate.Create(root, g, gm);
+        foreach (CalcSpec c in data.calcs) CalcPuzzle.Create(root, c, gm);
     }
 }
 
@@ -255,5 +256,186 @@ public class ColorGate : MonoBehaviour
         if (gotA) return Name(colorB);
         if (gotB) return Name(colorA);
         return Name(colorA) + " و" + Name(colorB);
+    }
+}
+
+// آلة حاسبة: لوحة أزرار أرقام طايرة فوق الطريق، وشاشة فيها رقم. ارمي كور على الأزرار:
+// إذا صار مجموعها نفس الرقم ينفتح الباب، وإذا زاد ترجع الأزرار من جديد
+public class CalcSpec
+{
+    public float gateX, panelX, panelY = 3f;
+    public int target;
+    public int[] keys;
+    public CalcSpec(float gateX, float panelX, int target, params int[] keys) { this.gateX = gateX; this.panelX = panelX; this.target = target; this.keys = keys; }
+}
+
+public class CalcPuzzle : MonoBehaviour
+{
+    const float Spacing = 1.45f;
+    CalcSpec spec;
+    readonly List<Transform> keyCaps = new List<Transform>();
+    readonly List<GameObject> keyBall = new List<GameObject>();
+    TextMesh screen;
+    Transform door;
+    BoxCollider doorCol;
+    float openT = -1f, resetAt = -1f;
+    bool holding;
+    int prompted;
+
+    public static void Create(Transform root, CalcSpec spec, GameManager gm)
+    {
+        var go = new GameObject("Calculator");
+        go.transform.SetParent(root, false);
+        var c = go.AddComponent<CalcPuzzle>();
+        c.spec = spec;
+        Material body = gm.Mat("Calc Body", new Color(0.3f, 0.32f, 0.38f), 0.4f);
+        Material key = gm.Mat("Calc Key", new Color(0.93f, 0.93f, 0.9f), 0.5f);
+        Material lcd = gm.Mat("Calc Screen", new Color(0.72f, 0.85f, 0.6f), 0.6f);
+        Material orange = gm.Mat("Calc Orange", new Color(1f, 0.6f, 0.2f), 0.5f);
+
+        // لوحة الأزرار
+        float w = spec.keys.Length * Spacing + 0.4f;
+        float cx = spec.panelX + (spec.keys.Length - 1) * Spacing * 0.5f;
+        var panel = LevelBuilder.Visual("Panel", PrimitiveType.Cube, go.transform, new Vector3(cx, spec.panelY - 0.25f, 0f), new Vector3(w, 0.5f, 2f), body);
+        panel.AddComponent<BoxCollider>();
+        for (int i = 0; i < spec.keys.Length; i++)
+        {
+            float x = spec.panelX + i * Spacing;
+            var cap = LevelBuilder.Visual("Key", PrimitiveType.Cube, go.transform, new Vector3(x, spec.panelY + 0.12f, 0f), new Vector3(1.15f, 0.25f, 1.3f), key).transform;
+            cap.gameObject.AddComponent<BoxCollider>();
+            c.keyCaps.Add(cap);
+            c.keyBall.Add(null);
+            Label(go.transform, spec.keys[i].ToString(), new Vector3(x, spec.panelY + 0.05f, -0.72f), 0.55f, new Color(0.15f, 0.15f, 0.2f));
+        }
+        // الشاشة فوق اللوحة
+        LevelBuilder.Visual("Screen Frame", PrimitiveType.Cube, go.transform, new Vector3(cx, spec.panelY + 1.55f, 0.4f), new Vector3(Mathf.Max(4f, w * 0.7f), 1.3f, 0.3f), body);
+        LevelBuilder.Visual("Screen", PrimitiveType.Cube, go.transform, new Vector3(cx, spec.panelY + 1.55f, 0.22f), new Vector3(Mathf.Max(3.6f, w * 0.7f - 0.4f), 0.95f, 0.05f), lcd, false);
+        c.screen = Label(go.transform, "", new Vector3(cx, spec.panelY + 1.55f, 0.15f), 0.9f, new Color(0.1f, 0.15f, 0.1f));
+
+        // الباب (شكل زر "=" كبير)
+        c.door = new GameObject("Calc Door").transform;
+        c.door.SetParent(go.transform, false);
+        c.door.position = new Vector3(spec.gateX, 0f, 0f);
+        LevelBuilder.Visual("Door", PrimitiveType.Cube, c.door, new Vector3(0f, 1.6f, 0f), new Vector3(0.6f, 3.2f, 2.3f), orange);
+        for (int s = 0; s < 2; s++)
+            LevelBuilder.Visual("Equals", PrimitiveType.Cube, c.door, new Vector3(-0.32f, 1.4f + s * 0.45f, 0f), new Vector3(0.04f, 0.15f, 1.2f), key, false);
+        c.doorCol = c.door.gameObject.AddComponent<BoxCollider>();
+        c.doorCol.center = new Vector3(0f, 1.6f, 0f);
+        c.doorCol.size = new Vector3(0.6f, 3.2f, 2.3f);
+        c.UpdateScreen();
+    }
+
+    static TextMesh Label(Transform parent, string text, Vector3 pos, float size, Color color)
+    {
+        var go = new GameObject("Label");
+        go.transform.SetParent(parent, false);
+        go.transform.position = pos;
+        var t = go.AddComponent<TextMesh>();
+        t.text = text;
+        t.font = ArabicText.Font;
+        t.fontSize = 80;
+        t.characterSize = size * 0.1f;
+        t.anchor = TextAnchor.MiddleCenter;
+        t.alignment = TextAlignment.Center;
+        t.color = color;
+        go.GetComponent<MeshRenderer>().sharedMaterial = ArabicText.Font.material;
+        return t;
+    }
+
+    int Sum()
+    {
+        int s = 0;
+        for (int i = 0; i < keyBall.Count; i++) if (keyBall[i] != null) s += spec.keys[i];
+        return s;
+    }
+
+    void UpdateScreen()
+    {
+        var parts = new List<string>();
+        for (int i = 0; i < keyBall.Count; i++) if (keyBall[i] != null) parts.Add(spec.keys[i].ToString());
+        int sum = Sum();
+        // الأرقام من اليسار لليمين مثل الآلة الحاسبة
+        if (sum < spec.target) parts.Add("?");
+        screen.text = string.Join(" + ", parts) + "  =  " + spec.target;
+        screen.color = sum > spec.target ? new Color(0.8f, 0.1f, 0.1f) : new Color(0.1f, 0.15f, 0.1f);
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+
+        if (openT >= 0f)
+        {
+            openT += Time.deltaTime;
+            door.position = new Vector3(spec.gateX, -Mathf.SmoothStep(0f, 3.6f, Mathf.Clamp01(openT / 0.8f)), 0f);
+        }
+        else
+        {
+            // كورة نزلت على زر؟
+            for (int i = 0; i < keyCaps.Count; i++)
+            {
+                if (keyBall[i] != null) continue;
+                Vector3 k = keyCaps[i].position;
+                foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+                {
+                    if (!mark.closed || keyBall.Contains(mark.gameObject)) continue;
+                    Vector3 c = mark.transform.position;
+                    if (Mathf.Abs(c.x - k.x) > 0.7f || c.y < k.y || c.y > k.y + 1.4f) continue;
+                    var body = mark.GetComponent<Rigidbody>();
+                    if (body != null) { body.isKinematic = true; }
+                    // تنزل وتقعد على الزر
+                    var rr = mark.GetComponent<MeshRenderer>();
+                    float half = rr != null ? rr.bounds.extents.y : 0.45f;
+                    mark.transform.position = new Vector3(k.x, k.y + 0.12f + half, c.z);
+                    keyBall[i] = mark.gameObject;
+                    keyCaps[i].localPosition += Vector3.down * 0.12f;
+                    gm.Sound.PlaySqueak(1.2f + spec.keys[i] * 0.05f);
+                    UpdateScreen();
+                    break;
+                }
+            }
+            int sum = Sum();
+            if (sum == spec.target)
+            {
+                openT = 0f;
+                doorCol.enabled = false;
+                gm.Sound.PlayBoing();
+                Fx.Confetti(new Vector3(spec.gateX, 2f, -0.5f), 30);
+                gm.UI.ShowMessage("", 1.8f, "صح! " + spec.target);
+            }
+            else if (sum > spec.target && resetAt < 0f)
+            {
+                resetAt = Time.time + 1.2f;
+                gm.Sound.PlayPoof();
+                gm.UI.ShowMessage("", 2f, "أكثر من " + spec.target + "! جربي مرة ثانية");
+            }
+            if (resetAt > 0f && Time.time >= resetAt)
+            {
+                resetAt = -1f;
+                for (int i = 0; i < keyBall.Count; i++)
+                {
+                    if (keyBall[i] == null) continue;
+                    Fx.Sparkle(keyBall[i].transform.position, new Color(1f, 0.6f, 0.2f), 10);
+                    Destroy(keyBall[i]);
+                    keyBall[i] = null;
+                    keyCaps[i].localPosition += Vector3.up * 0.12f;
+                }
+                UpdateScreen();
+            }
+        }
+
+        // رويدا تستنى عند الباب
+        RowaidaController r = gm.Rowaida;
+        if (r == null) return;
+        float px = r.transform.position.x;
+        bool wait = openT < 0f && px > spec.gateX - 1.6f && px < spec.gateX - 0.3f && gm.IsPlaying;
+        if (wait && prompted == 0)
+        {
+            prompted = 1;
+            gm.UI.ShowMessage("", 2.8f, "ارمي كور على الأرقام... لازم مجموعها يصير " + spec.target);
+        }
+        if (wait) { r.Held = true; r.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
+        else if (holding) { r.Held = false; holding = false; }
     }
 }

@@ -164,6 +164,7 @@ public class LevelData
     // الجزء الثاني: أدوات المدرسة
     public List<Vector4> rulers = new List<Vector4>();      // مسطرة ميزان (من x، لـ x، مكان القلم اللي تحتها، ثقل الممحاة)
     public List<Vector3> colorGates = new List<Vector3>();  // أبواب ملونة (x، اللون، اللون الثاني أو -1). الألوان: 1 أحمر، 2 أزرق، 3 أخضر
+    public List<CalcSpec> calcs = new List<CalcSpec>();     // آلة حاسبة: أزرار أرقام وباب ينفتح إذا المجموع صح
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -207,6 +208,7 @@ public static class Levels
         LighthouseLevel(),
         RulerLevel(),
         CrayonBoxLevel(),
+        CalculatorLevel(),
         LastPage(),
     };
 
@@ -712,6 +714,33 @@ public static class Levels
                 new Vector3(41.5f, 3f, -1f),
             },
             hints = { new HintLine(new Vector3(4.6f, 0.8f, 0f), new Vector3(4.6f, 2.6f, 0f), InkColorEffect.ColorOf(InkColor.Red)) },
+        };
+    }
+
+    // الآلة الحاسبة: ارمي كور على أزرار الأرقام (فوق الطريق) لين يصير مجموعها نفس الرقم اللي بالشاشة
+    static LevelData CalculatorLevel()
+    {
+        return new LevelData
+        {
+            title = "الآلة الحاسبة",
+            theme = LevelTheme.GraphDusk(),
+            subtitle = "ارمي كور على الأرقام... إذا صار مجموعها نفس رقم الشاشة ينفتح الباب",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(60f, 0f, 0f),
+            ink = 36f,
+            waitForBridge = true,
+            blocks =
+            {
+                Page(-7f, 18f),
+                Page(21f, 40f),
+                Page(43f, 64f),
+            },
+            calcs =
+            {
+                new CalcSpec(9f, 10.6f, 5, 1, 2, 3, 4),
+                new CalcSpec(29f, 30.6f, 9, 2, 3, 4, 5, 6),
+                new CalcSpec(50f, 51.6f, 12, 3, 4, 5, 7, 8),
+            },
         };
     }
 
