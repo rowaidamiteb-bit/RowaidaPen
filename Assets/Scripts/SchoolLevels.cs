@@ -9,6 +9,7 @@ public static class SchoolFeatures
         foreach (Vector4 r in data.rulers) RulerSeesaw.Create(root, r, gm);
         foreach (Vector3 g in data.colorGates) ColorGate.Create(root, g, gm);
         foreach (CalcSpec c in data.calcs) CalcPuzzle.Create(root, c, gm);
+        foreach (Vector3 s in data.scissors) GiantScissors.Create(root, s, gm);
     }
 }
 
@@ -437,5 +438,137 @@ public class CalcPuzzle : MonoBehaviour
         }
         if (wait) { r.Held = true; r.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
         else if (holding) { r.Held = false; holding = false; }
+    }
+}
+
+// مقص كبير نايم على الحفرة: يفتح ويسكر بسرعة ويقص أي جسر بين شفراته.
+// ارمي كورة بين الشفرات: تعلق ويظل المقص مفتوح، وبعدين ارسمي الجسر
+public class GiantScissors : MonoBehaviour
+{
+    const float OpenAngle = 30f, Period = 2.4f;
+    float from, to, angle = OpenAngle, jamAngle = -1f, nextSnip;
+    Transform upper, lower, pivot;
+    GameObject jamBall;
+    bool holding;
+    int prompted = -1;
+    float Len => to - from + 0.8f;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Giant Scissors");
+        go.transform.SetParent(root, false);
+        var s = go.AddComponent<GiantScissors>();
+        s.from = spec.x; s.to = spec.y;
+        s.pivot = new GameObject("Pivot").transform;
+        s.pivot.SetParent(go.transform, false);
+        s.pivot.position = new Vector3(s.from - 0.3f, 0.15f, 0.9f);   // ورا طريق رويدا شوي
+        Material steel = gm.Mat("Scissor Steel", new Color(0.78f, 0.8f, 0.85f), 0.85f, 0.7f);
+        Material handle = gm.Mat("Scissor Handle", new Color(0.95f, 0.3f, 0.45f), 0.5f);
+        Material screw = gm.Mat("Scissor Screw", new Color(0.4f, 0.4f, 0.45f), 0.8f, 0.6f);
+        s.upper = Blade(s.pivot, s.Len, steel, handle, 1f);
+        s.lower = Blade(s.pivot, s.Len, steel, handle, -1f);
+        LevelBuilder.Visual("Screw", PrimitiveType.Cylinder, s.pivot, new Vector3(0f, 0f, -0.15f), new Vector3(0.35f, 0.05f, 0.35f), screw, false).transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+    }
+
+    // شفرة (مثلث طويل) وورا المسمار مقبض حلقة
+    static Transform Blade(Transform pivot, float len, Material steel, Material handle, float side)
+    {
+        var b = new GameObject("Blade").transform;
+        b.SetParent(pivot, false);
+        b.localPosition = new Vector3(0f, 0f, side * 0.06f);
+        var blade = LevelBuilder.Visual("Steel", PrimitiveType.Cube, b, new Vector3(len * 0.5f, side * 0.12f, 0f), new Vector3(len, 0.28f, 0.05f), steel, false).transform;
+        LevelBuilder.Visual("Edge", PrimitiveType.Cube, b, new Vector3(len * 0.5f, side * 0.02f, -0.03f), new Vector3(len, 0.04f, 0.02f), steel, false);
+        var tip = LevelBuilder.Visual("Tip", PrimitiveType.Cube, b, new Vector3(len, side * 0.05f, 0f), new Vector3(0.3f, 0.3f, 0.05f), steel, false).transform;
+        tip.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        var ring = new GameObject("Handle").transform;
+        ring.SetParent(b, false);
+        ring.localPosition = new Vector3(-1.1f, side * 0.35f, 0f);
+        ring.localRotation = Quaternion.Euler(0f, 90f, 0f);
+        ring.gameObject.AddComponent<MeshFilter>().sharedMesh = PaperMeshes.Ring(0.45f, 0.1f, 24, 6);
+        ring.gameObject.AddComponent<MeshRenderer>().sharedMaterial = handle;
+        return b;
+    }
+
+    // زاوية الشفرة اللي فوق لو كانت واقفة على الكورة
+    float AngleFor(Bounds ball)
+    {
+        Vector3 p = pivot.position;
+        float dx = Mathf.Max(0.5f, ball.center.x - p.x);
+        return Mathf.Clamp(Mathf.Atan2(ball.max.y - p.y, dx) * Mathf.Rad2Deg, 8f, OpenAngle);
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time;
+
+        if (jamAngle < 0f)
+        {
+            // كورة بين الشفرات؟ تعلق
+            foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                if (!mark.closed) continue;
+                var r = mark.GetComponent<MeshRenderer>();
+                if (r == null) continue;
+                Bounds b = r.bounds;
+                if (b.center.x < from + 0.4f || b.center.x > to || b.center.y < -0.4f || b.center.y > 3f) continue;
+                jamBall = mark.gameObject;
+                var body = jamBall.GetComponent<Rigidbody>();
+                if (body != null) body.isKinematic = true;
+                foreach (Collider c in jamBall.GetComponentsInChildren<Collider>()) c.enabled = false;
+                jamBall.transform.position = new Vector3(b.center.x, Mathf.Max(b.center.y, 0.3f + b.extents.y), 0.9f);
+                jamAngle = AngleFor(jamBall.GetComponent<MeshRenderer>().bounds);
+                gm.Sound.PlayBoing();
+                Fx.Sparkle(b.center, new Color(1f, 0.9f, 0.5f), 18);
+                gm.UI.ShowMessage("", 2f, "علق المقص! ارسمي الجسر");
+                break;
+            }
+        }
+
+        // يفتح ويسكر (إلا لو معلق)
+        float target;
+        if (jamAngle >= 0f) target = jamAngle;
+        else
+        {
+            float local = Mathf.Repeat(t, Period);
+            target = local < 1.4f ? OpenAngle : local < 1.55f ? Mathf.Lerp(OpenAngle, 0f, (local - 1.4f) / 0.15f) : local < 1.95f ? 0f : Mathf.Lerp(0f, OpenAngle, (local - 1.95f) / 0.45f);
+        }
+        angle = jamAngle >= 0f ? Mathf.MoveTowards(angle, target, 120f * Time.deltaTime) : target;
+        upper.localRotation = Quaternion.Euler(0f, 0f, angle);
+        lower.localRotation = Quaternion.Euler(0f, 0f, -angle);
+
+        // سكر: يقص أي خط بين الشفرات
+        if (jamAngle < 0f && angle < 2f && t >= nextSnip)
+        {
+            nextSnip = t + 0.5f;
+            gm.Sound.PlayChomp();
+            foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                if (mark.closed) continue;
+                var r = mark.GetComponent<MeshRenderer>();
+                if (r == null) continue;
+                Bounds b = r.bounds;
+                if (b.max.x < from + 0.2f || b.min.x > to - 0.2f || b.min.y > 1.2f || b.max.y < -0.8f) continue;
+                Fx.Sparkle(new Vector3((from + to) * 0.5f, b.center.y, 0f), new Color(0.8f, 0.8f, 0.85f), 16);
+                Destroy(mark.gameObject);
+            }
+        }
+
+        // رويدا تستنى لين يعلق المقص وينرسم جسر
+        RowaidaController rw = gm.Rowaida;
+        if (rw == null) return;
+        Vector3 rp = rw.transform.position;
+        bool atEdge = rp.x > from - 1.6f && rp.x < from - 0.5f && rp.y > 0.3f;
+        bool bridge = RowaidaController.BridgeCovers(from, to, 0f);
+        bool wait = atEdge && gm.IsPlaying && (jamAngle < 0f || !bridge);
+        int stage = jamAngle < 0f ? 0 : 1;
+        if (wait && prompted != stage)
+        {
+            prompted = stage;
+            gm.UI.ShowMessage("", 2.6f, stage == 0 ? "المقص يقص الجسور! ارمي كورة بين شفراته" : "ارسمي الجسر");
+        }
+        if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; }
+        else if (holding) { rw.Held = false; holding = false; }
     }
 }

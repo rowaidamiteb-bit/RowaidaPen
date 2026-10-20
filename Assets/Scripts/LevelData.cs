@@ -165,6 +165,7 @@ public class LevelData
     public List<Vector4> rulers = new List<Vector4>();      // مسطرة ميزان (من x، لـ x، مكان القلم اللي تحتها، ثقل الممحاة)
     public List<Vector3> colorGates = new List<Vector3>();  // أبواب ملونة (x، اللون، اللون الثاني أو -1). الألوان: 1 أحمر، 2 أزرق، 3 أخضر
     public List<CalcSpec> calcs = new List<CalcSpec>();     // آلة حاسبة: أزرار أرقام وباب ينفتح إذا المجموع صح
+    public List<Vector3> scissors = new List<Vector3>();    // مقص كبير على حفرة (من x، لـ x)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -209,6 +210,7 @@ public static class Levels
         RulerLevel(),
         CrayonBoxLevel(),
         CalculatorLevel(),
+        ScissorsLevel(),
         LastPage(),
     };
 
@@ -742,6 +744,36 @@ public static class Levels
                 new CalcSpec(50f, 51.6f, 12, 3, 4, 5, 7, 8),
             },
         };
+    }
+
+    // المقص: على كل حفرة مقص كبير يفتح ويسكر ويقص الجسور. ارمي كورة بين شفراته تعلقه، وبعدين ارسمي الجسر
+    static LevelData ScissorsLevel()
+    {
+        var level = new LevelData
+        {
+            title = "المقص",
+            theme = LevelTheme.Origami(),
+            subtitle = "المقص يقص الجسور! ارمي كورة بين شفراته تعلقه... وبعدين ارسمي الجسر",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(45f, 0f, 0f),
+            ink = 40f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(9.5f, 18f),
+                Page(24f, 32f),
+                Page(38f, 48f),
+            },
+            scissors =
+            {
+                new Vector3(4f, 9.5f, 0f),
+                new Vector3(18f, 24f, 0f),
+                new Vector3(32f, 38f, 0f),
+            },
+        };
+        Oval(level, 6.5f, 1.6f, new Color(1f, 0.45f, 0.55f));
+        level.hints.Add(new HintLine(new Vector3(3.8f, 0.1f, 0f), new Vector3(9.7f, 0.1f, 0f), new Color(0.5f, 0.5f, 0.55f)));
+        return level;
     }
 
     // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.
