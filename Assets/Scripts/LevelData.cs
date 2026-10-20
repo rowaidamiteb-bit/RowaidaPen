@@ -173,6 +173,9 @@ public class LevelData
     public List<GearSpec> gearBridges = new List<GearSpec>(); // تروس وجسر متحرك
     public List<Vector4> alarms = new List<Vector4>();      // منبه وقطوة نايمة (x القطوة، x المنبه، y المنبه، سقف فوقه 1/0)
     public List<Vector4> dayPads = new List<Vector4>();     // الليل والنهار: صفحات (من x، لـ x، سطحها، 0 نهار / 1 ليل)
+
+    // الجزء الثاني: الموسيقى
+    public List<PianoSpec> pianos = new List<PianoSpec>();  // بيانو: لحن بالألوان لازم ينعزف بالترتيب
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -224,6 +227,7 @@ public static class Levels
         GearsLevel(),
         AlarmLevel(),
         DayNightLevel(),
+        PianoLevel(),
         LastPage(),
     };
 
@@ -974,6 +978,35 @@ public static class Levels
                 new Vector3(9f, 0f, 1.8f),
                 new Vector3(23.5f, 0f, 1.8f),
                 new Vector3(27.5f, 0f, 1.8f),
+            },
+        };
+    }
+
+    // ===== الموسيقى =====
+
+    // البيانو: ورقة النوتة تبين ألوان اللحن بالترتيب. ارمي كور على المفاتيح بنفس الترتيب عشان ينفتح الباب
+    static LevelData PianoLevel()
+    {
+        return new LevelData
+        {
+            title = "البيانو",
+            theme = LevelTheme.CrayonDay(),
+            subtitle = "اعزفي اللحن! ارمي كور على المفاتيح بنفس ترتيب ألوان النوتة",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(62f, 0f, 0f),
+            ink = 40f,
+            waitForBridge = true,
+            blocks =
+            {
+                Page(-7f, 20f),
+                Page(23f, 42f),
+                Page(45f, 66f),
+            },
+            pianos =
+            {
+                new PianoSpec(9f, 10.6f, 0, 2),
+                new PianoSpec(31f, 32.6f, 4, 1, 3),
+                new PianoSpec(53f, 54.6f, 2, 0, 4, 1),
             },
         };
     }
