@@ -10,6 +10,7 @@ public static class TimeFeatures
         foreach (Vector4 h in data.hourglasses) Hourglass.Create(root, h, gm);
         foreach (GearSpec g in data.gearBridges) GearBridge.Create(root, g, gm);
         foreach (Vector4 a in data.alarms) AlarmSleeper.Create(root, a, gm, rng, data);
+        if (data.dayPads.Count > 0) DayNight.Create(root, data, gm);
     }
 
     // نص بالأرقام (TextMesh) يواجه الكاميرا
@@ -563,5 +564,162 @@ public class AlarmSleeper : MonoBehaviour
         }
         if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
         else if (holding) { rw.Held = false; holding = false; }
+    }
+}
+
+// الليل والنهار: قرص شمس/قمر فوق، المسيه بخط عشان يتغير الوقت.
+// الصفحات الصفرا تطلع بالنهار بس، والزرقا بالليل بس. والخطوط اللي ترسمينها تختفي لما يتغير الوقت
+public class DayNight : MonoBehaviour
+{
+    public static bool Night;
+    LevelData data;
+    Transform dial, sunSide, moonSide;
+    Renderer overlay;
+    Material overlayMat;
+    float dialAngle, flipCooldown, dark;
+    bool holding;
+    int prompted = -1;
+    readonly List<(Collider col, Renderer rend, bool night)> pads = new List<(Collider, Renderer, bool)>();
+    Material dayMat, nightMat, ghostDay, ghostNight;
+
+    public static void Create(Transform root, LevelData data, GameManager gm)
+    {
+        Night = false;
+        var go = new GameObject("Day Night");
+        go.transform.SetParent(root, false);
+        var d = go.AddComponent<DayNight>();
+        d.data = data;
+        d.dayMat = gm.Mat("Day Pad", new Color(1f, 0.85f, 0.35f), 0.3f);
+        d.nightMat = gm.Mat("Night Pad", new Color(0.3f, 0.35f, 0.75f), 0.3f);
+        d.ghostDay = NightSky.Transparent("Day Ghost", Texture2D.whiteTexture, new Color(1f, 0.85f, 0.35f, 0.32f));
+        d.ghostNight = NightSky.Transparent("Night Ghost", Texture2D.whiteTexture, new Color(0.4f, 0.45f, 0.9f, 0.32f));
+        Material sunIcon = gm.Mat("Sun Icon", new Color(1f, 0.6f, 0.1f), 0.4f);
+        Material moonIcon = gm.Mat("Moon Icon", new Color(0.95f, 0.95f, 1f), 0.4f);
+        foreach (Vector4 p in data.dayPads)
+        {
+            bool night = p.w > 0.5f;
+            var pad = LevelBuilder.Visual(night ? "Night Pad" : "Day Pad", PrimitiveType.Cube, go.transform, new Vector3((p.x + p.y) * 0.5f, p.z - 0.25f, 0f), new Vector3(p.y - p.x, 0.5f, 2.2f), night ? d.nightMat : d.dayMat);
+            var col = pad.AddComponent<BoxCollider>();
+            // رسمة شمس أو قمر على الصفحة
+            var icon = LevelBuilder.Visual("Icon", PrimitiveType.Sphere, pad.transform, new Vector3(0f, 0f, -0.52f), new Vector3(0.35f / (p.y - p.x), 0.7f, 0.05f), night ? moonIcon : sunIcon, false);
+            d.pads.Add((col, pad.GetComponent<Renderer>(), night));
+        }
+
+        // القرص: نص شمس ونص قمر، يلف لما يتغير الوقت
+        d.dial = new GameObject("Sun Moon Dial").transform;
+        d.dial.SetParent(go.transform, false);
+        Material sky = gm.Mat("Dial Rim", new Color(0.45f, 0.35f, 0.6f), 0.4f);
+        var rim = LevelBuilder.Visual("Rim", PrimitiveType.Cylinder, d.dial, Vector3.zero, new Vector3(2f, 0.05f, 2f), sky, false).transform;
+        rim.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        d.sunSide = LevelBuilder.Visual("Sun", PrimitiveType.Sphere, d.dial, new Vector3(0f, 0f, -0.1f), Vector3.one * 0.75f, gm.Mat("Sun Glow", new Color(1.6f, 1.1f, 0.3f), 0.5f), false).transform;
+        for (int i = 0; i < 8; i++)
+        {
+            float a = i * Mathf.PI / 4f;
+            var ray = LevelBuilder.Visual("Ray", PrimitiveType.Cube, d.sunSide, new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.75f, new Vector3(0.35f, 0.12f, 0.1f), sunIcon, false).transform;
+            ray.localRotation = Quaternion.Euler(0f, 0f, a * Mathf.Rad2Deg);
+        }
+        d.moonSide = LevelBuilder.Visual("Moon", PrimitiveType.Sphere, d.dial, new Vector3(0f, 0f, -0.1f), Vector3.one * 0.85f, moonIcon, false).transform;
+        LevelBuilder.Visual("Moon Bite", PrimitiveType.Sphere, d.moonSide, new Vector3(0.3f, 0.2f, -0.2f), Vector3.one * 0.8f, sky, false);
+
+        // طبقة غامقة قدام الكاميرا (الليل)
+        d.overlayMat = NightSky.Transparent("Night Overlay", Texture2D.whiteTexture, new Color(0.05f, 0.05f, 0.2f, 0f));
+        var cam = Camera.main;
+        var ov = LevelBuilder.Visual("Night Overlay", PrimitiveType.Quad, cam.transform, new Vector3(0f, 0f, 0.6f), new Vector3(3f, 2f, 1f), d.overlayMat, false);
+        d.overlay = ov.GetComponent<Renderer>();
+        d.Apply();
+    }
+
+    void OnDestroy()
+    {
+        if (overlay != null) Destroy(overlay.gameObject);
+        Night = false;
+    }
+
+    void Apply()
+    {
+        foreach (var p in pads)
+        {
+            bool on = p.night == Night;
+            p.col.enabled = on;
+            p.rend.sharedMaterial = on ? (p.night ? nightMat : dayMat) : (p.night ? ghostNight : ghostDay);
+        }
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        Camera cam = Camera.main;
+        // القرص يمشي مع الكاميرا فوق
+        dial.position = new Vector3(cam.transform.position.x + 4f, 3.7f, -0.5f);
+        dialAngle = Mathf.MoveTowards(dialAngle, Night ? 180f : 0f, 360f * Time.deltaTime);
+        // يلف لفة وهو يتغير، ويبان بس الوقت الحالي (شمس أو قمر)
+        dial.localRotation = Quaternion.Euler(0f, 0f, dialAngle);
+        sunSide.gameObject.SetActive(!Night);
+        moonSide.gameObject.SetActive(Night);
+        sunSide.localRotation = moonSide.localRotation = Quaternion.Euler(0f, 0f, -dialAngle);
+        dark = Mathf.MoveTowards(dark, Night ? 0.75f : 0f, Time.deltaTime * 1.5f);
+        overlayMat.SetColor("_BaseColor", new Color(0.02f, 0.03f, 0.15f, dark));
+        flipCooldown -= Time.deltaTime;
+
+        // خطوط: كل خط يتبع وقت رسمته، ولو تغير الوقت يختفي. والخط اللي يلمس القرص يغير الوقت
+        Bounds db = new Bounds(dial.position, new Vector3(2.2f, 2.2f, 6f));
+        foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+        {
+            var tag = mark.GetComponent<TimeOfInk>();
+            var r = mark.GetComponent<MeshRenderer>();
+            if (tag == null)
+            {
+                if (r != null && r.bounds.Intersects(db))
+                {
+                    if (flipCooldown <= 0f)
+                    {
+                        Night = !Night;
+                        flipCooldown = 0.6f;
+                        Apply();
+                        gm.Sound.PlayBoing();
+                        Fx.Sparkle(dial.position, Night ? new Color(0.7f, 0.75f, 1f) : new Color(1f, 0.8f, 0.3f), 20);
+                    }
+                    Destroy(mark.gameObject);
+                    continue;
+                }
+                mark.gameObject.AddComponent<TimeOfInk>().night = Night;
+            }
+        }
+
+        // رويدا تستنى إذا الأرض قدامها مو موجودة بهالوقت
+        RowaidaController rw = gm.Rowaida;
+        if (rw == null) return;
+        Vector3 rp = rw.transform.position;
+        bool grounded = Physics.Raycast(rp, Vector3.down, 1.2f, ~0, QueryTriggerInteraction.Ignore);
+
+        int need = -1;
+        foreach (Vector4 p in data.dayPads)
+            if (p.x > rp.x && p.x < rp.x + 1.6f) need = p.w > 0.5f ? 1 : 0;
+        // الصفحة اللي قدامها مو بوقتها؟ تستنى
+        bool wait = gm.IsPlaying && grounded && need >= 0 && (need == 1) != Night;
+        if (wait && prompted != need)
+        {
+            prompted = need;
+            gm.UI.ShowMessage("", 2.6f, need == 1 ? "الصفحة الزرقا تطلع بالليل... المسي القمر بخط" : "الصفحة الصفرا تطلع بالنهار... المسي الشمس بخط");
+        }
+        if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; }
+        else if (holding) { rw.Held = false; holding = false; }
+    }
+}
+
+// الخط يتبع وقت رسمته (نهار أو ليل): إذا تغير الوقت يختفي
+public class TimeOfInk : MonoBehaviour
+{
+    public bool night;
+    bool shown = true;
+
+    void Update()
+    {
+        bool on = night == DayNight.Night;
+        if (on == shown) return;
+        shown = on;
+        foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = on;
+        foreach (Renderer r in GetComponentsInChildren<Renderer>()) r.enabled = on;
     }
 }

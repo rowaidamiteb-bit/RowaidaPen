@@ -172,6 +172,7 @@ public class LevelData
     public List<Vector4> hourglasses = new List<Vector4>(); // ساعة رملية فوق حفرة (من x، لـ x، مكانها x، y)
     public List<GearSpec> gearBridges = new List<GearSpec>(); // تروس وجسر متحرك
     public List<Vector4> alarms = new List<Vector4>();      // منبه وقطوة نايمة (x القطوة، x المنبه، y المنبه، سقف فوقه 1/0)
+    public List<Vector4> dayPads = new List<Vector4>();     // الليل والنهار: صفحات (من x، لـ x، سطحها، 0 نهار / 1 ليل)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -222,6 +223,7 @@ public static class Levels
         HourglassLevel(),
         GearsLevel(),
         AlarmLevel(),
+        DayNightLevel(),
         LastPage(),
     };
 
@@ -937,6 +939,43 @@ public static class Levels
         // آخر منبه: طريق مايل منقط من اليمين للمنبه
         level.hints.Add(new HintLine(new Vector3(43f, 4.4f, 0f), new Vector3(39.7f, 3.3f, 0f), new Color(0.95f, 0.3f, 0.3f)));
         return level;
+    }
+
+    // الليل والنهار (نهاية فصل الوقت): المسي قرص الشمس والقمر بخط يتغير الوقت.
+    // الصفحات الصفرا بالنهار بس، والزرقا بالليل بس، والحجارة دايم. والخطوط تختفي إذا تغير الوقت
+    static LevelData DayNightLevel()
+    {
+        return new LevelData
+        {
+            title = "الليل والنهار",
+            theme = LevelTheme.BalloonSky(),
+            subtitle = "المسي الشمس والقمر بخط عشان يتغير الوقت... كل صفحة لها وقتها",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(40f, 0f, 0f),
+            ink = 16f,
+            blocks =
+            {
+                Page(-7f, 4.5f),
+                Page(14f, 20f),
+                Page(32f, 44f),
+            },
+            // من x، لـ x، سطحها، 0 نهار / 1 ليل
+            dayPads =
+            {
+                new Vector4(4.6f, 8.1f, 0f, 0f),
+                new Vector4(9.9f, 13.9f, 0f, 1f),
+                new Vector4(20.1f, 22.6f, 0f, 1f),
+                new Vector4(24.4f, 26.6f, 0f, 0f),
+                new Vector4(28.4f, 31.9f, 0f, 1f),
+            },
+            // حجارة بين الصفحات (دايم موجودة)
+            pegs =
+            {
+                new Vector3(9f, 0f, 1.8f),
+                new Vector3(23.5f, 0f, 1.8f),
+                new Vector3(27.5f, 0f, 1.8f),
+            },
+        };
     }
 
     // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.
