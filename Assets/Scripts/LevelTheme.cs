@@ -369,6 +369,21 @@ public class LevelTheme
         ringColor = new Color(0.55f, 0.3f, 0.5f), seaColor = new Color(0.2f, 0.35f, 0.6f),
     };
 
+    // الدوامة: بحر غيم رمادي مخضر، وجو عاصف
+    public static LevelTheme StormSea() => new LevelTheme
+    {
+        name = "StormSea",
+        paper = new Color(0.9f, 0.93f, 0.92f), pattern = PaperPattern.Grid, patternColor = new Color(0.55f, 0.7f, 0.72f),
+        pageEdge = new Color(0.78f, 0.84f, 0.84f), pencil = new Color(0.2f, 0.3f, 0.35f), doodleColor = new Color(0.3f, 0.42f, 0.45f),
+        skyTop = new Color(0.25f, 0.32f, 0.4f), skyMid = new Color(0.45f, 0.55f, 0.6f), skyBottom = new Color(0.7f, 0.78f, 0.78f),
+        showMoon = false, stars = 0f, cloudTint = new Color(0.55f, 0.6f, 0.65f), cloudAlpha = 0.9f,
+        sunLight = new Color(0.85f, 0.92f, 0.95f), sunIntensity = 1.1f, sunAngles = new Vector3(55f, -30f, 0f),
+        ambientSky = new Color(0.6f, 0.7f, 0.75f), ambientEquator = new Color(0.5f, 0.58f, 0.6f), ambientGround = new Color(0.22f, 0.27f, 0.3f),
+        fog = new Color(0.5f, 0.6f, 0.65f), props = PropSet.Stationery, floating = FloatKind.Leaves,
+        floatColors = new[] { new Color(0.5f, 0.65f, 0.6f), new Color(0.7f, 0.75f, 0.7f) },
+        ringColor = new Color(0.25f, 0.35f, 0.4f), seaColor = new Color(0.12f, 0.38f, 0.5f),
+    };
+
     public Color PaperFor(int index)
     {
         return pageColors != null && pageColors.Length > 0 ? pageColors[index % pageColors.Length] : paper;

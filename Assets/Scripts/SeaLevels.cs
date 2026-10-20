@@ -13,6 +13,7 @@ public static class SeaFeatures
         foreach (Vector3 v in data.vents) BubbleVent.Create(root, v, gm);
         foreach (Vector3 j in data.jellies) Jellyfish.Create(root, j, gm);
         foreach (Vector3 t in data.tentacles) Tentacle.Create(root, t, gm);
+        foreach (Vector3 w in data.whirlpools) Whirlpool.Create(root, w, gm);
         if (data.tentacles.Count > 0) GiantOctopus.Create(root, new Vector3(data.door.x * 0.5f, 0.7f, 12f), gm);
         if (data.underwater)
         {
@@ -630,5 +631,126 @@ public class GiantOctopus : MonoBehaviour
         float dx = Mathf.Clamp((gm.Rowaida.transform.position.x - transform.position.x) * 0.004f, -0.05f, 0.05f);
         for (int i = 0; i < pupils.Count; i++)
             pupils[i].localPosition = new Vector3((i == 0 ? -0.18f : 0.18f) + dx, -0.07f, -0.48f);
+    }
+}
+
+// ---------- الدوامة ----------
+
+// دوامة بالبحر: أي خط يقرب منها تسحبه وتلفه وتبلعه. الجسر لازم يكون مقوّس فوقها بعيد عنها
+public class Whirlpool : MonoBehaviour
+{
+    float radius, nextScan, nextFoam;
+    readonly List<Transform> rings = new List<Transform>();
+    readonly List<Transform> debris = new List<Transform>();
+    Material foamMat;
+    Transform eye;
+
+    Vector3 Center => new Vector3(transform.position.x, SeaWater.Instance != null ? SeaWater.Instance.Level : -0.7f, 0f);
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Whirlpool");
+        go.transform.SetParent(root, false);
+        go.transform.position = new Vector3(spec.x, 0f, 0f);
+        var w = go.AddComponent<Whirlpool>();
+        w.radius = spec.y;
+        Material dark = gm.Mat("Whirl Dark", new Color(0.05f, 0.15f, 0.3f), 0.7f);
+        Material mid = gm.Mat("Whirl Mid", new Color(0.15f, 0.4f, 0.6f), 0.7f);
+        w.foamMat = gm.Mat("Sea Foam", new Color(0.92f, 0.97f, 1f), 0.6f);
+        // حلقات تلف (من برا فاتحة، ومن جوا غامقة)
+        for (int i = 0; i < 5; i++)
+        {
+            float r = w.radius * (1f - i * 0.18f);
+            var ring = new GameObject("Ring").transform;
+            var holder = new GameObject("Ring Holder").transform;   // يسطّحها شوي بالعمق
+            holder.SetParent(go.transform, false);
+            holder.localScale = new Vector3(1f, 1f, 0.55f);
+            ring.SetParent(holder, false);
+            ring.gameObject.AddComponent<MeshFilter>().sharedMesh = PaperMeshes.Ring(r, 0.09f + i * 0.02f, 40, 6);
+            ring.gameObject.AddComponent<MeshRenderer>().sharedMaterial = i == 0 ? w.foamMat : i % 2 == 0 ? mid : dark;
+
+            w.rings.Add(ring);
+        }
+        w.eye = LevelBuilder.Visual("Eye", PrimitiveType.Sphere, go.transform, Vector3.zero, new Vector3(w.radius * 0.55f, 0.05f, w.radius * 0.3f), dark, false).transform;
+        // خشب وبراميل تلف حولها
+        Material wood = gm.Mat("Debris Wood", new Color(0.6f, 0.42f, 0.25f), 0.3f);
+        for (int i = 0; i < 4; i++)
+        {
+            var d = LevelBuilder.Visual(i % 2 == 0 ? "Barrel" : "Plank", i % 2 == 0 ? PrimitiveType.Cylinder : PrimitiveType.Cube, go.transform, Vector3.zero,
+                i % 2 == 0 ? new Vector3(0.35f, 0.25f, 0.35f) : new Vector3(0.9f, 0.1f, 0.25f), wood, false).transform;
+            w.debris.Add(d);
+        }
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time;
+        Vector3 c = Center;
+        for (int i = 0; i < rings.Count; i++)
+        {
+            rings[i].parent.position = c + Vector3.up * (0.05f + i * 0.01f);
+            rings[i].localRotation = Quaternion.Euler(0f, -t * (60f + i * 45f), 0f) * Quaternion.Euler(0f, 0f, 90f);   // نايمة على سطح الماي وتلف
+        }
+        eye.position = c + Vector3.up * 0.04f;
+        for (int i = 0; i < debris.Count; i++)
+        {
+            float a = t * (1.2f + i * 0.3f) + i * 1.6f;
+            float r = radius * (0.85f - 0.15f * Mathf.Repeat(t * 0.2f + i * 0.25f, 1f));
+            debris[i].position = c + new Vector3(Mathf.Cos(a) * r, 0.05f, Mathf.Sin(a) * r * 0.45f);
+            debris[i].rotation = Quaternion.Euler(0f, -a * Mathf.Rad2Deg, 0f);
+        }
+        if (t >= nextFoam)
+        {
+            nextFoam = t + 0.1f;
+            float a = Random.value * Mathf.PI * 2f;
+            var f = LevelBuilder.Visual("Foam", PrimitiveType.Sphere, null, c + new Vector3(Mathf.Cos(a) * radius, 0.05f, Mathf.Sin(a) * radius * 0.45f), new Vector3(0.3f, 0.06f, 0.2f), foamMat, false);
+            var fx = f.AddComponent<FxParticle>();
+            fx.velocity = new Vector3(-Mathf.Sin(a), 0f, Mathf.Cos(a) * 0.45f) * 2f - new Vector3(Mathf.Cos(a), 0f, 0f) * 0.8f;
+            fx.life = 0.8f;
+        }
+
+        if (t < nextScan) return;
+        nextScan = t + 0.05f;
+        // أي خط (أو شكل) قريب: تبلعه
+        foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+        {
+            if (mark.GetComponent<SuckedInk>() != null) continue;
+            foreach (Collider col in mark.GetComponentsInChildren<Collider>())
+            {
+                if (!col.enabled) continue;
+                Vector3 p = col.ClosestPoint(c);
+                p.z = 0f;
+                if ((p - c).sqrMagnitude > radius * radius) continue;
+                mark.gameObject.AddComponent<SuckedInk>().center = c;
+                gm.Sound.PlayRumble(0.3f);
+                break;
+            }
+        }
+    }
+}
+
+// خط انسحب للدوامة: يلف حولها وينزل تحت الماي لين يختفي
+public class SuckedInk : MonoBehaviour
+{
+    public Vector3 center;
+    float age;
+
+    void Start()
+    {
+        foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
+        var body = GetComponent<Rigidbody>();
+        if (body != null) body.isKinematic = true;
+        Fx.Sparkle(center, new Color(0.7f, 0.9f, 1f), 12);
+    }
+
+    void Update()
+    {
+        age += Time.deltaTime;
+        // يلف حول مركز الدوامة وينزل
+        transform.RotateAround(center, Vector3.up, 360f * Time.deltaTime);
+        transform.position += Vector3.down * 2.2f * Time.deltaTime;
+        if (age > 1.6f) Destroy(gameObject);
     }
 }

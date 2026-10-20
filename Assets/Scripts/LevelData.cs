@@ -154,6 +154,7 @@ public class LevelData
     public List<Vector3> vents = new List<Vector3>();       // فتحات فقاعات (x، y، كل كم ثانية)
     public List<Vector3> jellies = new List<Vector3>();     // قناديل بحر (x، y، كم تطلع وتنزل)
     public List<Vector3> tentacles = new List<Vector3>();   // أذرع أخطبوط (من x، لـ x، تأخير)
+    public List<Vector3> whirlpools = new List<Vector3>();  // دوامات (x، نص القطر اللي تسحب منه)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -193,6 +194,7 @@ public static class Levels
         TideLevel(),
         UnderwaterLevel(),
         OctopusLevel(),
+        WhirlpoolLevel(),
         LastPage(),
     };
 
@@ -552,6 +554,42 @@ public static class Levels
                 new Vector3(30f, 35f, 4f),
             },
         };
+    }
+
+    // الدوامة: كل خط يقرب منها تبلعه. الجسر المستقيم ما ينفع، ارسمي جسر مقوّس عالي فوقها
+    static LevelData WhirlpoolLevel()
+    {
+        var level = new LevelData
+        {
+            title = "الدوامة",
+            theme = LevelTheme.StormSea(),
+            subtitle = "الدوامة تبلع أي خط يقرب منها... ارسمي الجسر مقوّس فوقها!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(37f, 0f, 0f),
+            ink = 26f,
+            sea = true, seaLevel = -0.7f, tidePeriod = 1f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(12f, 20f),
+                Page(30f, 40f),
+            },
+            whirlpools =
+            {
+                new Vector3(8f, 2.4f, 0f),
+                new Vector3(25f, 3f, 0f),
+            },
+        };
+        // قوس منقط فوق أول دوامة
+        Vector3 prev = new Vector3(3.8f, 0.1f, 0f);
+        for (int i = 1; i <= 8; i++)
+        {
+            float x = 3.8f + i * (12.2f - 3.8f) / 8f;
+            var p = new Vector3(x, 0.1f + 2.1f * Mathf.Sin(Mathf.PI * i / 8f), 0f);
+            level.hints.Add(new HintLine(prev, p, new Color(0.3f, 0.5f, 0.6f)));
+            prev = p;
+        }
+        return level;
     }
 
     // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.
