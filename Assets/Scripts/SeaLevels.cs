@@ -45,7 +45,7 @@ public class SeaWater : MonoBehaviour
     GameManager gm;
     const float Depth = 40f;
 
-    // مستوى الماي الحين (يبدا من الجزر)
+    // مستوى المويه الحين (يبدا من الجزر)
     public float Level => LevelAt(Time.time);
     public float LevelAt(float time) => baseLevel - amp * Mathf.Cos((time - start) * Mathf.PI * 2f / Mathf.Max(0.1f, period));
 
@@ -256,7 +256,7 @@ public class Crab : MonoBehaviour
     }
 }
 
-// ---------- تحت الماي ----------
+// ---------- تحت المويه ----------
 
 // هوا رويدا: ينقص مع الوقت (فقاعات صغيرة فوق راسها تختفي وحدة وحدة). إذا خلص تخسر قلب
 public class AirTank : MonoBehaviour
@@ -517,8 +517,8 @@ public class SeaDecor : MonoBehaviour
 
 // ---------- الأخطبوط ----------
 
-// ذراع أخطبوط جوعانة واقفة بالحفرة: أي جسر ترسمينه فوقها تسحبه تحت الماي.
-// ارمي لها كورة (شكل مغلق): تاكلها وتنام تحت الماي، وبعدها ارسمي الجسر وعدّي
+// ذراع أخطبوط جوعانة واقفة بالحفرة: أي جسر ترسمينه فوقها تسحبه تحت المويه.
+// ارمي لها كورة (شكل مغلق): تاكلها وتنام تحت المويه، وبعدها ارسمي الجسر وعدّي
 public class Tentacle : MonoBehaviour
 {
     enum State { Hungry, Grabbing, Eating, Sleeping }
@@ -675,7 +675,7 @@ public class Tentacle : MonoBehaviour
         }
         if (prey != null) prey.transform.position += (tip - (prey.GetComponent<InkMark>().closed ? prey.transform.position : prey.GetComponent<MeshRenderer>().bounds.center)) * Mathf.Min(1f, Time.deltaTime * 10f);
 
-        // نايمة: Z تطلع من الماي
+        // نايمة: Z تطلع من المويه
         if (state == State.Sleeping && t >= nextZ)
         {
             nextZ = t + 0.7f;
@@ -696,7 +696,7 @@ public class Tentacle : MonoBehaviour
         if (wait && prompted != (int)state * 10 + (bridge ? 1 : 0))
         {
             prompted = (int)state * 10 + (bridge ? 1 : 0);
-            gm.UI.ShowMessage("", 2.5f, state != State.Sleeping ? "الأخطبوط جوعان! ارمي له كورة بالماي" : "ارسمي الجسر");
+            gm.UI.ShowMessage("", 2.5f, state != State.Sleeping ? "الأخطبوط جوعان! ارمي له كورة بالمويه" : "ارسمي الجسر");
         }
         if (wait) { rowaida.Held = true; rowaida.CarryX = 0f; holding = true; }
         else if (holding) { rowaida.Held = false; holding = false; }
@@ -799,7 +799,7 @@ public class Whirlpool : MonoBehaviour
         for (int i = 0; i < rings.Count; i++)
         {
             rings[i].parent.position = c + Vector3.up * (0.05f + i * 0.01f);
-            rings[i].localRotation = Quaternion.Euler(0f, t * (110f + i * 30f), 0f);   // تلف على سطح الماي
+            rings[i].localRotation = Quaternion.Euler(0f, t * (110f + i * 30f), 0f);   // تلف على سطح المويه
         }
         eye.position = c + Vector3.up * 0.04f;
         for (int i = 0; i < debris.Count; i++)
@@ -839,7 +839,7 @@ public class Whirlpool : MonoBehaviour
     }
 }
 
-// خط انسحب للدوامة: يلف حولها وينزل تحت الماي لين يختفي
+// خط انسحب للدوامة: يلف حولها وينزل تحت المويه لين يختفي
 public class SuckedInk : MonoBehaviour
 {
     public Vector3 center;
@@ -903,7 +903,7 @@ public class SeaBoat : MonoBehaviour
         }
         if (!floating)
         {
-            // أول ما يلمس الماي يصير قارب يطفو
+            // أول ما يلمس المويه يصير قارب يطفو
             if (b.min.y > Water + 0.05f) return;
             floating = true;
             rb.isKinematic = true;
@@ -912,7 +912,7 @@ public class SeaBoat : MonoBehaviour
             GameManager.Instance.Sound.PlayPoof();
             Fx.Sparkle(new Vector3(b.center.x, Water, 0f), new Color(0.7f, 0.9f, 1f), 10);
         }
-        // يطفو: قاعه فوق الماي بشوي، ويتمايل مع الموج
+        // يطفو: قاعه فوق المويه بشوي، ويتمايل مع الموج
         // يطفو: نصه بمستوى سطح الصخور (عشان رويدا تدخل وتطلع منه بسهولة)، ويتمايل مع الموج
         float targetY = rb.position.y + (Water + 0.25f + Mathf.Sin(Time.time * 2f) * 0.03f - b.center.y);
         Vector3 p = rb.position;
@@ -1170,13 +1170,36 @@ public class GapWait : MonoBehaviour
     }
 }
 
-// المد والجزر: رويدا تستنى على الأرض العالية إذا الماي بيغطي الرمل قبل ما تعدي،
+// المد والجزر: رويدا تستنى على الأرض العالية إذا المويه بيغطي الرمل قبل ما تعدي،
 // إلا لو فيه ممشى مرسوم فوق الرمل
 public class TideWait : MonoBehaviour
 {
     LevelData data;
     bool holding;
     int lastPrompt = -1;
+
+    // فيه ممشى فوق الرمل؟ (ولو كان مرسوم بأكثر من خط، المهم يغطي الرمل كله فوق المويه)
+    static bool WalkwayCovers(float x0, float x1, float minY)
+    {
+        var parts = new List<Vector2>();
+        foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+        {
+            if (m.closed) continue;
+            var r = m.GetComponent<MeshRenderer>();
+            if (r == null) continue;
+            Bounds b = r.bounds;
+            if (b.center.y < minY || b.center.y > minY + 3f) continue;
+            parts.Add(new Vector2(b.min.x, b.max.x));
+        }
+        parts.Sort((a, b) => a.x.CompareTo(b.x));
+        float reach = x0 + 0.8f;   // لازم يبدا قريب من الطرف
+        foreach (Vector2 p in parts)
+        {
+            if (p.x > reach + 0.5f) break;   // فيه فراغ
+            reach = Mathf.Max(reach, p.y);
+        }
+        return reach >= x1 - 0.8f;
+    }
 
     public static void Create(Transform root, LevelData data)
     {
@@ -1196,8 +1219,10 @@ public class TideWait : MonoBehaviour
         {
             Vector3 bar = data.tideBars[i];
             if (p.x < bar.x - 1.4f || p.x > bar.x - 0.4f || p.y < bar.z + 1f) continue;
-            if (RowaidaController.BridgeCovers(bar.x, bar.y, bar.z + 1.1f)) continue;
-            // تلحق تعدي قبل ما يطلع الماي؟
+            if (WalkwayCovers(bar.x, bar.y, bar.z + 0.4f)) continue;
+            // وهي تستنى: الكاميرا ترجع لورا عشان يبان الرمل كله
+            CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f);
+            // تلحق تعدي قبل ما يطلع المويه؟
             float cross = (bar.y - bar.x + 0.8f) / r.walkSpeed;
             foreach (Vector3 c in data.crabs) if (c.x < bar.y && c.y > bar.x) cross += 1.5f;   // السرطان يأخرها شوي
             bool safe = true;
@@ -1208,7 +1233,7 @@ public class TideWait : MonoBehaviour
             if (lastPrompt != i)
             {
                 lastPrompt = i;
-                gm.UI.ShowMessage("", 2.5f, cross > 5.5f ? "الرمل طويل! ارسمي ممشى فوق الماي" : "استني الجزر... أو ارسمي ممشى");
+                gm.UI.ShowMessage("", 2.5f, cross > 5f ? "الرمل طويل! ارسمي ممشى فوق المويه" : "استني الجزر... أو ارسمي ممشى");
             }
         }
         if (wait) { r.Held = true; r.CarryX = 0f; holding = true; }
@@ -1216,7 +1241,7 @@ public class TideWait : MonoBehaviour
     }
 }
 
-// مسطرة مدرسية مغروسة بالبحر: تبين وين وصل الماي، والخط الأحمر = الرمل يغرق
+// مسطرة مدرسية مغروسة بالبحر: تبين وين وصل المويه، والخط الأحمر = الرمل يغرق
 public class TideRuler : MonoBehaviour
 {
     public static void Create(Transform root, float x, float dangerY, GameManager gm)

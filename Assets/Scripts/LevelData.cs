@@ -150,7 +150,7 @@ public class LevelData
     public bool sea;                                        // فيه بحر (يطلع وينزل)
     public float seaLevel, tideAmp, tidePeriod;             // مستوى البحر، كم يطلع وينزل، وكل كم ثانية
     public List<Vector3> crabs = new List<Vector3>();       // سرطانات (من x، لـ x، سطح الرمل)
-    public bool underwater;                                 // تحت الماي: هوا ينقص، وجاذبية خفيفة
+    public bool underwater;                                 // تحت المويه: هوا ينقص، وجاذبية خفيفة
     public bool waitForBridge;                              // رويدا تستنى عند كل حفرة لين ينرسم جسر
     public List<Vector3> tideBars = new List<Vector3>();    // المد والجزر: رمل يغرق (من x فوق، لـ x فوق، سطح الرمل)
     public List<Vector3> vents = new List<Vector3>();       // فتحات فقاعات (x، y، كل كم ثانية)
@@ -457,8 +457,8 @@ public static class Levels
 
     // ========== الجزء الثاني ==========
 
-    // المد والجزر: البحر يطلع وينزل، ومسطرة بالبحر تبين وين وصل الماي. رويدا تستنى الجزر قبل الرمل،
-    // والرمل الطويل ما تلحق تعديه... ارسمي له ممشى فوق الماي
+    // المد والجزر: البحر يطلع وينزل، ومسطرة بالبحر تبين وين وصل المويه. رويدا تستنى الجزر قبل الرمل،
+    // والرمل الطويل ما تلحق تعديه... ارسمي له ممشى فوق المويه
     static LevelData TideLevel()
     {
         return new LevelData
@@ -467,34 +467,34 @@ public static class Levels
             theme = LevelTheme.Ocean(),
             subtitle = "رويدا تستنى الجزر عشان تعدي الرمل... والرمل الطويل ارسمي له ممشى",
             spawn = new Vector3(-5f, 1.8f, 0f),
-            door = new Vector3(50f, 0.8f, 0f),
-            ink = 30f,
-            sea = true, seaLevel = -0.3f, tideAmp = 1f, tidePeriod = 10f,
+            door = new Vector3(44f, 0.8f, 0f),
+            ink = 28f,
+            sea = true, seaLevel = -0.3f, tideAmp = 1f, tidePeriod = 8f,
             blocks =
             {
                 Page(-7f, 3f, 0.8f),
                 Page(5f, 8f, -0.3f),        // رمل قصير: تستنى الجزر وتعدي
                 Page(10f, 14f, 0.8f),
-                Page(16f, 30f, -0.3f),      // رمل طويل: ما تلحق، تبي ممشى
-                Page(32f, 35f, 0.8f),
-                Page(37f, 42f, -0.3f),      // رمل فيه سرطان
-                Page(44f, 54f, 0.8f),
+                Page(16f, 26f, -0.3f),      // رمل طويل: ما تلحق، تبي ممشى
+                Page(28f, 31f, 0.8f),
+                Page(33f, 36f, -0.3f),      // رمل فيه سرطان
+                Page(38f, 48f, 0.8f),
             },
             slopes =
             {
                 new Vector4(3f, 0.8f, 5f, -0.3f), new Vector4(8f, -0.3f, 10f, 0.8f),
-                new Vector4(14f, 0.8f, 16f, -0.3f), new Vector4(30f, -0.3f, 32f, 0.8f),
-                new Vector4(35f, 0.8f, 37f, -0.3f), new Vector4(42f, -0.3f, 44f, 0.8f),
+                new Vector4(14f, 0.8f, 16f, -0.3f), new Vector4(26f, -0.3f, 28f, 0.8f),
+                new Vector4(31f, 0.8f, 33f, -0.3f), new Vector4(36f, -0.3f, 38f, 0.8f),
             },
             // (من x، لـ x، سطح الرمل): من فوق المنحدر لين فوق المنحدر الثاني
             tideBars =
             {
                 new Vector3(3f, 10f, -0.3f),
-                new Vector3(14f, 32f, -0.3f),
-                new Vector3(35f, 44f, -0.3f),
+                new Vector3(14f, 28f, -0.3f),
+                new Vector3(31f, 38f, -0.3f),
             },
-            crabs = { new Vector3(37.5f, 41.5f, -0.3f) },
-            hints = { new HintLine(new Vector3(14.2f, 0.85f, 0f), new Vector3(31.8f, 0.85f, 0f), new Color(0.3f, 0.55f, 0.85f)) },
+            crabs = { new Vector3(33.3f, 35.7f, -0.3f) },
+            hints = { new HintLine(new Vector3(14.2f, 0.85f, 0f), new Vector3(27.8f, 0.85f, 0f), new Color(0.3f, 0.55f, 0.85f)) },
         };
     }
 
@@ -542,7 +542,7 @@ public static class Levels
         return level;
     }
 
-    // الأخطبوط العملاق: في كل حفرة ذراع جوعانة تسحب أي جسر تحت الماي.
+    // الأخطبوط العملاق: في كل حفرة ذراع جوعانة تسحب أي جسر تحت المويه.
     // ارمي لها كورة تاكلها وتنام، وبعدين ارسمي الجسر
     static LevelData OctopusLevel()
     {
@@ -569,7 +569,7 @@ public static class Levels
                 new Vector3(30f, 35f, 0f),
             },
         };
-        // أول حفرة: كورة منقطة فوق الماي، وجسر منقط
+        // أول حفرة: كورة منقطة فوق المويه، وجسر منقط
         Oval(level, 6.5f, 1.4f, new Color(1f, 0.5f, 0.75f));
         level.hints.Add(new HintLine(new Vector3(3.8f, 0.1f, 0f), new Vector3(9.2f, 0.1f, 0f), new Color(0.55f, 0.3f, 0.5f)));
         return level;

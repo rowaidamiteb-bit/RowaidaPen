@@ -74,7 +74,7 @@ public class GameUI : MonoBehaviour
 
     // الشريط ينزل بنعومة، ولما يقل الحبر يصير أحمر وينبض
 
-    // ---------- شريط الهوا (تحت الماي) ----------
+    // ---------- شريط الهوا (تحت المويه) ----------
 
     RectTransform airRoot, airFill;
     Image airFillImage;
