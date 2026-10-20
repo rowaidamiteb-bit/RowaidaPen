@@ -247,7 +247,9 @@ public class MenuUI : MonoBehaviour
     // صورة المرحلة (لقطة من المرحلة نفسها)، ولو ما فيه صورة نسوي تدرج بألوان سماها
     static Texture Thumbnail(int index)
     {
-        var tex = Resources.Load<Texture2D>("LevelThumbs/level_" + index);
+        // الصفحة الأخيرة لها صورة ثابتة (رقمها يتغير كل ما زادت مراحل)
+        string file = Levels.All[index].drawDoor ? "level_last" : "level_" + index;
+        var tex = Resources.Load<Texture2D>("LevelThumbs/" + file);
         if (tex != null) return tex;
         LevelTheme theme = Levels.All[index].theme;
         var g = new Texture2D(1, 3, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };

@@ -22,6 +22,7 @@ public class LevelTheme
     public bool snowCaps;                 // طبقة ثلج فوق الصفحات
     public bool glitter;                  // الصفحات تلمع بقليتر
     public Color ringColor = new Color(0.2f, 0.2f, 0.22f);
+    public Color seaColor = new Color(0.2f, 0.55f, 0.85f);  // لون البحر
 
     // السما
     public Color skyTop = new Color(0.30f, 0.24f, 0.42f);
@@ -321,6 +322,21 @@ public class LevelTheme
         fog = new Color(0.01f, 0.02f, 0.03f), props = PropSet.Stationery, floating = FloatKind.Fireflies,
         floatColors = new[] { new Color(0.8f, 1f, 0.4f), new Color(1f, 0.95f, 0.5f) },
         ringColor = new Color(0.3f, 0.32f, 0.3f),
+    };
+
+    // البحر: ورق أزرق فاتح، سما صيف صافية، وشمس
+    public static LevelTheme Ocean() => new LevelTheme
+    {
+        name = "Ocean",
+        paper = new Color(0.99f, 0.95f, 0.84f), pattern = PaperPattern.Dots, patternColor = new Color(0.55f, 0.75f, 0.9f), colorfulDoodles = true,
+        pageEdge = new Color(0.95f, 0.88f, 0.7f), pencil = new Color(0.2f, 0.4f, 0.6f), doodleColor = new Color(0.3f, 0.5f, 0.7f),
+        skyTop = new Color(0.2f, 0.55f, 0.95f), skyMid = new Color(0.55f, 0.82f, 1f), skyBottom = new Color(0.9f, 0.97f, 1f),
+        sun = true, moonColor = new Color(2.8f, 2.6f, 1.9f), stars = 0f, cloudTint = new Color(1.12f, 1.12f, 1.12f), cloudAlpha = 0.85f,
+        sunLight = new Color(1f, 0.97f, 0.9f), sunIntensity = 1.55f, sunAngles = new Vector3(48f, -30f, 0f),
+        ambientSky = new Color(0.8f, 0.9f, 1f), ambientEquator = new Color(0.7f, 0.75f, 0.78f), ambientGround = new Color(0.35f, 0.4f, 0.45f),
+        fog = new Color(0.75f, 0.88f, 1f), props = PropSet.Crayons, floating = FloatKind.Sparkles,
+        floatColors = new[] { Color.white, new Color(0.7f, 0.9f, 1f) },
+        ringColor = new Color(0.3f, 0.5f, 0.75f), seaColor = new Color(0.12f, 0.55f, 0.85f),
     };
 
     public Color PaperFor(int index)

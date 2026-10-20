@@ -144,6 +144,12 @@ public class LevelData
     public List<Vector3> fans = new List<Vector3>();        // البالونات: مروحة تدف البالونة لليمين (من x، لـ x، ارتفاع الطيران)
     public bool darkness;                                   // اليراعات: ظلام، فانوس مع رويدا، وخطوط تضوي
     public bool eraserChase;                                // نهاية الجزء الأول: ممحاة عملاقة تلحق رويدا
+
+    // الجزء الثاني: البحر
+    public List<Vector4> slopes = new List<Vector4>();      // صفحات مايلة (من x، من y، لـ x، لـ y) على السطح
+    public bool sea;                                        // فيه بحر (يطلع وينزل)
+    public float seaLevel, tideAmp, tidePeriod;             // مستوى البحر، كم يطلع وينزل، وكل كم ثانية
+    public List<Vector3> crabs = new List<Vector3>();       // سرطانات (من x، لـ x، سطح الرمل)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -180,6 +186,7 @@ public static class Levels
         CanyonLevel(),
         FirefliesLevel(),
         EraserFinale(),
+        TideLevel(),
         LastPage(),
     };
 
@@ -431,6 +438,46 @@ public static class Levels
                 new FloaterSpec(19.5f, 3f, 1.2f, 4f, 0f),
                 new FloaterSpec(25.5f, 3f, 1.3f, 4.4f, 1.5f),
             },
+        };
+    }
+
+    // ========== الجزء الثاني ==========
+
+    // المد والجزر: البحر يطلع وينزل. الرمل الواطي يغرق وقت المد، والسرطانات تقرص.
+    // ارسمي ممشى فوق الماي، أو عدّي وقت الجزر
+    static LevelData TideLevel()
+    {
+        return new LevelData
+        {
+            title = "المد والجزر",
+            theme = LevelTheme.Ocean(),
+            subtitle = "البحر يطلع وينزل! ارسمي ممشى فوق الماي... وانتبهي من السرطانات",
+            spawn = new Vector3(-5f, 1.8f, 0f),
+            door = new Vector3(52f, 0.8f, 0f),
+            ink = 34f,
+            sea = true, seaLevel = -0.3f, tideAmp = 1f, tidePeriod = 8f,
+            blocks =
+            {
+                Page(-7f, 3f, 0.8f),
+                Page(5f, 12f, -0.3f),       // رمل يغرق
+                Page(14f, 18f, 0.8f),
+                Page(20f, 29f, -0.3f),      // رمل فيه سرطان
+                Page(31f, 35f, 0.8f),
+                Page(37f, 44f, -0.3f),      // رمل فيه سرطان
+                Page(46f, 56f, 0.8f),
+            },
+            slopes =
+            {
+                new Vector4(3f, 0.8f, 5f, -0.3f), new Vector4(12f, -0.3f, 14f, 0.8f),
+                new Vector4(18f, 0.8f, 20f, -0.3f), new Vector4(29f, -0.3f, 31f, 0.8f),
+                new Vector4(35f, 0.8f, 37f, -0.3f), new Vector4(44f, -0.3f, 46f, 0.8f),
+            },
+            crabs =
+            {
+                new Vector3(20.5f, 28.5f, -0.3f),
+                new Vector3(37.5f, 43.5f, -0.3f),
+            },
+            hints = { new HintLine(new Vector3(3.3f, 0.85f, 0f), new Vector3(13.7f, 0.85f, 0f), new Color(0.3f, 0.55f, 0.85f)) },
         };
     }
 

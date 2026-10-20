@@ -36,6 +36,7 @@ public static class LevelBuilder
         SpaceFeatures.Build(root.transform, data, gm);
         MemoryClouds.Build(root.transform, data, gm);
         NewFeatures.Build(root.transform, data, gm, rng);
+        SeaFeatures.Build(root.transform, data, gm, rng);
         return root;
     }
 
