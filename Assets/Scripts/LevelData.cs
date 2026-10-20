@@ -166,6 +166,9 @@ public class LevelData
     public List<Vector3> colorGates = new List<Vector3>();  // أبواب ملونة (x، اللون، اللون الثاني أو -1). الألوان: 1 أحمر، 2 أزرق، 3 أخضر
     public List<CalcSpec> calcs = new List<CalcSpec>();     // آلة حاسبة: أزرار أرقام وباب ينفتح إذا المجموع صح
     public List<Vector3> scissors = new List<Vector3>();    // مقص كبير على حفرة (من x، لـ x)
+
+    // الجزء الثاني: الوقت
+    public List<Vector3> clocks = new List<Vector3>();      // ساعة على حفرة (من x، لـ x، سرعة العقرب درجة بالثانية)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -212,6 +215,7 @@ public static class Levels
         CalculatorLevel(),
         ScissorsLevel(),
         PencilCaseLevel(),
+        ClockLevel(),
         LastPage(),
     };
 
@@ -805,6 +809,38 @@ public static class Levels
             scissors = { new Vector3(22f, 27.5f, 0f) },
             calcs = { new CalcSpec(33f, 34.6f, 6, 1, 2, 4, 5) },
         };
+    }
+
+    // ===== الوقت =====
+
+    // الساعة: عقرب الدقايق هو الجسر بس يلف. ارسمي خط صغير تحت مكانه لما يصير مستوي، يوقف عليه وتعدين
+    static LevelData ClockLevel()
+    {
+        var level = new LevelData
+        {
+            title = "الساعة",
+            theme = LevelTheme.Watercolor(),
+            subtitle = "عقرب الساعة يلف! ارسمي خط تحت مكانه لما يصير مستوي... يوقف عليه وتعدين",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(48f, 0f, 0f),
+            ink = 18f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(10f, 19f),
+                Page(26f, 34f),
+                Page(42f, 52f),
+            },
+            // من x، لـ x، سرعة العقرب
+            clocks =
+            {
+                new Vector3(4f, 10f, 60f),
+                new Vector3(19f, 26f, 90f),
+                new Vector3(34f, 42f, 130f),
+            },
+        };
+        level.hints.Add(new HintLine(new Vector3(7.6f, -0.5f, 0f), new Vector3(9.4f, -0.5f, 0f), new Color(0.35f, 0.3f, 0.45f)));
+        return level;
     }
 
     // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.

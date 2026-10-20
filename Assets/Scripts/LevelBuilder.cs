@@ -38,6 +38,7 @@ public static class LevelBuilder
         NewFeatures.Build(root.transform, data, gm, rng);
         SeaFeatures.Build(root.transform, data, gm, rng);
         SchoolFeatures.Build(root.transform, data, gm, rng);
+        TimeFeatures.Build(root.transform, data, gm, rng);
         return root;
     }
 
