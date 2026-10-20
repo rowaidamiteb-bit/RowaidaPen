@@ -160,6 +160,9 @@ public class LevelData
     public bool boatRide;                                   // المنارة: الشكل المغلق بالبحر يصير قارب يشيل رويدا
     public List<Vector3> sharks = new List<Vector3>();      // قروش (من x، لـ x)
     public Vector3? lighthouse;                             // المنارة (x، سطح الأرض، أبعد x يوصله الضو)
+
+    // الجزء الثاني: أدوات المدرسة
+    public List<Vector4> rulers = new List<Vector4>();      // مسطرة ميزان (من x، لـ x، مكان القلم اللي تحتها، ثقل الممحاة)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -201,6 +204,7 @@ public static class Levels
         OctopusLevel(),
         WhirlpoolLevel(),
         LighthouseLevel(),
+        RulerLevel(),
         LastPage(),
     };
 
@@ -640,6 +644,39 @@ public static class Levels
             lighthouse = new Vector3(54f, -0.4f, 40f),
         };
         Oval(level, 5.4f, 0.4f, new Color(0.6f, 0.75f, 1f));
+        return level;
+    }
+
+    // ===== أدوات المدرسة =====
+
+    // المسطرة: مسطرة فوق كل حفرة، مايلة لأن على طرفها ممحاة ثقيلة.
+    // ارمي كورة على طرفها الثاني تعدلها وتصير جسر (كل ما كانت الكورة أبعد كانت أقوى)
+    static LevelData RulerLevel()
+    {
+        var level = new LevelData
+        {
+            title = "المسطرة",
+            theme = LevelTheme.CrayonDay(),
+            subtitle = "ارمي كورة على طرف المسطرة عشان تتعدل... كل ما كانت أبعد كانت أقوى!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(53f, 0f, 0f),
+            ink = 20f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(12f, 20f),
+                Page(29f, 37f),
+                Page(46f, 56f),
+            },
+            // من x، لـ x، القلم اللي تحتها، ثقل الممحاة
+            rulers =
+            {
+                new Vector4(4.1f, 12.9f, 6.6f, 1.5f),
+                new Vector4(20.1f, 29.9f, 22.5f, 2.2f),
+                new Vector4(37.1f, 46.9f, 39.4f, 3f),
+            },
+        };
+        Oval(level, 11.2f, 4f, new Color(1f, 0.55f, 0.3f));
         return level;
     }
 
