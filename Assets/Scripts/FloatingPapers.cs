@@ -27,7 +27,7 @@ public class FloatingPapers : MonoBehaviour
         foreach (Transform child in transform) Destroy(child.gameObject);
 
         snowing = theme.floating == FloatKind.Snow;
-        rising = theme.floating == FloatKind.Embers || theme.floating == FloatKind.Balloons;
+        rising = theme.floating == FloatKind.Embers || theme.floating == FloatKind.Balloons || theme.floating == FloatKind.Bubbles;
         int n = snowing ? 220 : count;   // الثلج: ندف كثيرة صغيرة
         papers = new Transform[n];
         basePos = new Vector3[n];
@@ -72,6 +72,7 @@ public class FloatingPapers : MonoBehaviour
             }
             case FloatKind.Embers: return LevelBuilder.Visual("Ember", PrimitiveType.Sphere, transform, pos, Vector3.one * 0.06f * s, gm.Mat("Ember " + ColorUtility.ToHtmlStringRGB(color), color * 2.4f, 0.8f), false);
             case FloatKind.Fireflies: return LevelBuilder.Visual("Firefly", PrimitiveType.Sphere, transform, pos, Vector3.one * 0.07f * s, gm.Mat("Firefly " + ColorUtility.ToHtmlStringRGB(color), color * 3f, 0.8f), false);
+            case FloatKind.Bubbles: return LevelBuilder.Visual("Bubble", PrimitiveType.Sphere, transform, pos, Vector3.one * 0.12f * s, gm.Mat("Bubble Float", new Color(0.8f, 0.95f, 1f), 0.98f), false);
             case FloatKind.Snow: return LevelBuilder.Visual("Snowflake", PrimitiveType.Sphere, transform, pos, Vector3.one * 0.07f * s, mat, false);
             case FloatKind.InkDrops: return LevelBuilder.Visual("Ink Drop", PrimitiveType.Sphere, transform, pos, new Vector3(0.12f, 0.18f, 0.12f) * s, mat, false);
             default: return LevelBuilder.Visual("Paper", PrimitiveType.Cube, transform, pos, new Vector3(0.4f, 0.52f, 0.01f) * s, mat, false);

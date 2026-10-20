@@ -150,6 +150,9 @@ public class LevelData
     public bool sea;                                        // فيه بحر (يطلع وينزل)
     public float seaLevel, tideAmp, tidePeriod;             // مستوى البحر، كم يطلع وينزل، وكل كم ثانية
     public List<Vector3> crabs = new List<Vector3>();       // سرطانات (من x، لـ x، سطح الرمل)
+    public bool underwater;                                 // تحت الماي: هوا ينقص، وجاذبية خفيفة
+    public List<Vector3> vents = new List<Vector3>();       // فتحات فقاعات (x، y، كل كم ثانية)
+    public List<Vector3> jellies = new List<Vector3>();     // قناديل بحر (x، y، كم تطلع وتنزل)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -187,6 +190,7 @@ public static class Levels
         FirefliesLevel(),
         EraserFinale(),
         TideLevel(),
+        UnderwaterLevel(),
         LastPage(),
     };
 
@@ -478,6 +482,44 @@ public static class Levels
                 new Vector3(37.5f, 43.5f, -0.3f),
             },
             hints = { new HintLine(new Vector3(3.3f, 0.85f, 0f), new Vector3(13.7f, 0.85f, 0f), new Color(0.3f, 0.55f, 0.85f)) },
+        };
+    }
+
+    // تحت الماي: الهوا ينقص (الفقاعات فوق راسها). فتحات بقاع الحفر تطلع فقاعات هوا،
+    // والجسر فوق الحفرة يخلي الفقاعات تتزحلق تحته وتطلع عند طرفه... بطريق رويدا. وقناديل بحر تلسع
+    static LevelData UnderwaterLevel()
+    {
+        return new LevelData
+        {
+            title = "تحت الماي",
+            theme = LevelTheme.Underwater(),
+            subtitle = "الهوا يخلص! الفقاعات تتزحلق تحت خطوطك، والقناديل تخاف من الحبر",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(51f, 0f, 0f),
+            ink = 26f,
+            underwater = true,
+            gravityScale = 0.6f,
+            blocks =
+            {
+                Wall(-7f, 4f, 0f, -8f),
+                Wall(7.5f, 16f, 0f, -8f),
+                Wall(20f, 27f, 0f, -8f),
+                Wall(31f, 40f, 0f, -8f),
+                Wall(44f, 54f, 0f, -8f),
+            },
+            vents =
+            {
+                new Vector3(5.75f, -2.6f, 1.2f),
+                new Vector3(18f, -2.6f, 1.2f),
+                new Vector3(29f, -2.6f, 1.2f),
+                new Vector3(42f, -2.6f, 1.2f),
+            },
+            jellies =
+            {
+                new Vector3(12f, 1.7f, 0.9f),
+                new Vector3(35f, 1.6f, 1f),
+            },
+            hints = { new HintLine(new Vector3(3.6f, 0.1f, 0f), new Vector3(7.9f, 0.1f, 0f), new Color(0.3f, 0.6f, 0.8f)) },
         };
     }
 
