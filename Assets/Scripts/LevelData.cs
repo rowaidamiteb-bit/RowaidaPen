@@ -178,6 +178,7 @@ public class LevelData
     public List<PianoSpec> pianos = new List<PianoSpec>();  // بيانو: لحن بالألوان لازم ينعزف بالترتيب
     public List<Vector3> drumPits = new List<Vector3>();    // حفرة طبول (من x، لـ x، قاعها)
     public List<NoteSpec> noteSections = new List<NoteSpec>(); // نوتات تنجمع عشان ينفتح الباب
+    public List<Vector3> strings = new List<Vector3>();     // أوتار على الحفر (من x، لـ x، ترجع تهتز بعد كم ثانية)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -232,6 +233,7 @@ public static class Levels
         PianoLevel(),
         DrumsLevel(),
         NotesLevel(),
+        StringsLevel(),
         LastPage(),
     };
 
@@ -1069,6 +1071,38 @@ public static class Levels
         Color c = new Color(0.7f, 0.5f, 1f);
         level.hints.Add(new HintLine(new Vector3(4f, 0.15f, 0f), new Vector3(8f, 2.3f, 0f), c));
         level.hints.Add(new HintLine(new Vector3(8f, 2.3f, 0f), new Vector3(12f, 0.15f, 0f), c));
+        return level;
+    }
+
+    // الأوتار: الجسور أوتار تهتز. ارسمي خط يلمس الوتر يسكت ويصير جسر... وبعضها يرجع يهتز بعد شوي
+    static LevelData StringsLevel()
+    {
+        var level = new LevelData
+        {
+            title = "الأوتار",
+            theme = LevelTheme.KraftDawn(),
+            subtitle = "الوتر يهتز! ارسمي خط يلمسه عشان يسكت ويصير جسر",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(49f, 0f, 0f),
+            ink = 16f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(10f, 17f),
+                Page(24f, 30f),
+                Page(41f, 52f),
+            },
+            // من x، لـ x، يرجع يهتز بعد كم ثانية
+            strings =
+            {
+                new Vector3(4f, 10f, 0f),
+                new Vector3(17f, 24f, 4f),
+                new Vector3(30f, 35f, 3.5f),
+                new Vector3(36f, 41f, 3.5f),
+            },
+            pegs = { new Vector3(35.5f, 0f, 1f) },
+        };
+        level.hints.Add(new HintLine(new Vector3(7f, 1.4f, 0f), new Vector3(7f, 0.4f, 0f), new Color(0.6f, 0.4f, 0.2f)));
         return level;
     }
 

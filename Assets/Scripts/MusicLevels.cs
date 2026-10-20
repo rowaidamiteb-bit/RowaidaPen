@@ -17,6 +17,7 @@ public static class MusicFeatures
         foreach (PianoSpec p in data.pianos) PianoPuzzle.Create(root, p, gm);
         foreach (Vector3 d in data.drumPits) DrumPit.Create(root, d, gm);
         foreach (NoteSpec n in data.noteSections) NoteSection.Create(root, n, gm);
+        foreach (Vector3 s in data.strings) StringBridge.Create(root, s, gm);
     }
 }
 
@@ -409,5 +410,105 @@ public class NoteSection : MonoBehaviour
             Camera.main.GetComponent<CameraFollow>().SetTarget(r.transform, true);
             gm.UI.ShowMessage("", 2.4f, "فاتتك نوتة! ارسمي طريق يوصلك لها");
         }
+    }
+}
+
+// وتر مشدود على حفرة: يهتز طول الوقت وما تقدر رويدا تمشي عليه.
+// ارسمي خط يلمسه (مثل الإصبع): يسكت ويصير جسر. بعض الأوتار ترجع تهتز بعد شوي
+public class StringBridge : MonoBehaviour
+{
+    float from, to, unmuteAfter, mutedAt = -1f, phase;
+    Mesh mesh;
+    BoxCollider col;
+    bool holding;
+    int prompted = -1;
+    Transform pegL, pegR;
+    readonly List<Vector3> pts = new List<Vector3>();
+    bool Muted => mutedAt >= 0f && (unmuteAfter <= 0f || Time.time - mutedAt < unmuteAfter);
+
+    // spec: (من x، لـ x، يرجع يهتز بعد كم ثانية (0 = أبد))
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("String Bridge");
+        go.transform.SetParent(root, false);
+        var s = go.AddComponent<StringBridge>();
+        s.from = spec.x; s.to = spec.y; s.unmuteAfter = spec.z;
+        s.phase = spec.x;
+        Material steel = gm.Mat("String Steel", new Color(0.85f, 0.75f, 0.5f), 0.9f, 0.7f);
+        Material wood = gm.Mat("Guitar Wood", new Color(0.55f, 0.3f, 0.15f), 0.5f);
+        Material pearl = gm.Mat("Guitar Peg", new Color(0.97f, 0.95f, 0.9f), 0.8f);
+        var stringGo = new GameObject("String");
+        stringGo.transform.SetParent(go.transform, false);
+        s.mesh = new Mesh { name = "String" };
+        stringGo.AddComponent<MeshFilter>().sharedMesh = s.mesh;
+        stringGo.AddComponent<MeshRenderer>().sharedMaterial = steel;
+        // مسامير الشد على الطرفين
+        for (int e = 0; e < 2; e++)
+        {
+            float x = e == 0 ? s.from - 0.1f : s.to + 0.1f;
+            var peg = LevelBuilder.Visual("Peg", PrimitiveType.Cylinder, go.transform, new Vector3(x, 0.1f, -0.3f), new Vector3(0.35f, 0.15f, 0.35f), pearl).transform;
+            peg.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            LevelBuilder.Visual("Bridge Nut", PrimitiveType.Cube, go.transform, new Vector3(x, -0.12f, 0f), new Vector3(0.3f, 0.25f, 1.6f), wood);
+            if (e == 0) s.pegL = peg; else s.pegR = peg;
+        }
+        s.col = go.AddComponent<BoxCollider>();
+        s.col.center = new Vector3((s.from + s.to) * 0.5f, -0.1f, 0f);
+        s.col.size = new Vector3(s.to - s.from, 0.2f, 1.6f);
+        s.col.enabled = false;
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        bool muted = Muted;
+        col.enabled = muted;
+        float t = Time.time;
+
+        // شكل الوتر: يتموج وهو يهتز، ومستقيم وهو ساكت
+        pts.Clear();
+        float len = to - from;
+        for (int i = 0; i <= 30; i++)
+        {
+            float k = i / 30f;
+            // موجتين على طول الوتر وتتحرك (تبان إنه يهتز حتى بالصورة)
+            float wave = muted ? 0f : Mathf.Sin(k * Mathf.PI) * Mathf.Sin(k * Mathf.PI * 3f - t * 9f + phase) * 0.5f;
+            pts.Add(new Vector3(from + k * len, wave, 0f));
+        }
+        TubeMesh.Build(mesh, pts, 0.1f, false, 6);
+        pegL.localRotation = pegR.localRotation = Quaternion.Euler(90f, muted ? 0f : t * 200f, 0f);
+
+        if (!muted)
+        {
+            // خط يلمس الوتر: يسكته (والخط يختفي)
+            foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                var r = mark.GetComponent<MeshRenderer>();
+                if (r == null) continue;
+                Bounds b = r.bounds;
+                if (b.max.x < from + 0.3f || b.min.x > to - 0.3f || b.min.y > 0.9f || b.max.y < -0.7f) continue;
+                mutedAt = t;
+                gm.Sound.PlaySqueak(0.9f + (to - from) * 0.05f);
+                Fx.Sparkle(b.center, new Color(1f, 0.85f, 0.5f), 14);
+                Destroy(mark.gameObject);
+                break;
+            }
+            if (mutedAt >= 0f && unmuteAfter > 0f && t - mutedAt >= unmuteAfter && t - mutedAt < unmuteAfter + 0.05f)
+                gm.Sound.PlayRumble(0.2f);
+        }
+
+        RowaidaController rw = gm.Rowaida;
+        if (rw == null) return;
+        Vector3 p = rw.transform.position;
+        bool atEdge = p.x > from - 1.6f && p.x < from - 0.4f && p.y > 0.3f;
+        bool wait = atEdge && !muted && gm.IsPlaying;
+        int stage = mutedAt < 0f ? 0 : 1;
+        if (wait && prompted != stage)
+        {
+            prompted = stage;
+            gm.UI.ShowMessage("", 2.6f, stage == 0 ? "الوتر يهتز! ارسمي خط يلمسه عشان يسكت" : "رجع يهتز! سكتيه مرة ثانية");
+        }
+        if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; }
+        else if (holding) { rw.Held = false; holding = false; }
     }
 }
