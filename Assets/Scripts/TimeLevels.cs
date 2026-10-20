@@ -9,6 +9,7 @@ public static class TimeFeatures
         foreach (Vector3 c in data.clocks) ClockBridge.Create(root, c, gm);
         foreach (Vector4 h in data.hourglasses) Hourglass.Create(root, h, gm);
         foreach (GearSpec g in data.gearBridges) GearBridge.Create(root, g, gm);
+        foreach (Vector4 a in data.alarms) AlarmSleeper.Create(root, a, gm, rng, data);
     }
 
     // نص بالأرقام (TextMesh) يواجه الكاميرا
@@ -428,6 +429,137 @@ public class GearBridge : MonoBehaviour
         {
             prompted = turning;
             gm.UI.ShowMessage("", 2.8f, turning == 1 ? "ارسمي خط يلمس الترسين... يصير سير ويدورهم" : "باقي ترس! وصليه بخط بعد");
+        }
+        if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
+        else if (holding) { rw.Held = false; holding = false; }
+    }
+}
+
+// منبه على رف، وقطوة نايمة تسد الطريق. لو طاحت كورة على زر المنبه يرن، والقطوة تصحى وتروح من الطريق
+public class AlarmSleeper : MonoBehaviour
+{
+    float sleeperX, ringT = -1f, nextZ;
+    Vector3 alarmPos;
+    Transform cat, alarm, button, catBody;
+    BoxCollider catCol;
+    Material zMat;
+    bool holding;
+    int prompted;
+
+    // spec: (x القطوة، x المنبه، y المنبه، سقف فوق المنبه؟ 1/0)
+    public static void Create(Transform root, Vector4 spec, GameManager gm, System.Random rng, LevelData data)
+    {
+        var go = new GameObject("Alarm Sleeper");
+        go.transform.SetParent(root, false);
+        var a = go.AddComponent<AlarmSleeper>();
+        a.sleeperX = spec.x;
+        a.alarmPos = new Vector3(spec.y, spec.z, 0f);
+        a.zMat = gm.Mat("Sleep Z", new Color(0.95f, 0.95f, 1f), 0.3f);
+
+        // القطوة النايمة (كورة كبيرة دايرة على نفسها)
+        Material fur = gm.Mat("Cat Fur", new Color(1f, 0.7f, 0.35f), 0.3f);
+        Material stripe = gm.Mat("Cat Stripe", new Color(0.85f, 0.5f, 0.2f), 0.3f);
+        Material pink = gm.Mat("Cat Pink", new Color(1f, 0.65f, 0.7f), 0.3f);
+        Material black = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
+        a.cat = new GameObject("Cat").transform;
+        a.cat.SetParent(go.transform, false);
+        a.cat.position = new Vector3(spec.x, 0f, 0f);
+        a.catBody = new GameObject("Body").transform;
+        a.catBody.SetParent(a.cat, false);
+        LevelBuilder.Visual("Body", PrimitiveType.Sphere, a.catBody, new Vector3(0f, 0.95f, 0f), new Vector3(2.4f, 1.9f, 1.8f), fur);
+        for (int i = 0; i < 3; i++)
+            LevelBuilder.Visual("Stripe", PrimitiveType.Cube, a.catBody, new Vector3(-0.4f + i * 0.4f, 1.85f, -0.1f), new Vector3(0.15f, 0.12f, 1.2f), stripe, false);
+        LevelBuilder.Visual("Head", PrimitiveType.Sphere, a.catBody, new Vector3(-1f, 0.75f, -0.35f), new Vector3(1.1f, 1f, 1f), fur);
+        for (int s = -1; s <= 1; s += 2)
+        {
+            var ear = LevelBuilder.Visual("Ear", PrimitiveType.Cube, a.catBody, new Vector3(-1f + s * 0.3f, 1.25f, -0.35f), new Vector3(0.3f, 0.3f, 0.2f), fur).transform;
+            ear.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            // عيون مسكرة (خط)
+            LevelBuilder.Visual("Closed Eye", PrimitiveType.Cube, a.catBody, new Vector3(-1f + s * 0.22f, 0.82f, -0.85f), new Vector3(0.2f, 0.04f, 0.02f), black, false);
+        }
+        LevelBuilder.Visual("Nose", PrimitiveType.Sphere, a.catBody, new Vector3(-1f, 0.66f, -0.86f), Vector3.one * 0.1f, pink, false);
+        var tail = LevelBuilder.Visual("Tail", PrimitiveType.Capsule, a.catBody, new Vector3(1.1f, 0.4f, -0.4f), new Vector3(0.25f, 0.7f, 0.25f), stripe).transform;
+        tail.localRotation = Quaternion.Euler(0f, 0f, 70f);
+        a.catCol = a.cat.gameObject.AddComponent<BoxCollider>();
+        a.catCol.center = new Vector3(0f, 1f, 0f);
+        a.catCol.size = new Vector3(2.4f, 2f, 2f);
+
+        // المنبه على رف (وأحيانا سقف فوقه: لازم الكورة تتدحرج له من الجنب)
+        LevelBuilder.CreatePaperBlock(root, new Block(new Vector3(spec.y, spec.z - 0.3f, 0f), new Vector3(2.4f, 0.6f, 2.2f)), gm, rng, data, false);
+        if (spec.w > 0.5f)
+            LevelBuilder.CreatePaperBlock(root, new Block(new Vector3(spec.y - 0.7f, spec.z + 2.5f, 0f), new Vector3(2.8f, 0.4f, 2.2f)), gm, rng, data, false);
+        Material red = gm.Mat("Alarm Red", new Color(0.95f, 0.25f, 0.25f), 0.6f);
+        Material bell = gm.Mat("Alarm Bell", new Color(0.95f, 0.8f, 0.3f), 0.8f, 0.5f);
+        Material face = gm.Mat("Clock Face", new Color(1f, 0.97f, 0.88f), 0.3f);
+        a.alarm = new GameObject("Alarm").transform;
+        a.alarm.SetParent(go.transform, false);
+        a.alarm.position = a.alarmPos;
+        var bodyT = LevelBuilder.Visual("Clock", PrimitiveType.Cylinder, a.alarm, new Vector3(0f, 0.55f, 0f), new Vector3(1f, 0.3f, 1f), red).transform;
+        bodyT.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        var faceT = LevelBuilder.Visual("Face", PrimitiveType.Cylinder, a.alarm, new Vector3(0f, 0.55f, -0.31f), new Vector3(0.8f, 0.02f, 0.8f), face, false).transform;
+        faceT.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        for (int s = -1; s <= 1; s += 2)
+        {
+            LevelBuilder.Visual("Bell", PrimitiveType.Sphere, a.alarm, new Vector3(s * 0.38f, 1.1f, 0f), new Vector3(0.45f, 0.35f, 0.45f), bell);
+            LevelBuilder.Visual("Leg", PrimitiveType.Cube, a.alarm, new Vector3(s * 0.32f, 0.08f, 0f), new Vector3(0.1f, 0.18f, 0.1f), bell, false);
+        }
+        a.button = LevelBuilder.Visual("Button", PrimitiveType.Cylinder, a.alarm, new Vector3(0f, 1.15f, 0f), new Vector3(0.3f, 0.08f, 0.3f), bell).transform;
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time;
+
+        if (ringT < 0f)
+        {
+            // Zzz من القطوة، وتتنفس
+            catBody.localScale = new Vector3(1f, 1f + Mathf.Sin(t * 1.5f) * 0.03f, 1f);
+            if (t >= nextZ)
+            {
+                nextZ = t + 0.9f;
+                var z = LevelBuilder.Visual("Z", PrimitiveType.Cube, null, cat.position + new Vector3(-1.3f, 1.6f, -0.6f), new Vector3(0.3f, 0.06f, 0.02f), zMat, false);
+                var fx = z.AddComponent<FxParticle>();
+                fx.velocity = new Vector3(-0.2f, 0.7f, 0f);
+                fx.grow = 0.8f;
+                fx.life = 1.6f;
+            }
+            // كورة على المنبه؟
+            foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                if (!mark.closed) continue;
+                Vector3 c = mark.transform.position;
+                if (Mathf.Abs(c.x - alarmPos.x) > 1.5f || c.y < alarmPos.y || c.y > alarmPos.y + 2.2f) continue;
+                ringT = 0f;
+                gm.Sound.PlayLaser();
+                gm.UI.ShowMessage("", 1.8f, "رررن! صحت القطوة");
+                break;
+            }
+        }
+        else
+        {
+            ringT += Time.deltaTime;
+            // المنبه يرن (يهتز)
+            alarm.localRotation = ringT < 1.6f ? Quaternion.Euler(0f, 0f, Mathf.Sin(ringT * 60f) * 8f) : Quaternion.identity;
+            if (ringT < 1.6f && Random.value < 0.3f) Fx.Sparkle(alarmPos + Vector3.up * 1.1f, new Color(1f, 0.85f, 0.3f), 2);
+            // القطوة تنط وتروح ورا (تفضّي الطريق)
+            if (ringT > 0.4f)
+            {
+                float k = Mathf.Clamp01((ringT - 0.4f) / 1.2f);
+                cat.position = new Vector3(sleeperX + k * 1.5f, Mathf.Sin(k * Mathf.PI) * 1.6f, k * 4f);
+                catCol.enabled = false;
+            }
+        }
+
+        RowaidaController rw = gm.Rowaida;
+        if (rw == null) return;
+        float px = rw.transform.position.x;
+        bool wait = ringT < 0.5f && px > sleeperX - 3f && px < sleeperX - 1.4f && gm.IsPlaying;
+        if (wait && prompted == 0)
+        {
+            prompted = 1;
+            gm.UI.ShowMessage("", 2.8f, "القطوة نايمة بالطريق! ارمي كورة على زر المنبه");
         }
         if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
         else if (holding) { rw.Held = false; holding = false; }

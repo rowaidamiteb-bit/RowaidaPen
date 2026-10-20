@@ -171,6 +171,7 @@ public class LevelData
     public List<Vector3> clocks = new List<Vector3>();      // ساعة على حفرة (من x، لـ x، سرعة العقرب درجة بالثانية)
     public List<Vector4> hourglasses = new List<Vector4>(); // ساعة رملية فوق حفرة (من x، لـ x، مكانها x، y)
     public List<GearSpec> gearBridges = new List<GearSpec>(); // تروس وجسر متحرك
+    public List<Vector4> alarms = new List<Vector4>();      // منبه وقطوة نايمة (x القطوة، x المنبه، y المنبه، سقف فوقه 1/0)
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -220,6 +221,7 @@ public static class Levels
         ClockLevel(),
         HourglassLevel(),
         GearsLevel(),
+        AlarmLevel(),
         LastPage(),
     };
 
@@ -903,6 +905,37 @@ public static class Levels
             },
         };
         level.hints.Add(new HintLine(new Vector3(7f, 3.6f, 0f), new Vector3(10.2f, 2.9f, 0f), new Color(0.35f, 0.6f, 0.85f)));
+        return level;
+    }
+
+    // المنبه: قطاوة نايمة تسد الطريق. ارمي كورة على زر المنبه يرن وتصحى وتروح.
+    // آخر منبه فوقه سقف: ارسمي طريق مايل تتدحرج عليه الكورة لين توصل له
+    static LevelData AlarmLevel()
+    {
+        var level = new LevelData
+        {
+            title = "المنبه",
+            theme = LevelTheme.CandySunset(),
+            subtitle = "القطاوة نايمة بالطريق! ارمي كورة على زر المنبه عشان يرن وتصحى",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(45f, 0f, 0f),
+            ink = 30f,
+            waitForBridge = true,
+            blocks =
+            {
+                Page(-7f, 24f),
+                Page(27f, 48f),
+            },
+            alarms =
+            {
+                new Vector4(6f, 10f, 3f, 0f),
+                new Vector4(16f, 20.5f, 4.4f, 0f),
+                new Vector4(34f, 38.5f, 3f, 1f),
+            },
+        };
+        Oval(level, 10f, 5f, new Color(0.95f, 0.3f, 0.3f));
+        // آخر منبه: طريق مايل منقط من اليمين للمنبه
+        level.hints.Add(new HintLine(new Vector3(43f, 4.4f, 0f), new Vector3(39.7f, 3.3f, 0f), new Color(0.95f, 0.3f, 0.3f)));
         return level;
     }
 
