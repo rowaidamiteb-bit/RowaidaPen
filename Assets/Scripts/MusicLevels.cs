@@ -13,8 +13,23 @@ public static class MusicFeatures
     // دو ري مي صول لا (نغمات حلوة مع بعض)
     public static readonly float[] KeyPitch = { 1f, 1.122f, 1.26f, 1.498f, 1.682f };
 
+    // مرحلة البيانو: النغمات ترتفع شوي شوي من أول المرحلة لآخرها (على السلم الكبير)
+    public static bool Rising;
+    static float riseFrom, riseTo;
+    static readonly int[] Major = { 0, 2, 4, 5, 7, 9, 11 };
+
+    public static float RisePitch(float x)
+    {
+        float k = Mathf.Clamp01(Mathf.InverseLerp(riseFrom, riseTo, x));
+        int degree = Mathf.RoundToInt(k * 13f);   // تقريبًا أوكتافين
+        int semis = Major[degree % 7] + 12 * (degree / 7);
+        return 0.75f * Mathf.Pow(2f, semis / 12f);
+    }
+
     public static void Build(Transform root, LevelData data, GameManager gm, System.Random rng)
     {
+        Rising = data.risingPianos;
+        riseFrom = data.spawn.x; riseTo = data.door.x;
         foreach (PianoSpec p in data.pianos) PianoPuzzle.Create(root, p, gm);
         foreach (Vector3 d in data.drumPits) DrumPit.Create(root, d, gm);
         foreach (NoteSpec n in data.noteSections) NoteSection.Create(root, n, gm);
@@ -151,7 +166,9 @@ public class PianoPuzzle : MonoBehaviour
 
     void Play(int key, GameObject ball, GameManager gm)
     {
-        LevelSfx.Play("piano", 1f, MusicFeatures.KeyPitch[key]);
+        // كل بيانو بالمرحلة نغماته أعلى من اللي قبله
+        float lift = MusicFeatures.Rising ? MusicFeatures.RisePitch(keys[key].position.x) / 0.75f * 0.8f : 1f;
+        LevelSfx.Play("piano", 1f, MusicFeatures.KeyPitch[key] * lift);
         StartCoroutine(Press(keys[key]));
         Fx.Sparkle(keys[key].position + Vector3.up * 0.5f, MusicFeatures.KeyColors[key], 14);
         // الكورة تختفي بعد ما تعزف (عشان تقدرين تعزفين نفس المفتاح مرة ثانية)
@@ -617,7 +634,10 @@ public class FloorPiano : MonoBehaviour
             float[] scale = MusicFeatures.KeyPitch;
             int step = k % (scale.Length * 2 - 2);
             int idx = step < scale.Length ? step : scale.Length * 2 - 2 - step;
-            LevelSfx.Play("piano", 0.45f, scale[idx] * (1f + (k / 8) * 0.0f));
+            float pitch = scale[idx];
+            // مرحلة البيانو: كل مفتاح أعلى من اللي قبله لين آخر المرحلة
+            if (MusicFeatures.Rising) pitch = MusicFeatures.RisePitch(from + (k + 0.5f) * 0.9f);
+            LevelSfx.Play("piano", MusicFeatures.Rising ? 0.6f : 0.45f, pitch);
         }
         for (int i = 0; i < keys.Count; i++)
         {
@@ -653,6 +673,13 @@ public class StaffBridge : MonoBehaviour
     int played;
     BoxCollider bridge;
     Material ink, glow, hintMat;
+
+    // نغمة النوتة: درجتها على السطر، وكل سطر أعلى من اللي قبله
+    float NotePitch(int n)
+    {
+        float p = Scale[Mathf.Clamp(Mathf.RoundToInt(spec.notes[n].y), 0, Scale.Length - 1)];
+        return MusicFeatures.Rising ? p * MusicFeatures.RisePitch(spec.from) / 0.75f * 0.8f : p;
+    }
 
     Vector3 Target(int i) => new Vector3(spec.notes[i].x, spec.top + Line0 + spec.notes[i].y * Step, 0f);
 
@@ -745,7 +772,7 @@ public class StaffBridge : MonoBehaviour
             float k = t - doneAt;
             while (played < heads.Length && k > 0.3f + played * 0.28f)
             {
-                LevelSfx.Play("piano", 0.7f, Scale[Mathf.Clamp(Mathf.RoundToInt(spec.notes[played].y), 0, Scale.Length - 1)]);
+                LevelSfx.Play("piano", 0.7f, NotePitch(played));
                 Fx.Sparkle(heads[played].position, MusicFeatures.KeyColors[played % 5], 8);
                 heads[played].localScale = new Vector3(0.62f, 0.46f, 0.2f) * 1.3f;
                 played++;
@@ -780,7 +807,7 @@ public class StaffBridge : MonoBehaviour
         LevelBuilder.Visual("Stem", PrimitiveType.Cube, transform, p + new Vector3(0.28f, 0.6f, 0f), new Vector3(0.06f, 1.2f, 0.06f), ink, false);
         heads[n] = head;
         int step = Mathf.Clamp(Mathf.RoundToInt(spec.notes[n].y), 0, Scale.Length - 1);
-        LevelSfx.Play("piano", 0.8f, Scale[step]);
+        LevelSfx.Play("piano", 0.8f, NotePitch(n));
         Fx.Sparkle(p, MusicFeatures.KeyColors[n % 5], 12);
     }
 }

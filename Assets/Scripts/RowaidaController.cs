@@ -53,9 +53,10 @@ public class RowaidaController : MonoBehaviour
     }
 
     // تنط إذا كانت واقفة على شي
-    public void Jump()
+    // force: تنط حتى لو هي واقفة تستنى (مثل لما القلم يتدحرج لها)
+    public void Jump(bool force = false)
     {
-        if (stopped || Held || IsKnocked || timer < startDelay || !Grounded()) return;
+        if (stopped || (Held && !force) || IsKnocked || (timer < startDelay && !force) || !Grounded()) return;
         jumpRequested = true;
         var gm = GameManager.Instance;
         gm.Sound.PlaySqueak(Random.Range(1.25f, 1.4f));

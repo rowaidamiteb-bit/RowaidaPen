@@ -18,7 +18,8 @@ public class TimedHazard : MonoBehaviour
     bool holding, played;
     Transform model;
     readonly List<Transform> parts = new List<Transform>();
-    const float Active = 1.2f;   // كم ثانية تكون العقبة على الطريق
+    // كم ثانية تكون العقبة على الطريق (القلم أطول لأنه يتدحرج من بعيد على مهله)
+    float Active => spec.kind == "pencil" ? (spec.width + 6f) / 4f : 1.2f;
 
     float Local => Mathf.Repeat(Time.time - start + spec.phase, spec.period);
     // العقبة على الطريق من 0 لين Active
@@ -160,6 +161,20 @@ public class TimedHazard : MonoBehaviour
                 Part(PrimitiveType.Cube, new Vector3(1.55f, 0.05f, 0f), new Vector3(0.2f, 0.35f, 0.15f), wood);
                 break;
             }
+            case "stapler":
+            {
+                // دباسة عملاقة: القاعدة على الأرض، والذراع يتحرك من مفصل ورا
+                Material red = gm.Mat("Stapler Red", new Color(0.9f, 0.22f, 0.25f), 0.6f, 0.2f);
+                Material steel = gm.Mat("Sharpener Steel", new Color(0.8f, 0.82f, 0.86f), 0.9f, 0.8f);
+                LevelBuilder.Visual("Stapler Base", PrimitiveType.Cube, transform, new Vector3(spec.x, 0.04f, 0.2f), new Vector3(1.5f, 0.08f, 3.6f), steel, false);
+                LevelBuilder.Visual("Stapler Anvil", PrimitiveType.Cube, transform, new Vector3(spec.x, 0.09f, -1.3f), new Vector3(0.8f, 0.04f, 0.6f), red, false);
+                LevelBuilder.Visual("Hinge", PrimitiveType.Cube, transform, new Vector3(spec.x, 0.5f, 1.8f), new Vector3(1.3f, 0.95f, 0.5f), red);
+                // الذراع (تحت المفصل لليسار)
+                Part(PrimitiveType.Cube, new Vector3(0f, 0.05f, -1.75f), new Vector3(1.3f, 0.45f, 3.6f), red);
+                Part(PrimitiveType.Cube, new Vector3(0f, -0.25f, -1.75f), new Vector3(1f, 0.15f, 3.4f), steel);
+                Part(PrimitiveType.Cube, new Vector3(0f, 0.12f, -3.4f), new Vector3(1.35f, 0.5f, 0.4f), red);
+                break;
+            }
             case "metronome":
             {
                 // مترونوم كبير معلق: إطار خشب فوق الطريق، وذراع بثقل يتأرجح
@@ -214,7 +229,7 @@ public class TimedHazard : MonoBehaviour
             }
             case "pencil":
                 // يتدحرج من اليمين لليسار على الطريق
-                model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 0.3f, 0f);
+                model.position = new Vector3(cx + w * 0.5f + 3.5f - k * (w + 6f), 0.3f, 0f);
                 model.localRotation = Quaternion.Euler(0f, 0f, k * 720f);
                 break;
             case "crayons":
@@ -258,6 +273,23 @@ public class TimedHazard : MonoBehaviour
             case "bow":
                 model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 1f, -0.2f);
                 break;
+            case "stapler":
+            {
+                // تنفتح فوق، وتنطبق بقوة على الطريق، وترجع ترتفع
+                float open = on ? (k < 0.12f ? 1f - k / 0.12f : k > 0.85f ? (k - 0.85f) / 0.15f : 0f) : 1f;
+                float shake = !on && UntilOn < 0.6f ? Mathf.Sin(t * 50f) * 3f : 0f;
+                model.position = new Vector3(cx, 0.95f, 1.8f);
+                model.localRotation = Quaternion.Euler(open * 38f + shake, 0f, 0f);
+                model.gameObject.SetActive(true);
+                if (on && k > 0.12f && k < 0.2f && Random.value < 0.5f)
+                {
+                    var bit = LevelBuilder.Visual("Staple", PrimitiveType.Cube, null, new Vector3(cx + Random.Range(-1f, 1f), 0.15f + spec.y, Random.Range(-0.6f, 0.6f)), new Vector3(0.3f, 0.05f, 0.05f), GameManager.Instance.Mat("Sharpener Steel", new Color(0.8f, 0.82f, 0.86f), 0.9f, 0.8f), false);
+                    var fx = bit.AddComponent<FxParticle>();
+                    fx.velocity = new Vector3(Random.Range(-3f, 3f), Random.Range(2f, 4f), Random.Range(-1f, 1f));
+                    fx.gravity = 12f; fx.spin = Random.insideUnitSphere * 600f; fx.life = 0.6f;
+                }
+                break;
+            }
             case "metronome":
             {
                 // يتأرجح يمين ويسار، ويمر من الطريق مرة كل دورة
@@ -300,6 +332,7 @@ public class TimedHazard : MonoBehaviour
             case "bow": return "string_buzz";
             case "cannon": return "applause";
             case "metronome": return "tock";
+            case "stapler": return "clank";
         }
         return null;
     }
@@ -329,6 +362,19 @@ public class TimedHazard : MonoBehaviour
         if (rw == null) return;
         Vector3 p = rw.transform.position;
         float x0 = spec.x - spec.width * 0.5f, x1 = spec.x + spec.width * 0.5f;
+        // القلم: يتدحرج لها ورويدا تنط من فوقه (ولو لمسها يرجعها لورا)
+        if (spec.kind == "pencil")
+        {
+            float gap = model.position.x - p.x;
+            if (on && gm.IsPlaying && gap > 1.1f && gap < 2.4f && Mathf.Abs(p.y - spec.y - 0.7f) < 0.4f) rw.Jump(true);
+            if (on && Mathf.Abs(gap) < 0.45f && p.y - spec.y < 1.05f && p.y - spec.y > -0.5f && !rw.IsKnocked)
+            {
+                rw.Knockback(-1.2f);
+                LevelSfx.Play("thud", 0.7f);
+                Fx.Sparkle(p, new Color(1f, 0.8f, 0.4f), 10);
+            }
+            return;
+        }
         // صدمتها؟ ترجعها لورا
         if (on && K > 0.1f && K < 0.9f && p.x > x0 - 0.3f && p.x < x1 + 0.3f && p.y - spec.y < 2.4f && p.y - spec.y > -1f && !rw.IsKnocked)
         {

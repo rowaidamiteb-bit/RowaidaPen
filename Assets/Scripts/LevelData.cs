@@ -189,6 +189,7 @@ public class LevelData
     public List<NoteSpec> noteSections = new List<NoteSpec>(); // نوتات تنجمع عشان ينفتح الباب
     public List<Vector3> strings = new List<Vector3>();     // أوتار على الحفر (من x، لـ x، ترجع تهتز بعد كم ثانية)
     public List<StaffSpec> staffs = new List<StaffSpec>();  // اللحن الأخير: سطر موسيقي فوق حفرة، النوتات تكمل اللحن وتصير جسر
+    public bool risingPianos;                               // البيانو: كل بيانو نغمته أعلى من اللي قبله لين آخر المرحلة
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -705,10 +706,10 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "classroom",
-            hazards = { new HazardSpec("pencil", 16f, 2.4f, 4.2f), new HazardSpec("pencil", 33f, 2.4f, 3.8f, 1.5f) },
+            hazards = { new HazardSpec("pencil", 16f, 2.4f, 4.2f), new HazardSpec("pencil", 33f, 2.4f, 3.8f, 1.5f), new HazardSpec("stapler", -0.2f, 1.6f, 3.6f), new HazardSpec("stapler", 49.6f, 1.6f, 3.2f, 1f) },
             title = "المسطرة",
             theme = LevelTheme.CrayonDay(),
-            subtitle = "ارمي كورة على طرف المسطرة عشان تتعدل... كل ما كانت أبعد كانت أقوى!",
+            subtitle = "ارمي كورة على طرف المسطرة عشان تتعدل... ونطي فوق الأقلام، وانتبهي من الدباسة!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(53f, 0f, 0f),
             ink = 20f,
@@ -1034,6 +1035,7 @@ public static class Levels
         {
             ambience = "hall",
             floorPianos = { new Vector2(-3f, 7.2f), new Vector2(23.5f, 29.4f), new Vector2(45.5f, 51.4f) },
+            risingPianos = true,
             title = "البيانو",
             theme = LevelTheme.CrayonDay(),
             subtitle = "اعزفي اللحن! ارمي كور على المفاتيح بنفس ترتيب ألوان النوتة",
