@@ -646,6 +646,38 @@ public static class LevelSfx
                 }
                 return Normalize(b, 0.6f);
             }
+            case "cuckoo":
+            {
+                b = Buf(0.9f);
+                AddTone(b, 0f, 0.3f, 784f, 0.7f, 6f, 0.15f);
+                AddTone(b, 0.32f, 0.45f, 622f, 0.7f, 5f, 0.15f);
+                return Normalize(b, 0.55f);
+            }
+            case "steam":
+            {
+                b = Buf(1.1f);
+                float lp = 0f;
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    lp += (Noise(r) - lp) * 0.6f;
+                    b[i] = (Noise(r) - lp) * Mathf.Clamp01(t / 0.03f) * Mathf.Exp(-t * 2.5f);
+                }
+                return Normalize(b, 0.5f);
+            }
+            case "cymbal":
+            {
+                b = Buf(1.6f);
+                float hp = 0f;
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float n = Noise(r);
+                    hp += (n - hp) * 0.2f;
+                    b[i] = (n - hp) * Mathf.Exp(-t * 2.8f) + Mathf.Sin(2f * Mathf.PI * 3100f * t) * Mathf.Exp(-t * 4f) * 0.2f;
+                }
+                return Normalize(b, 0.55f);
+            }
             case "shark":
             {
                 // دن... دن (موسيقى القرش)

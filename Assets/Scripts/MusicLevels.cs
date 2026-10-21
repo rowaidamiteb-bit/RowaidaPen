@@ -524,3 +524,105 @@ public class StringBridge : MonoBehaviour
         else if (holding) { rw.Held = false; holding = false; }
     }
 }
+
+// نوتة زعلانة (نشاز): رمادية بنفسجية ووجهها معصب. لو لمستها رويدا تطلع صوت نشاز وترجعها لورا
+public class BadNote : MonoBehaviour
+{
+    Vector3 home;
+    float nextHit;
+
+    public static void Create(Transform root, Vector2 pos, GameManager gm)
+    {
+        var go = new GameObject("Bad Note");
+        go.transform.SetParent(root, false);
+        go.transform.position = new Vector3(pos.x, pos.y, 0f);
+        var n = go.AddComponent<BadNote>();
+        n.home = go.transform.position;
+        Material sour = gm.Mat("Sour Note", new Color(0.45f, 0.3f, 0.55f), 0.5f);
+        Material black = gm.Mat("Note Black", new Color(0.12f, 0.1f, 0.15f), 0.6f);
+        Material white = gm.Mat("Monster Eye", Color.white, 0.7f);
+        LevelBuilder.Visual("Head", PrimitiveType.Sphere, go.transform, new Vector3(-0.12f, -0.3f, 0f), new Vector3(0.65f, 0.5f, 0.3f), sour);
+        LevelBuilder.Visual("Stem", PrimitiveType.Cube, go.transform, new Vector3(0.18f, 0.15f, 0f), new Vector3(0.08f, 0.9f, 0.08f), black);
+        // عيون معصبة
+        for (int s = -1; s <= 1; s += 2)
+        {
+            LevelBuilder.Visual("Eye", PrimitiveType.Sphere, go.transform, new Vector3(-0.12f + s * 0.13f, -0.25f, -0.15f), Vector3.one * 0.12f, white, false);
+            var brow = LevelBuilder.Visual("Brow", PrimitiveType.Cube, go.transform, new Vector3(-0.12f + s * 0.13f, -0.15f, -0.17f), new Vector3(0.14f, 0.03f, 0.02f), black, false).transform;
+            brow.localRotation = Quaternion.Euler(0f, 0f, s * -25f);
+        }
+        // سحابة صغيرة غامقة فوقها (عشان تبان إنها شي سيئ)
+        LevelBuilder.Visual("Cloud", PrimitiveType.Sphere, go.transform, new Vector3(0.1f, 0.75f, 0.1f), new Vector3(0.6f, 0.3f, 0.3f), sour, false);
+    }
+
+    void Update()
+    {
+        float t = Time.time;
+        transform.position = home + new Vector3(Mathf.Sin(t * 1.3f + home.x) * 0.25f, Mathf.Sin(t * 2.1f + home.x) * 0.15f, 0f);
+        GameManager gm = GameManager.Instance;
+        if (gm == null || gm.Rowaida == null || t < nextHit) return;
+        Vector3 d = gm.Rowaida.transform.position + Vector3.up * 0.3f - transform.position;
+        if (d.sqrMagnitude < 0.95f * 0.95f)
+        {
+            nextHit = t + 1.2f;
+            gm.Rowaida.Knockback(-1.2f);
+            LevelSfx.Play("error");
+            Fx.Sparkle(transform.position, new Color(0.5f, 0.3f, 0.6f), 14);
+        }
+    }
+}
+
+// مفاتيح بيانو مرسومة على الأرض: كل ما تمشي رويدا على مفتاح يضوي ويعزف نغمته
+public class FloorPiano : MonoBehaviour
+{
+    float from, to;
+    readonly List<Transform> keys = new List<Transform>();
+    readonly List<Material> lit = new List<Material>();
+    Material ivory, ebony;
+    int lastKey = -1;
+    float[] glow;
+
+    public static void Create(Transform root, Vector2 spec, GameManager gm)
+    {
+        var go = new GameObject("Floor Piano");
+        go.transform.SetParent(root, false);
+        var f = go.AddComponent<FloorPiano>();
+        f.from = spec.x; f.to = spec.y;
+        f.ivory = gm.Mat("Piano Ivory", new Color(0.97f, 0.96f, 0.92f), 0.6f);
+        f.ebony = gm.Mat("Piano Wood", new Color(0.15f, 0.12f, 0.14f), 0.7f);
+        int n = Mathf.FloorToInt((f.to - f.from) / 0.9f);
+        for (int i = 0; i < n; i++)
+        {
+            float x = f.from + 0.45f + i * 0.9f;
+            f.keys.Add(LevelBuilder.Visual("Floor Key", PrimitiveType.Cube, go.transform, new Vector3(x, 0.02f, 0f), new Vector3(0.82f, 0.04f, 1.8f), f.ivory, false).transform);
+            f.lit.Add(gm.Mat("Floor Key Lit " + i % 5, MusicFeatures.KeyColors[i % 5] * 1.3f, 0.6f));
+            // مفاتيح سودا صغيرة بين بعض المفاتيح
+            if (i % 7 != 2 && i % 7 != 6 && i < n - 1)
+                LevelBuilder.Visual("Black Key", PrimitiveType.Cube, go.transform, new Vector3(x + 0.45f, 0.04f, 0.4f), new Vector3(0.45f, 0.05f, 1f), f.ebony, false);
+        }
+        f.glow = new float[n];
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null || gm.Rowaida == null) return;
+        float x = gm.Rowaida.transform.position.x;
+        int k = Mathf.FloorToInt((x - from) / 0.9f);
+        if (k >= 0 && k < keys.Count && k != lastKey && gm.Rowaida.transform.position.y < 1.2f)
+        {
+            lastKey = k;
+            glow[k] = 1f;
+            // سلم موسيقي يطلع وينزل
+            float[] scale = MusicFeatures.KeyPitch;
+            int step = k % (scale.Length * 2 - 2);
+            int idx = step < scale.Length ? step : scale.Length * 2 - 2 - step;
+            LevelSfx.Play("piano", 0.45f, scale[idx] * (1f + (k / 8) * 0.0f));
+        }
+        for (int i = 0; i < keys.Count; i++)
+        {
+            glow[i] = Mathf.Max(0f, glow[i] - Time.deltaTime * 2f);
+            keys[i].GetComponent<Renderer>().sharedMaterial = glow[i] > 0.05f ? lit[i] : ivory;
+            keys[i].localPosition = new Vector3(keys[i].localPosition.x, 0.02f - glow[i] * 0.03f, 0f);
+        }
+    }
+}

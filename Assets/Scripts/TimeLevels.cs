@@ -534,6 +534,7 @@ public class AlarmSleeper : MonoBehaviour
                 Vector3 c = mark.transform.position;
                 if (Mathf.Abs(c.x - alarmPos.x) > 1.5f || c.y < alarmPos.y || c.y > alarmPos.y + 2.2f) continue;
                 ringT = 0f;
+                Destroy(mark.gameObject, 0.6f);   // الكورة تنستخدم مرة وحدة
                 LevelSfx.Play("alarm"); LevelSfx.Play("meow", 0.8f);
                 gm.UI.ShowMessage("", 1.8f, "رررن! صحت القطوة");
                 break;
@@ -542,6 +543,19 @@ public class AlarmSleeper : MonoBehaviour
         else
         {
             ringT += Time.deltaTime;
+            // غفوة: لو صحت بدري ورويدا ما عدت، ترجع تنام بعد ٧ ثواني
+            float rx = gm.Rowaida != null ? gm.Rowaida.transform.position.x : 0f;
+            if (ringT > 7f && rx < sleeperX - 2f)
+            {
+                ringT = -1f;
+                cat.position = new Vector3(sleeperX, 0f, 0f);
+                catCol.enabled = true;
+                alarm.localRotation = Quaternion.identity;
+                prompted = 0;
+                LevelSfx.Play("snore", 0.7f);
+                gm.UI.ShowMessage("", 2.4f, "القطوة رجعت نامت! صحيها لما توصل رويدا");
+                return;
+            }
             // المنبه يرن (يهتز)
             alarm.localRotation = ringT < 1.6f ? Quaternion.Euler(0f, 0f, Mathf.Sin(ringT * 60f) * 8f) : Quaternion.identity;
             if (ringT < 1.6f && Random.value < 0.3f) Fx.Sparkle(alarmPos + Vector3.up * 1.1f, new Color(1f, 0.85f, 0.3f), 2);

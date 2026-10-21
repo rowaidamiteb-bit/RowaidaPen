@@ -150,6 +150,9 @@ public class LevelData
     public bool sea;                                        // فيه بحر (يطلع وينزل)
     public float seaLevel, tideAmp, tidePeriod;             // مستوى البحر، كم يطلع وينزل، وكل كم ثانية
     public List<Vector3> crabs = new List<Vector3>();       // سرطانات (من x، لـ x، سطح الرمل)
+    public List<Vector3> scorpions = new List<Vector3>();   // عقارب الصحرا (من x، لـ x، سطح الأرض)
+    public List<Vector2> badNotes = new List<Vector2>();    // نوتات زعلانة (نشاز) لازم تتجنبها رويدا
+    public List<Vector2> floorPianos = new List<Vector2>(); // مفاتيح بيانو على الأرض (من x، لـ x)
     public bool underwater;                                 // تحت المويه: هوا ينقص، وجاذبية خفيفة
     public bool waitForBridge;                              // رويدا تستنى عند كل حفرة لين ينرسم جسر
     public List<Vector3> tideBars = new List<Vector3>();    // المد والجزر: رمل يغرق (من x فوق، لـ x فوق، سطح الرمل)
@@ -177,6 +180,7 @@ public class LevelData
 
     // الجزء الثاني: الموسيقى
     public string ambience;                                 // صوت خلفية المرحلة (بحر، ساعة، مصنع...)
+    public List<HazardSpec> hazards = new List<HazardSpec>(); // عقبات تجي كل شوي (سمك، محارة، أقلام، طيارات...)
     public List<PianoSpec> pianos = new List<PianoSpec>();  // بيانو: لحن بالألوان لازم ينعزف بالترتيب
     public List<Vector3> drumPits = new List<Vector3>();    // حفرة طبول (من x، لـ x، قاعها)
     public List<NoteSpec> noteSections = new List<NoteSpec>(); // نوتات تنجمع عشان ينفتح الباب
@@ -500,6 +504,7 @@ public static class Levels
         return new LevelData
         {
             ambience = "sea",
+            hazards = { new HazardSpec("fish", 21f, 2.2f, 4.6f), new HazardSpec("fish", 41f, 2f, 4f, 2f) },
             title = "المد والجزر",
             theme = LevelTheme.Ocean(),
             subtitle = "رويدا تستنى الجزر عشان تعدي الرمل... والرمل الطويل ارسمي له ممشى",
@@ -542,6 +547,7 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "underwater",
+            hazards = { new HazardSpec("clam", 24f, 2.2f, 4f), new HazardSpec("clam", 48f, 2.2f, 3.6f, 1.5f) },
             title = "أعماق البحر",
             theme = LevelTheme.Underwater(),
             subtitle = "ارسمي جسور فوق الحفر... الفقاعات تتزحلق تحتها وتعبي هوا رويدا",
@@ -638,7 +644,7 @@ public static class Levels
             whirlpools =
             {
                 new Vector3(8f, 2.4f, 0f),
-                new Vector3(25f, 3f, 0f),
+                new Vector3(25f, 2.5f, 1.3f),   // تتحرك يمين ويسار
             },
         };
         // قوس منقط فوق أول دوامة
@@ -679,7 +685,7 @@ public static class Levels
                 new Vector3(24f, -0.45f, 1.8f),
                 new Vector3(35f, -0.45f, 1.8f),
             },
-            sharks = { new Vector3(25.5f, 33.5f, 0f) },
+            sharks = { new Vector3(25.5f, 33.5f, 0f), new Vector3(15.5f, 22f, 0f) },
             lighthouse = new Vector3(54f, -0.4f, 40f),
         };
         Oval(level, 5.4f, 0.4f, new Color(0.6f, 0.75f, 1f));
@@ -695,6 +701,7 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "classroom",
+            hazards = { new HazardSpec("pencil", 16f, 2.4f, 4.2f), new HazardSpec("pencil", 33f, 2.4f, 3.8f, 1.5f) },
             title = "المسطرة",
             theme = LevelTheme.CrayonDay(),
             subtitle = "ارمي كورة على طرف المسطرة عشان تتعدل... كل ما كانت أبعد كانت أقوى!",
@@ -727,6 +734,7 @@ public static class Levels
         return new LevelData
         {
             ambience = "classroom",
+            hazards = { new HazardSpec("crayons", 13.8f, 2f, 3.6f), new HazardSpec("crayons", 45f, 2f, 3.4f, 1f) },
             title = "صندوق الألوان",
             theme = LevelTheme.PastelPaint(),
             subtitle = "كل باب يبي لونه! اختاري اللون بالأرقام وارسمي على الباب",
@@ -777,7 +785,7 @@ public static class Levels
             {
                 new CalcSpec(9f, 10.6f, 5, 1, 2, 3, 4),
                 new CalcSpec(29f, 30.6f, 9, 2, 3, 4, 5, 6),
-                new CalcSpec(50f, 51.6f, 12, 3, 4, 5, 7, 8),
+                new CalcSpec(50f, 51.6f, 12, 3, 4, 5, 7, 8) { move = 2.2f },   // آخر لوحة تتحرك
             },
         };
     }
@@ -788,6 +796,7 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "classroom",
+            hazards = { new HazardSpec("plane", 13.5f, 2.5f, 4f), new HazardSpec("plane", 28f, 2.5f, 3.6f, 1.2f) },
             title = "المقص",
             theme = LevelTheme.Origami(),
             subtitle = "المقص يقص الجسور! ارمي كورة بين شفراته تعلقه... وبعدين ارسمي الجسر",
@@ -819,6 +828,7 @@ public static class Levels
         return new LevelData
         {
             ambience = "classroom",
+            hazards = { new HazardSpec("pencil", 39f, 2.4f, 4f), new HazardSpec("crayons", 56f, 2f, 3.4f, 1f) },
             title = "المقلمة",
             theme = LevelTheme.KraftDawn(),
             subtitle = "كل أدوات المدرسة مع بعض... وريها وش تعلمتي!",
@@ -852,6 +862,7 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "clock",
+            hazards = { new HazardSpec("cuckoo", 14.5f, 2f, 4.4f), new HazardSpec("cuckoo", 30f, 2f, 4f, 1.5f) },
             title = "الساعة",
             theme = LevelTheme.Watercolor(),
             subtitle = "عقرب الساعة يلف! ارسمي خط تحت مكانه لما يصير مستوي... يوقف عليه وتعدين",
@@ -883,6 +894,7 @@ public static class Levels
         return new LevelData
         {
             ambience = "desert",
+            scorpions = { new Vector3(11f, 17.5f, 0f), new Vector3(26f, 32.5f, 0f) },
             title = "الساعة الرملية",
             theme = LevelTheme.Canyon(),
             subtitle = "المسي الساعة الرملية بخط... تنقلب والرمل يملي الحفرة",
@@ -914,6 +926,7 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "factory",
+            hazards = { new HazardSpec("steam", 13f, 1.4f, 3.2f), new HazardSpec("steam", 25f, 1.4f, 3f, 1f), new HazardSpec("steam", 39f, 1.4f, 2.8f, 2f) },
             title = "التروس",
             theme = LevelTheme.InkParchment(),
             subtitle = "الترس الأزرق يلف... ارسمي خط يوصله بالترس الثاني عشان ينزل الجسر",
@@ -977,6 +990,7 @@ public static class Levels
         return new LevelData
         {
             ambience = "day",
+            hazards = { new HazardSpec("bat", 17f, 2.4f, 3.4f), new HazardSpec("bat", 36f, 2.4f, 3.2f, 1.2f) },
             title = "الليل والنهار",
             theme = LevelTheme.BalloonSky(),
             subtitle = "المسي الشمس والقمر بخط عشان يتغير الوقت... كل صفحة لها وقتها",
@@ -1016,6 +1030,7 @@ public static class Levels
         return new LevelData
         {
             ambience = "hall",
+            floorPianos = { new Vector2(-3f, 7.2f), new Vector2(23.5f, 29.4f), new Vector2(45.5f, 51.4f) },
             title = "البيانو",
             theme = LevelTheme.CrayonDay(),
             subtitle = "اعزفي اللحن! ارمي كور على المفاتيح بنفس ترتيب ألوان النوتة",
@@ -1044,6 +1059,7 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "hall",
+            hazards = { new HazardSpec("cymbals", 15f, 2f, 3.6f) { y = 2f }, new HazardSpec("cymbals", 31f, 2f, 3.4f, 1f) { y = 2.5f } },
             title = "الطبول",
             theme = LevelTheme.CandySunset(),
             subtitle = "الجدار عالي! ارسمي دايرة بقاع الحفرة تصير طبل... وتنطين عليه",
@@ -1077,6 +1093,7 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "hall",
+            badNotes = { new Vector2(25.5f, 2.3f), new Vector2(45.2f, 2f) },
             title = "النوتات",
             theme = LevelTheme.Mystic(),
             subtitle = "جمعي النوتات! ارسمي طريق مثل التلة يوصل رويدا لها",
@@ -1103,6 +1120,7 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "hall",
+            hazards = { new HazardSpec("bow", 13.5f, 2.4f, 4f), new HazardSpec("bow", 27f, 2.4f, 3.6f, 1.5f) },
             title = "الأوتار",
             theme = LevelTheme.KraftDawn(),
             subtitle = "الوتر يهتز! ارسمي خط يلمسه عشان يسكت ويصير جسر",
@@ -1136,6 +1154,7 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "crowd",
+            hazards = { new HazardSpec("cannon", 17f, 2f, 4f), new HazardSpec("cannon", 64f, 2f, 3.6f, 1f) },
             title = "الحفلة",
             theme = LevelTheme.Cosmic(),
             subtitle = "الحفلة بدت! اعزفي، نطي، سكتي الوتر، وجمعي النوتات",

@@ -267,6 +267,7 @@ public class CalcSpec
     public float gateX, panelX, panelY = 3f;
     public int target;
     public int[] keys;
+    public float move;   // اللوحة تتحرك يمين ويسار (كم متر)
     public CalcSpec(float gateX, float panelX, int target, params int[] keys) { this.gateX = gateX; this.panelX = panelX; this.target = target; this.keys = keys; }
 }
 
@@ -277,6 +278,7 @@ public class CalcPuzzle : MonoBehaviour
     readonly List<Transform> keyCaps = new List<Transform>();
     readonly List<GameObject> keyBall = new List<GameObject>();
     TextMesh screen;
+    Transform rig;
     Transform door;
     BoxCollider doorCol;
     float openT = -1f, resetAt = -1f;
@@ -293,25 +295,28 @@ public class CalcPuzzle : MonoBehaviour
         Material key = gm.Mat("Calc Key", new Color(0.93f, 0.93f, 0.9f), 0.5f);
         Material lcd = gm.Mat("Calc Screen", new Color(0.72f, 0.85f, 0.6f), 0.6f);
         Material orange = gm.Mat("Calc Orange", new Color(1f, 0.6f, 0.2f), 0.5f);
+        // كل شي (اللوحة، الأزرار، الشاشة) داخل حامل يقدر يتحرك
+        c.rig = new GameObject("Rig").transform;
+        c.rig.SetParent(go.transform, false);
 
         // لوحة الأزرار
         float w = spec.keys.Length * Spacing + 0.4f;
         float cx = spec.panelX + (spec.keys.Length - 1) * Spacing * 0.5f;
-        var panel = LevelBuilder.Visual("Panel", PrimitiveType.Cube, go.transform, new Vector3(cx, spec.panelY - 0.25f, 0f), new Vector3(w, 0.5f, 2f), body);
+        var panel = LevelBuilder.Visual("Panel", PrimitiveType.Cube, c.rig, new Vector3(cx, spec.panelY - 0.25f, 0f), new Vector3(w, 0.5f, 2f), body);
         panel.AddComponent<BoxCollider>();
         for (int i = 0; i < spec.keys.Length; i++)
         {
             float x = spec.panelX + i * Spacing;
-            var cap = LevelBuilder.Visual("Key", PrimitiveType.Cube, go.transform, new Vector3(x, spec.panelY + 0.12f, 0f), new Vector3(1.15f, 0.25f, 1.3f), key).transform;
+            var cap = LevelBuilder.Visual("Key", PrimitiveType.Cube, c.rig, new Vector3(x, spec.panelY + 0.12f, 0f), new Vector3(1.15f, 0.25f, 1.3f), key).transform;
             cap.gameObject.AddComponent<BoxCollider>();
             c.keyCaps.Add(cap);
             c.keyBall.Add(null);
-            Label(go.transform, spec.keys[i].ToString(), new Vector3(x, spec.panelY + 0.05f, -0.72f), 0.55f, new Color(0.15f, 0.15f, 0.2f));
+            Label(c.rig, spec.keys[i].ToString(), new Vector3(x, spec.panelY + 0.05f, -0.72f), 0.55f, new Color(0.15f, 0.15f, 0.2f));
         }
         // الشاشة فوق اللوحة
-        LevelBuilder.Visual("Screen Frame", PrimitiveType.Cube, go.transform, new Vector3(cx, spec.panelY + 1.55f, 0.4f), new Vector3(Mathf.Max(4f, w * 0.7f), 1.3f, 0.3f), body);
-        LevelBuilder.Visual("Screen", PrimitiveType.Cube, go.transform, new Vector3(cx, spec.panelY + 1.55f, 0.22f), new Vector3(Mathf.Max(3.6f, w * 0.7f - 0.4f), 0.95f, 0.05f), lcd, false);
-        c.screen = Label(go.transform, "", new Vector3(cx, spec.panelY + 1.55f, 0.15f), 0.9f, new Color(0.1f, 0.15f, 0.1f));
+        LevelBuilder.Visual("Screen Frame", PrimitiveType.Cube, c.rig, new Vector3(cx, spec.panelY + 1.55f, 0.4f), new Vector3(Mathf.Max(4f, w * 0.7f), 1.3f, 0.3f), body);
+        LevelBuilder.Visual("Screen", PrimitiveType.Cube, c.rig, new Vector3(cx, spec.panelY + 1.55f, 0.22f), new Vector3(Mathf.Max(3.6f, w * 0.7f - 0.4f), 0.95f, 0.05f), lcd, false);
+        c.screen = Label(c.rig, "", new Vector3(cx, spec.panelY + 1.55f, 0.15f), 0.9f, new Color(0.1f, 0.15f, 0.1f));
 
         // الباب (شكل زر "=" كبير)
         c.door = new GameObject("Calc Door").transform;
@@ -365,6 +370,13 @@ public class CalcPuzzle : MonoBehaviour
     {
         GameManager gm = GameManager.Instance;
         if (gm == null) return;
+        // لوحة تتحرك: الأزرار والكور اللي عليها يمشون معها
+        if (spec.move > 0f)
+        {
+            rig.localPosition = new Vector3(Mathf.Sin(Time.time * 0.7f) * spec.move, 0f, 0f);
+            for (int i = 0; i < keyBall.Count; i++)
+                if (keyBall[i] != null) keyBall[i].transform.position = new Vector3(keyCaps[i].position.x, keyBall[i].transform.position.y, keyBall[i].transform.position.z);
+        }
 
         if (openT >= 0f)
         {

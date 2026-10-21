@@ -10,6 +10,9 @@ public static class SeaFeatures
             SnowFeatures.SlopedPage(root, new Vector2(s.x, s.y), new Vector2(s.z, s.w), data, gm, rng);
         if (data.sea) SeaWater.Create(root, data, gm);
         foreach (Vector3 c in data.crabs) Crab.Create(root, c, gm);
+        foreach (Vector3 c in data.scorpions) Crab.Scorpion(root, c, gm);
+        foreach (Vector2 n in data.badNotes) BadNote.Create(root, n, gm);
+        foreach (Vector2 f in data.floorPianos) FloorPiano.Create(root, f, gm);
         foreach (Vector3 v in data.vents) BubbleVent.Create(root, v, gm);
         foreach (Vector3 j in data.jellies) Jellyfish.Create(root, j, gm);
         foreach (Vector3 t in data.tentacles) Tentacle.Create(root, t, gm);
@@ -192,7 +195,7 @@ public class Crab : MonoBehaviour
     Transform body, clawL, clawR;
     readonly List<Transform> legs = new List<Transform>();
 
-    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    public static Crab Create(Transform root, Vector3 spec, GameManager gm)
     {
         var go = new GameObject("Crab");
         go.transform.SetParent(root, false);
@@ -224,6 +227,28 @@ public class Crab : MonoBehaviour
                 c.legs.Add(leg);
             }
         }
+        return c;
+    }
+
+    // عقرب الصحرا: نفس السرطان بس لونه بني غامق وله ذيل مقوس وإبرة
+    public static void Scorpion(Transform root, Vector3 spec, GameManager gm)
+    {
+        Crab c = Create(root, spec, gm);
+        Material shell = gm.Mat("Scorpion Shell", new Color(0.45f, 0.28f, 0.15f), 0.45f);
+        Material dark = gm.Mat("Scorpion Dark", new Color(0.3f, 0.18f, 0.1f), 0.4f);
+        Material sting = gm.Mat("Scorpion Sting", new Color(0.9f, 0.3f, 0.2f), 0.5f);
+        foreach (Renderer r in c.GetComponentsInChildren<Renderer>())
+        {
+            string n = r.gameObject.name;
+            if (n == "Shell" || n == "Pincer A") r.sharedMaterial = shell;
+            else if (n == "Leg" || n == "Stalk" || n == "Pincer B") r.sharedMaterial = dark;
+        }
+        for (int i = 0; i < 5; i++)
+        {
+            float a = i / 4f * Mathf.PI * 0.85f;
+            LevelBuilder.Visual("Tail", PrimitiveType.Sphere, c.body, new Vector3(0.35f + Mathf.Sin(a) * 0.35f, 0.1f + (1f - Mathf.Cos(a)) * 0.35f, 0.1f), Vector3.one * (0.22f - i * 0.02f), shell);
+        }
+        LevelBuilder.Visual("Sting", PrimitiveType.Cube, c.body, new Vector3(0.25f, 0.82f, 0.1f), new Vector3(0.1f, 0.18f, 0.1f), sting).transform.localRotation = Quaternion.Euler(0f, 0f, 30f);
     }
 
     void Update()
@@ -803,7 +828,7 @@ public class GiantOctopus : MonoBehaviour
 // دوامة بالبحر: أي خط يقرب منها تسحبه وتلفه وتبلعه. الجسر لازم يكون مقوّس فوقها بعيد عنها
 public class Whirlpool : MonoBehaviour
 {
-    float radius, nextScan, nextFoam;
+    float radius, nextScan, nextFoam, baseX, range;
     readonly List<Transform> rings = new List<Transform>();
     readonly List<Transform> debris = new List<Transform>();
     Material foamMat;
@@ -818,6 +843,8 @@ public class Whirlpool : MonoBehaviour
         go.transform.position = new Vector3(spec.x, 0f, 0f);
         var w = go.AddComponent<Whirlpool>();
         w.radius = spec.y;
+        w.baseX = spec.x;
+        w.range = spec.z;   // دوامة تتحرك يمين ويسار
         Material dark = gm.Mat("Whirl Dark", new Color(0.08f, 0.2f, 0.35f), 0.2f);
         Material mid = gm.Mat("Whirl Mid", new Color(0.15f, 0.4f, 0.6f), 0.7f);
         w.foamMat = gm.Mat("Sea Foam", new Color(0.92f, 0.97f, 1f), 0.6f);
@@ -852,6 +879,7 @@ public class Whirlpool : MonoBehaviour
         GameManager gm = GameManager.Instance;
         if (gm == null) return;
         float t = Time.time;
+        if (range > 0f) transform.position = new Vector3(baseX + Mathf.Sin(t * 0.45f) * range, 0f, 0f);
         Vector3 c = Center;
         for (int i = 0; i < rings.Count; i++)
         {
@@ -991,13 +1019,32 @@ public class SeaBoat : MonoBehaviour
                 done = true;
                 if (rowaida != null) { rowaida.Held = false; rowaida.CarryX = 0f; }
             }
+            else if (SharkAhead(b))
+            {
+                // قرش طالع قدام: القارب يوقف لين ضو المنارة يخوفه
+                if (!Waiting) { Waiting = true; gm.UI.ShowMessage("", 2.4f, "قرش قدام! القارب يستنى ضو المنارة"); }
+                if (rowaida != null) { rowaida.Held = true; rowaida.CarryX = 0f; }
+            }
             else
             {
+                Waiting = false;
                 p.x += Speed * Time.fixedDeltaTime;
                 if (rowaida != null) { rowaida.Held = true; rowaida.CarryX = Speed; }
             }
         }
         rb.MovePosition(p);
+    }
+
+    public bool Waiting { get; private set; }
+
+    static bool SharkAhead(Bounds b)
+    {
+        foreach (Shark s in Shark.All)
+        {
+            float sx = s.transform.position.x;
+            if (s.Up && sx > b.min.x - 0.8f && sx < b.max.x + 3.5f) return true;
+        }
+        return false;
     }
 
     bool Riding(RowaidaController r, Bounds b)
@@ -1031,6 +1078,7 @@ public class SeaBoat : MonoBehaviour
         if (rowaida != null && sailing && !done) { rowaida.Held = false; rowaida.CarryX = 0f; }
         foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
         GameManager.Instance.Sound.PlayChomp(); LevelSfx.Play("shark");
+        GameManager.Instance.UI.ShowMessage("", 2.8f, "القرش عض القارب! ارسمي القارب لما يكون ضو المنارة على القرش");
         Fx.Sparkle(Box.center, new Color(0.7f, 0.9f, 1f), 18);
     }
 
@@ -1092,7 +1140,7 @@ public class Lighthouse : MonoBehaviour
         go.transform.position = new Vector3(spec.x, spec.y, 0.8f);
         var l = go.AddComponent<Lighthouse>();
         Instance = l;
-        l.minX = spec.z - 22f; l.maxX = spec.z;
+        l.minX = spec.z - 27f; l.maxX = spec.z;
         Material white = gm.Mat("Tower White", new Color(0.95f, 0.94f, 0.9f), 0.3f);
         Material red = gm.Mat("Tower Red", new Color(0.85f, 0.2f, 0.22f), 0.35f);
         Material dark = gm.Mat("Tower Dark", new Color(0.15f, 0.15f, 0.18f), 0.5f);
@@ -1142,8 +1190,13 @@ public class Lighthouse : MonoBehaviour
 // قرش (زعنفة بس تبان): يسبح رايح جاي، ويعض أي قارب يمر جنبه. يخاف من ضو المنارة ويغطس
 public class Shark : MonoBehaviour
 {
+    public static readonly List<Shark> All = new List<Shark>();
     float from, to, dir = 1f, down;
     Transform fin;
+    public bool Up => down <= 0f;
+
+    void OnEnable() => All.Add(this);
+    void OnDisable() => All.Remove(this);
 
     public static void Create(Transform root, Vector3 spec, GameManager gm)
     {
@@ -1155,9 +1208,9 @@ public class Shark : MonoBehaviour
         Material grey = gm.Mat("Shark", new Color(0.6f, 0.66f, 0.75f), 0.6f);
         s.fin = new GameObject("Fin").transform;
         s.fin.SetParent(go.transform, false);
-        var f = LevelBuilder.Visual("Fin", PrimitiveType.Cube, s.fin, new Vector3(0f, 0.5f, 0f), new Vector3(0.8f, 0.8f, 0.1f), grey).transform;
+        var f = LevelBuilder.Visual("Fin", PrimitiveType.Cube, s.fin, new Vector3(0f, 0.5f, 0f), new Vector3(0.8f, 0.8f, 0.1f), grey, false).transform;
         f.localRotation = Quaternion.Euler(0f, 0f, 45f);
-        LevelBuilder.Visual("Back", PrimitiveType.Sphere, s.fin, new Vector3(0f, -0.05f, 0f), new Vector3(1.6f, 0.35f, 0.5f), grey);
+        LevelBuilder.Visual("Back", PrimitiveType.Sphere, s.fin, new Vector3(0f, -0.05f, 0f), new Vector3(1.6f, 0.35f, 0.5f), grey, false);
     }
 
     void Update()
@@ -1172,7 +1225,7 @@ public class Shark : MonoBehaviour
 
         // ضو المنارة عليه؟ يغطس شوي
         bool lit = Lighthouse.Instance != null && Mathf.Abs(Lighthouse.Instance.BeamX - p.x) < 2.5f;
-        down = lit ? 1.6f : Mathf.Max(0f, down - Time.deltaTime);
+        down = lit ? 2.3f : Mathf.Max(0f, down - Time.deltaTime);
         float depth = down > 0f ? -1.2f : 0f;
         p.y = Mathf.Lerp(p.y, water + depth, Time.deltaTime * 5f);
         transform.position = p;
@@ -1181,7 +1234,7 @@ public class Shark : MonoBehaviour
         if (down > 0f || gm == null) return;
         foreach (SeaBoat boat in SeaBoat.All)
         {
-            if (boat == null || !boat.Sailing) continue;
+            if (boat == null || !boat.Sailing || boat.Waiting) continue;
             Bounds b = boat.Box;
             if (p.x > b.min.x - 0.6f && p.x < b.max.x + 0.6f) boat.Sink();
         }

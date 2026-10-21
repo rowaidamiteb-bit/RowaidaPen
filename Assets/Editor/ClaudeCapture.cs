@@ -110,7 +110,7 @@ public static class ClaudeCapture
                 string tag = "[" + i + "]";
                 if (done.Contains(tag)) continue;
                 string[] parts = shots[i].Trim().Split(':');
-                float t = float.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture);
+                if (!float.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float t)) t = 0f;
                 string kind = parts.Length > 1 ? parts[1] : "main";
                 string arg = parts.Length > 2 ? parts[2] : null;
                 if (elapsed >= t)
@@ -232,7 +232,7 @@ public static class ClaudeCapture
                     // يكتب أرقام للتشخيص: مكان رويدا، مستوى الحبر، ومكان القوارب
                     var gmp = GameManager.Instance;
                     string line = "\nt=" + Time.timeSinceLevelLoad.ToString("0.00");
-                    if (gmp.Rowaida != null) line += " rowaida=" + gmp.Rowaida.transform.position.ToString("F2") + " v=" + gmp.Rowaida.GetComponent<Rigidbody>().linearVelocity.ToString("F1") + " hearts=" + gmp.Hearts;
+                    if (gmp.Rowaida != null) line += " rowaida=" + gmp.Rowaida.transform.position.ToString("F2") + " v=" + gmp.Rowaida.GetComponent<Rigidbody>().linearVelocity.ToString("F1") + " hearts=" + gmp.Hearts + " held=" + gmp.Rowaida.Held + " play=" + gmp.IsPlaying;
                     foreach (var mon in Object.FindObjectsByType<ScribbleMonster>(FindObjectsSortMode.None))
                         line += " monster=" + mon.transform.position.ToString("F1");
                     var flood = Object.FindAnyObjectByType<InkFlood>();
