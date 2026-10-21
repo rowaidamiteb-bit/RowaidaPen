@@ -156,6 +156,7 @@ public class LevelData
     public List<Vector3> vents = new List<Vector3>();       // فتحات فقاعات (x، y، كل كم ثانية)
     public List<Vector3> jellies = new List<Vector3>();     // قناديل بحر (x، y، كم تطلع وتنزل)
     public List<Vector3> tentacles = new List<Vector3>();   // أذرع أخطبوط (من x، لـ x، تأخير)
+    public List<Vector3> landSlams = new List<Vector3>();   // ذراع تنضرب على اليابسة (x، تأخير)
     public List<Vector3> whirlpools = new List<Vector3>();  // دوامات (x، نص القطر اللي تسحب منه)
     public bool boatRide;                                   // المنارة: الشكل المغلق بالبحر يصير قارب يشيل رويدا
     public List<Vector3> sharks = new List<Vector3>();      // قروش (من x، لـ x)
@@ -600,6 +601,8 @@ public static class Levels
                 Page(22f, 30f),
                 Page(35f, 46f),
             },
+            // ذراع تنضرب على اليابسة (x، تأخير)
+            landSlams = { new Vector3(14.5f, 0f, 0f), new Vector3(27.5f, 2f, 0f) },
             tentacles =
             {
                 new Vector3(4f, 9f, 0f),
