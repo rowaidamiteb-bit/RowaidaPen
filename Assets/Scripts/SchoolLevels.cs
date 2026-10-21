@@ -101,7 +101,7 @@ public class RulerSeesaw : MonoBehaviour
             mark.transform.position += new Vector3(0f, 0f, 0.65f);
             weights.Add(mark.transform);
             weightMass.Add(Mathf.Clamp(rend.bounds.size.x, 0.8f, 2.5f));
-            gm.Sound.PlayBoing();
+            LevelSfx.Play("clack");
             Fx.Sparkle(rend.bounds.center, new Color(1f, 0.85f, 0.4f), 10);
         }
 
@@ -216,11 +216,11 @@ public class ColorGate : MonoBehaviour
                 if (c == colorA && !gotA) { gotA = true; used = true; }
                 else if (needB && c == colorB && !gotB) { gotB = true; used = true; }
                 Fx.Sparkle(b.center, InkColorEffect.ColorOf(c), used ? 22 : 8);
-                if (used) gm.Sound.PlayBoing();
+                if (used) LevelSfx.Play("crayon");
                 else
                 {
                     shake = 0.4f;
-                    gm.Sound.PlayPoof();
+                    LevelSfx.Play("buzz");
                     gm.UI.ShowMessage("", 2f, "لون غلط! الباب يبي " + Wanted());
                 }
                 Destroy(mark.gameObject);
@@ -232,7 +232,7 @@ public class ColorGate : MonoBehaviour
             {
                 openT = 0f;
                 col.enabled = false;
-                gm.Sound.PlayBoing();
+                LevelSfx.Play("success");
                 Fx.Confetti(new Vector3(x, 2.5f, -0.5f), 30);
             }
         }
@@ -391,7 +391,7 @@ public class CalcPuzzle : MonoBehaviour
                     mark.transform.position = new Vector3(k.x, k.y + 0.12f + half, c.z);
                     keyBall[i] = mark.gameObject;
                     keyCaps[i].localPosition += Vector3.down * 0.12f;
-                    gm.Sound.PlaySqueak(1.2f + spec.keys[i] * 0.05f);
+                    LevelSfx.Play("beep", 1f, 0.8f + spec.keys[i] * 0.08f);
                     UpdateScreen();
                     break;
                 }
@@ -401,14 +401,14 @@ public class CalcPuzzle : MonoBehaviour
             {
                 openT = 0f;
                 doorCol.enabled = false;
-                gm.Sound.PlayBoing();
+                LevelSfx.Play("success");
                 Fx.Confetti(new Vector3(spec.gateX, 2f, -0.5f), 30);
                 gm.UI.ShowMessage("", 1.8f, "صح! " + spec.target);
             }
             else if (sum > spec.target && resetAt < 0f)
             {
                 resetAt = Time.time + 1.2f;
-                gm.Sound.PlayPoof();
+                LevelSfx.Play("error");
                 gm.UI.ShowMessage("", 2f, "أكثر من " + spec.target + "! جربي مرة ثانية");
             }
             if (resetAt > 0f && Time.time >= resetAt)
@@ -519,7 +519,7 @@ public class GiantScissors : MonoBehaviour
                 foreach (Collider c in jamBall.GetComponentsInChildren<Collider>()) c.enabled = false;
                 jamBall.transform.position = new Vector3(b.center.x, Mathf.Max(b.center.y, 0.3f + b.extents.y), 0.9f);
                 jamAngle = AngleFor(jamBall.GetComponent<MeshRenderer>().bounds);
-                gm.Sound.PlayBoing();
+                LevelSfx.Play("clank");
                 Fx.Sparkle(b.center, new Color(1f, 0.9f, 0.5f), 18);
                 gm.UI.ShowMessage("", 2f, "علق المقص! ارسمي الجسر");
                 break;
@@ -542,7 +542,7 @@ public class GiantScissors : MonoBehaviour
         if (jamAngle < 0f && angle < 2f && t >= nextSnip)
         {
             nextSnip = t + 0.5f;
-            gm.Sound.PlayChomp();
+            LevelSfx.Play("snip");
             foreach (InkMark mark in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
             {
                 if (mark.closed) continue;

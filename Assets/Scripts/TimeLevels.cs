@@ -119,7 +119,7 @@ public class ClockBridge : MonoBehaviour
                 angle = 90f;
                 jammed = true;
                 handCol.enabled = true;
-                gm.Sound.PlayBoing();
+                LevelSfx.Play("clank");
                 Fx.Sparkle(new Vector3(to - 0.5f, 0f, 0f), new Color(1f, 0.85f, 0.4f), 18);
                 gm.UI.ShowMessage("", 1.8f, "وقف العقرب!");
             }
@@ -262,7 +262,7 @@ public class Hourglass : MonoBehaviour
                 var r = mark.GetComponent<MeshRenderer>();
                 if (r == null || !r.bounds.Intersects(g)) continue;
                 flipT = 0f;
-                gm.Sound.PlayBoing();
+                LevelSfx.Play("whoosh"); LevelSfx.Play("sand", 0.8f);
                 Fx.Sparkle(transform.position, new Color(1f, 0.9f, 0.5f), 16);
                 Destroy(mark.gameObject);
                 break;
@@ -396,7 +396,7 @@ public class GearBridge : MonoBehaviour
                 if (!linked[i] && Touches(r.bounds, i) && Touches(r.bounds, i + 1))
                 {
                     linked[i] = true;
-                    gm.Sound.PlayBoing();
+                    LevelSfx.Play("clank");
                     Fx.Sparkle(r.bounds.center, new Color(1f, 0.8f, 0.4f), 16);
                 }
         }
@@ -407,7 +407,7 @@ public class GearBridge : MonoBehaviour
         if (turning == gears.Count && lowerT < 0f)
         {
             lowerT = 0f;
-            gm.Sound.PlayRumble(0.4f);
+            LevelSfx.Play("thud");
         }
         if (lowerT >= 0f && lowerT < 1f)
         {
@@ -520,6 +520,7 @@ public class AlarmSleeper : MonoBehaviour
             if (t >= nextZ)
             {
                 nextZ = t + 0.9f;
+                if (gm.Rowaida != null && Mathf.Abs(gm.Rowaida.transform.position.x - sleeperX) < 10f && Random.value < 0.4f) LevelSfx.Play("snore", 0.5f);
                 var z = LevelBuilder.Visual("Z", PrimitiveType.Cube, null, cat.position + new Vector3(-1.3f, 1.6f, -0.6f), new Vector3(0.3f, 0.06f, 0.02f), zMat, false);
                 var fx = z.AddComponent<FxParticle>();
                 fx.velocity = new Vector3(-0.2f, 0.7f, 0f);
@@ -533,7 +534,7 @@ public class AlarmSleeper : MonoBehaviour
                 Vector3 c = mark.transform.position;
                 if (Mathf.Abs(c.x - alarmPos.x) > 1.5f || c.y < alarmPos.y || c.y > alarmPos.y + 2.2f) continue;
                 ringT = 0f;
-                gm.Sound.PlayLaser();
+                LevelSfx.Play("alarm"); LevelSfx.Play("meow", 0.8f);
                 gm.UI.ShowMessage("", 1.8f, "رررن! صحت القطوة");
                 break;
             }
@@ -677,7 +678,7 @@ public class DayNight : MonoBehaviour
                         Night = !Night;
                         flipCooldown = 0.6f;
                         Apply();
-                        gm.Sound.PlayBoing();
+                        LevelSfx.Play(Night ? "owl" : "rooster"); LevelSfx.SetAmbience(Night ? "night" : "day");
                         Fx.Sparkle(dial.position, Night ? new Color(0.7f, 0.75f, 1f) : new Color(1f, 0.8f, 0.3f), 20);
                     }
                     Destroy(mark.gameObject);

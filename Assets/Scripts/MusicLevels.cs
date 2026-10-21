@@ -10,7 +10,8 @@ public static class MusicFeatures
         new Color(0.95f, 0.3f, 0.35f), new Color(1f, 0.6f, 0.2f), new Color(1f, 0.85f, 0.25f),
         new Color(0.35f, 0.8f, 0.4f), new Color(0.3f, 0.55f, 1f),
     };
-    public static readonly float[] KeyPitch = { 1f, 1.12f, 1.26f, 1.33f, 1.5f };
+    // دو ري مي صول لا (نغمات حلوة مع بعض)
+    public static readonly float[] KeyPitch = { 1f, 1.122f, 1.26f, 1.498f, 1.682f };
 
     public static void Build(Transform root, LevelData data, GameManager gm, System.Random rng)
     {
@@ -149,7 +150,7 @@ public class PianoPuzzle : MonoBehaviour
 
     void Play(int key, GameObject ball, GameManager gm)
     {
-        gm.Sound.PlaySqueak(MusicFeatures.KeyPitch[key]);
+        LevelSfx.Play("piano", 1f, MusicFeatures.KeyPitch[key]);
         StartCoroutine(Press(keys[key]));
         Fx.Sparkle(keys[key].position + Vector3.up * 0.5f, MusicFeatures.KeyColors[key], 14);
         // الكورة تختفي بعد ما تعزف (عشان تقدرين تعزفين نفس المفتاح مرة ثانية)
@@ -161,7 +162,7 @@ public class PianoPuzzle : MonoBehaviour
             {
                 openT = 0f;
                 doorCol.enabled = false;
-                gm.Sound.PlayBoing();
+                LevelSfx.Play("success");
                 Fx.Confetti(new Vector3(spec.gateX, 2f, -0.5f), 30);
                 gm.UI.ShowMessage("", 1.8f, "لحن حلو! انفتح الباب");
             }
@@ -170,7 +171,7 @@ public class PianoPuzzle : MonoBehaviour
         {
             progress = spec.song[0] == key ? 1 : 0;
             flash = 0.6f;
-            gm.Sound.PlayPoof();
+            LevelSfx.Play("error");
             gm.UI.ShowMessage("", 2f, "نوتة غلط! ابدئي اللحن من أوله");
         }
     }
@@ -224,7 +225,7 @@ public class DrumPit : MonoBehaviour
             var zig = LevelBuilder.Visual("Zigzag", PrimitiveType.Cube, drum, new Vector3(-drumW * 0.4f + i * drumW * 0.16f, 0.45f, -drumW * 0.5f - 0.01f), new Vector3(0.05f, 0.7f, 0.02f), gold, false).transform;
             zig.localRotation = Quaternion.Euler(0f, 0f, i % 2 == 0 ? 25f : -25f);
         }
-        gm.Sound.PlayBoing();
+        LevelSfx.Play("drum");
         Fx.Sparkle(drum.position + Vector3.up, new Color(1f, 0.8f, 0.3f), 16);
         gm.UI.ShowMessage("", 1.6f, "صار طبل!");
     }
@@ -262,8 +263,8 @@ public class DrumPit : MonoBehaviour
             if (r0.Bounce(11.5f))
             {
                 squash = 1f;
-                gm.Sound.PlayBoing();
-                gm.Sound.PlayRumble(0.3f);
+                LevelSfx.Play("drum");
+                
                 Fx.Sparkle(drum.position + Vector3.up, new Color(1f, 0.85f, 0.3f), 12);
             }
         }
@@ -358,7 +359,7 @@ public class NoteSection : MonoBehaviour
             if (r != null && (r.transform.position + Vector3.up * 0.3f - n.position).sqrMagnitude < 1.1f * 1.1f)
             {
                 n.gameObject.SetActive(false);
-                gm.Sound.PlaySqueak(MusicFeatures.KeyPitch[i % MusicFeatures.KeyPitch.Length] * 1.2f);
+                LevelSfx.Play("chime", 0.9f, MusicFeatures.KeyPitch[(spec.notes.Length - notes.FindAll(x => x.gameObject.activeSelf).Count) % MusicFeatures.KeyPitch.Length]);
                 Fx.Sparkle(n.position, MusicFeatures.KeyColors[i % 5], 18);
                 // النوتة تنحط على الباب
                 icons[Collected() - 1].GetComponent<Renderer>().sharedMaterial = n.GetComponentInChildren<Renderer>().sharedMaterial;
@@ -368,7 +369,7 @@ public class NoteSection : MonoBehaviour
         {
             openT = 0f;
             doorCol.enabled = false;
-            gm.Sound.PlayBoing();
+            LevelSfx.Play("success");
             Fx.Confetti(new Vector3(spec.gateX, 2f, -0.5f), 30);
         }
         if (openT >= 0f && openT < 1f)
@@ -404,7 +405,7 @@ public class NoteSection : MonoBehaviour
         if (openT < 0f && p.x > spec.gateX - 1.2f && p.x < spec.gateX && gm.IsPlaying)
         {
             Fx.Sparkle(p, new Color(0.8f, 0.7f, 1f), 16);
-            gm.Sound.PlayPoof();
+            LevelSfx.Play("whoosh");
             r.Respawn(new Vector3(spec.startX - 1f, 1f, 0f));
             started = false;
             Camera.main.GetComponent<CameraFollow>().SetTarget(r.transform, true);
@@ -424,6 +425,7 @@ public class StringBridge : MonoBehaviour
     int prompted = -1;
     Transform pegL, pegR;
     readonly List<Vector3> pts = new List<Vector3>();
+    AudioSource buzz;
     bool Muted => mutedAt >= 0f && (unmuteAfter <= 0f || Time.time - mutedAt < unmuteAfter);
 
     // spec: (من x، لـ x، يرجع يهتز بعد كم ثانية (0 = أبد))
@@ -455,6 +457,7 @@ public class StringBridge : MonoBehaviour
         s.col.center = new Vector3((s.from + s.to) * 0.5f, -0.1f, 0f);
         s.col.size = new Vector3(s.to - s.from, 0.2f, 1.6f);
         s.col.enabled = false;
+        s.buzz = LevelSfx.LoopSource(go, "string_buzz", 0f);
     }
 
     void Update()
@@ -462,6 +465,15 @@ public class StringBridge : MonoBehaviour
         GameManager gm = GameManager.Instance;
         if (gm == null) return;
         bool muted = Muted;
+        // الوتر وهو يهتز يطن طنين مزعج (يعلى كل ما قربت رويدا)، ولما يسكت يسكت الطنين
+        if (buzz != null)
+        {
+            float dist = gm.Rowaida != null ? Mathf.Abs(gm.Rowaida.transform.position.x - (from + to) * 0.5f) : 99f;
+            float want = muted || !gm.IsPlaying ? 0f : Mathf.Clamp01(1f - dist / 14f) * 0.35f;
+            buzz.volume = Mathf.MoveTowards(buzz.volume, want, Time.deltaTime * 2f);
+            if (buzz.volume > 0.01f && !buzz.isPlaying) buzz.Play();
+            else if (buzz.volume <= 0.01f && buzz.isPlaying) buzz.Stop();
+        }
         col.enabled = muted;
         float t = Time.time;
 
@@ -488,7 +500,7 @@ public class StringBridge : MonoBehaviour
                 Bounds b = r.bounds;
                 if (b.max.x < from + 0.3f || b.min.x > to - 0.3f || b.min.y > 0.9f || b.max.y < -0.7f) continue;
                 mutedAt = t;
-                gm.Sound.PlaySqueak(0.9f + (to - from) * 0.05f);
+                LevelSfx.Play("pluck", 1f, 1f + (from % 3f) * 0.12f);
                 Fx.Sparkle(b.center, new Color(1f, 0.85f, 0.5f), 14);
                 Destroy(mark.gameObject);
                 break;

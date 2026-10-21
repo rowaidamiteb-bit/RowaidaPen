@@ -175,6 +175,7 @@ public class LevelData
     public List<Vector4> dayPads = new List<Vector4>();     // الليل والنهار: صفحات (من x، لـ x، سطحها، 0 نهار / 1 ليل)
 
     // الجزء الثاني: الموسيقى
+    public string ambience;                                 // صوت خلفية المرحلة (بحر، ساعة، مصنع...)
     public List<PianoSpec> pianos = new List<PianoSpec>();  // بيانو: لحن بالألوان لازم ينعزف بالترتيب
     public List<Vector3> drumPits = new List<Vector3>();    // حفرة طبول (من x، لـ x، قاعها)
     public List<NoteSpec> noteSections = new List<NoteSpec>(); // نوتات تنجمع عشان ينفتح الباب
@@ -497,6 +498,7 @@ public static class Levels
     {
         return new LevelData
         {
+            ambience = "sea",
             title = "المد والجزر",
             theme = LevelTheme.Ocean(),
             subtitle = "رويدا تستنى الجزر عشان تعدي الرمل... والرمل الطويل ارسمي له ممشى",
@@ -538,6 +540,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "underwater",
             title = "أعماق البحر",
             theme = LevelTheme.Underwater(),
             subtitle = "ارسمي جسور فوق الحفر... الفقاعات تتزحلق تحتها وتعبي هوا رويدا",
@@ -582,6 +585,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "sea",
             title = "الأخطبوط العملاق",
             theme = LevelTheme.SunsetSea(),
             subtitle = "الأخطبوط جوعان! ارمي له كورة ياكلها وينام... وبعدين ارسمي الجسر",
@@ -614,6 +618,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "storm",
             title = "الدوامة",
             theme = LevelTheme.StormSea(),
             subtitle = "الدوامة تبلع أي خط يقرب منها... ارسمي الجسر مقوّس فوقها!",
@@ -651,6 +656,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "night_sea",
             title = "المنارة",
             theme = LevelTheme.LighthouseNight(),
             subtitle = "ارسمي قارب بالبحر يوصلك للمنارة... والقرش يخاف من ضوها!",
@@ -685,6 +691,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "classroom",
             title = "المسطرة",
             theme = LevelTheme.CrayonDay(),
             subtitle = "ارمي كورة على طرف المسطرة عشان تتعدل... كل ما كانت أبعد كانت أقوى!",
@@ -716,6 +723,7 @@ public static class Levels
     {
         return new LevelData
         {
+            ambience = "classroom",
             title = "صندوق الألوان",
             theme = LevelTheme.PastelPaint(),
             subtitle = "كل باب يبي لونه! اختاري اللون بالأرقام وارسمي على الباب",
@@ -748,6 +756,7 @@ public static class Levels
     {
         return new LevelData
         {
+            ambience = "classroom",
             title = "الآلة الحاسبة",
             theme = LevelTheme.GraphDusk(),
             subtitle = "ارمي كور على الأرقام... إذا صار مجموعها نفس رقم الشاشة ينفتح الباب",
@@ -775,6 +784,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "classroom",
             title = "المقص",
             theme = LevelTheme.Origami(),
             subtitle = "المقص يقص الجسور! ارمي كورة بين شفراته تعلقه... وبعدين ارسمي الجسر",
@@ -805,6 +815,7 @@ public static class Levels
     {
         return new LevelData
         {
+            ambience = "classroom",
             title = "المقلمة",
             theme = LevelTheme.KraftDawn(),
             subtitle = "كل أدوات المدرسة مع بعض... وريها وش تعلمتي!",
@@ -837,6 +848,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "clock",
             title = "الساعة",
             theme = LevelTheme.Watercolor(),
             subtitle = "عقرب الساعة يلف! ارسمي خط تحت مكانه لما يصير مستوي... يوقف عليه وتعدين",
@@ -867,6 +879,7 @@ public static class Levels
     {
         return new LevelData
         {
+            ambience = "desert",
             title = "الساعة الرملية",
             theme = LevelTheme.Canyon(),
             subtitle = "المسي الساعة الرملية بخط... تنقلب والرمل يملي الحفرة",
@@ -897,6 +910,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "factory",
             title = "التروس",
             theme = LevelTheme.InkParchment(),
             subtitle = "الترس الأزرق يلف... ارسمي خط يوصله بالترس الثاني عشان ينزل الجسر",
@@ -927,6 +941,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "clock",
             title = "المنبه",
             theme = LevelTheme.CandySunset(),
             subtitle = "القطاوة نايمة بالطريق! ارمي كورة على زر المنبه عشان يرن وتصحى",
@@ -958,6 +973,7 @@ public static class Levels
     {
         return new LevelData
         {
+            ambience = "day",
             title = "الليل والنهار",
             theme = LevelTheme.BalloonSky(),
             subtitle = "المسي الشمس والقمر بخط عشان يتغير الوقت... كل صفحة لها وقتها",
@@ -996,6 +1012,7 @@ public static class Levels
     {
         return new LevelData
         {
+            ambience = "hall",
             title = "البيانو",
             theme = LevelTheme.CrayonDay(),
             subtitle = "اعزفي اللحن! ارمي كور على المفاتيح بنفس ترتيب ألوان النوتة",
@@ -1023,6 +1040,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "hall",
             title = "الطبول",
             theme = LevelTheme.CandySunset(),
             subtitle = "الجدار عالي! ارسمي دايرة بقاع الحفرة تصير طبل... وتنطين عليه",
@@ -1055,6 +1073,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "hall",
             title = "النوتات",
             theme = LevelTheme.Mystic(),
             subtitle = "جمعي النوتات! ارسمي طريق مثل التلة يوصل رويدا لها",
@@ -1080,6 +1099,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "hall",
             title = "الأوتار",
             theme = LevelTheme.KraftDawn(),
             subtitle = "الوتر يهتز! ارسمي خط يلمسه عشان يسكت ويصير جسر",
@@ -1112,6 +1132,7 @@ public static class Levels
     {
         var level = new LevelData
         {
+            ambience = "crowd",
             title = "الحفلة",
             theme = LevelTheme.Cosmic(),
             subtitle = "الحفلة بدت! اعزفي، نطي، سكتي الوتر، وجمعي النوتات",

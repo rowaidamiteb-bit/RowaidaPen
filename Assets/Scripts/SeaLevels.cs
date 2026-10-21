@@ -160,7 +160,7 @@ public class SeaWater : MonoBehaviour
         {
             touch = 0f;
             Fx.Sparkle(r.transform.position, new Color(0.6f, 0.85f, 1f), 16);
-            gm.Sound.PlayPoof();
+            LevelSfx.Play("splash");
             gm.KillRowaida();
         }
     }
@@ -250,7 +250,7 @@ public class Crab : MonoBehaviour
             nextPinch = t + 2.5f;
             dir = Mathf.Sign(p.x - r.transform.position.x);   // يقرص مرة ويهرب
             r.Knockback(-1f);
-            gm.Sound.PlaySqueak(1.8f);
+            LevelSfx.Play("crab");
             Fx.Sparkle(r.transform.position, new Color(1f, 0.5f, 0.3f), 10);
         }
     }
@@ -293,7 +293,7 @@ public class AirTank : MonoBehaviour
     public void Refill(float amount)
     {
         air = Mathf.Min(1f, air + amount);
-        gm.Sound.PlaySqueak(1.5f);
+        LevelSfx.Play("bubble", 0.9f, 1.3f);
         Fx.Sparkle(transform.position + Vector3.up * 0.8f, new Color(0.8f, 0.95f, 1f), 12);
     }
 
@@ -457,7 +457,7 @@ public class Jellyfish : MonoBehaviour
         {
             nextSting = Time.time + 1.2f;
             gm.Rowaida.Knockback(-1f);
-            gm.Sound.PlayLaser();
+            LevelSfx.Play("zap");
             Fx.Sparkle(gm.Rowaida.transform.position, new Color(1f, 0.6f, 0.9f), 12);
         }
     }
@@ -604,7 +604,7 @@ public class Tentacle : MonoBehaviour
         preyTarget = mark.closed ? mark.transform.position : mark.GetComponent<MeshRenderer>().bounds.center;
         state = next;
         stateT = 0f;
-        GameManager.Instance.Sound.PlayChomp();
+        LevelSfx.Play(next == State.Eating ? "gulp" : "slap");
     }
 
     void Update()
@@ -648,7 +648,7 @@ public class Tentacle : MonoBehaviour
                         Fx.Sparkle(new Vector3(Cx, water, 0f), new Color(0.6f, 0.85f, 1f), 14);
                         Destroy(prey);
                     }
-                    gm.Sound.PlayPoof();
+                    LevelSfx.Play("splash", 0.7f);
                     if (state == State.Eating)
                     {
                         state = State.Sleeping;
@@ -685,6 +685,7 @@ public class Tentacle : MonoBehaviour
         if (state == State.Sleeping && t >= nextZ)
         {
             nextZ = t + 0.7f;
+            if (Random.value < 0.15f) LevelSfx.Play("snore", 0.25f);
             var z = LevelBuilder.Visual("Z", PrimitiveType.Cube, null, new Vector3(Cx + Random.Range(-0.4f, 0.4f), water + 0.2f, -0.6f), new Vector3(0.28f, 0.06f, 0.02f), zMat, false);
             var fx = z.AddComponent<FxParticle>();
             fx.velocity = new Vector3(0.3f, 0.8f, 0f);
@@ -838,7 +839,7 @@ public class Whirlpool : MonoBehaviour
                 p.z = 0f;
                 if ((p - c).sqrMagnitude > radius * radius) continue;
                 mark.gameObject.AddComponent<SuckedInk>().center = c;
-                gm.Sound.PlayRumble(0.3f);
+                LevelSfx.Play("swirl");
                 break;
             }
         }
@@ -915,7 +916,7 @@ public class SeaBoat : MonoBehaviour
             rb.isKinematic = true;
             rb.rotation = Quaternion.identity;
             BuildRig(b);
-            GameManager.Instance.Sound.PlayPoof();
+            LevelSfx.Play("splash", 0.8f);
             Fx.Sparkle(new Vector3(b.center.x, Water, 0f), new Color(0.7f, 0.9f, 1f), 10);
         }
         // يطفو: قاعه فوق المويه بشوي، ويتمايل مع الموج
@@ -927,7 +928,7 @@ public class SeaBoat : MonoBehaviour
         GameManager gm = GameManager.Instance;
         RowaidaController rowaida = gm.Rowaida;
         bool riding = rowaida != null && !done && Riding(rowaida, b);
-        if (riding && !sailing) { sailing = true; gm.Sound.PlaySqueak(1.3f); }
+        if (riding && !sailing) { sailing = true; LevelSfx.Play("whoosh", 0.6f); }
 
         if (sailing && !done)
         {
@@ -979,7 +980,7 @@ public class SeaBoat : MonoBehaviour
         var rowaida = GameManager.Instance.Rowaida;
         if (rowaida != null && sailing && !done) { rowaida.Held = false; rowaida.CarryX = 0f; }
         foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
-        GameManager.Instance.Sound.PlayChomp();
+        GameManager.Instance.Sound.PlayChomp(); LevelSfx.Play("shark");
         Fx.Sparkle(Box.center, new Color(0.7f, 0.9f, 1f), 18);
     }
 
