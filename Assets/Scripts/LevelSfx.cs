@@ -70,6 +70,23 @@ public static class LevelSfx
         return c;
     }
 
+    // لحن تجريبي (نسمع فيه الصوت برا اللعبة): نفس الصوت بنغمات ورا بعض
+    public static AudioClip Demo(string key, float[] pitches, float gap)
+    {
+        var parts = new List<float[]>();
+        foreach (float p in pitches) parts.Add(Generate(key, p));
+        int len = Mathf.RoundToInt(gap * Rate) * (parts.Count - 1) + parts[parts.Count - 1].Length;
+        var mix = new float[len];
+        for (int k = 0; k < parts.Count; k++)
+        {
+            int s = Mathf.RoundToInt(gap * Rate) * k;
+            for (int i = 0; i < parts[k].Length && s + i < len; i++) mix[s + i] += parts[k][i] * 0.7f;
+        }
+        var c = AudioClip.Create("demo", len, 1, Rate, false);
+        c.SetData(mix, 0);
+        return c;
+    }
+
     // ---------- أدوات ----------
 
     static float[] Buf(float seconds) => new float[Mathf.RoundToInt(seconds * Rate)];
@@ -632,10 +649,43 @@ public static class LevelSfx
             }
             case "piano":
             {
-                b = Buf(1.4f);
+                // بيانو أقرب للحقيقي: ثلاث أوتار متقاربة لكل نغمة (تعطي رنة دافية)، توافقيات تخف بسرعة
+                // (الحادة أسرع)، ضربة مطرقة ناعمة بالبداية، وصوت يخف على مرحلتين مثل البيانو
+                float dur = 2.2f;
+                b = Buf(dur);
                 float f = 261.6f * p;
-                AddTone(b, 0f, 1.4f, f, 0.6f, 3f, 0.45f);
-                AddTone(b, 0f, 1.4f, f * 2.003f, 0.15f, 5f, 0f);
+                float[] detune = { 0.9993f, 1f, 1.0008f };
+                for (int n = 1; n <= 8; n++)
+                {
+                    float fn = n * f * Mathf.Sqrt(1f + 0.0004f * n * n);
+                    if (fn > 9000f) break;
+                    float amp = Mathf.Pow(n, -1.4f) * (n == 2 ? 0.8f : 1f) * Mathf.Lerp(1f, 0.6f, Mathf.Clamp01((f - 300f) / 600f) * (n > 1 ? 1f : 0f));
+                    float d = 0.9f + 0.7f * n + f / 500f;
+                    foreach (float dt in detune)
+                    {
+                        float ph = (float)r.NextDouble() * 6.28f;
+                        for (int i = 0; i < b.Length; i++)
+                        {
+                            float t = i / (float)Rate;
+                            float env = Mathf.Clamp01(t / 0.003f) * (0.65f * Mathf.Exp(-t * d * 2.2f) + 0.35f * Mathf.Exp(-t * d * 0.35f));
+                            b[i] += Mathf.Sin(2f * Mathf.PI * fn * dt * t + ph) * env * amp * 0.33f;
+                        }
+                    }
+                }
+                // ضربة المطرقة: نويز ناعم قصير
+                float lp = 0f;
+                for (int i = 0; i < Rate / 40 && i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    lp += (Noise(r) - lp) * 0.15f;
+                    b[i] += lp * Mathf.Exp(-t * 160f) * 0.5f;
+                }
+                // نهاية ناعمة
+                int fade = Rate / 5;
+                for (int i = 0; i < fade; i++) b[b.Length - 1 - i] *= i / (float)fade;
+                // صدى خفيف (كأنها بقاعة)
+                int echo = Rate * 9 / 100;
+                for (int i = echo; i < b.Length; i++) b[i] += b[i - echo] * 0.18f;
                 return Normalize(b, 0.55f);
             }
             case "drum":

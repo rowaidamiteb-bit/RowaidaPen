@@ -151,6 +151,10 @@ public static class ClaudeCapture
                     InkDrawer d3 = Object.FindAnyObjectByType<InkDrawer>();
                     if (d3 != null) d3.DebugDraw(new List<Vector3> { new Vector3(20.2f, 0.25f, 0f), new Vector3(25.3f, 0.25f, 0f) });
                     break;
+                case "sfxdemo":
+                    // يحفظ لحن قصير بصوت معين: sfxdemo:piano
+                    SynthAudio.SaveWav(LevelSfx.Demo(arg, new[] { 1f, 1.122f, 1.26f, 1.335f, 1.498f, 1.682f, 1.888f, 2f, 1.498f, 1.26f, 1f }, 0.32f), Path.Combine(OutDir, arg + "_demo.wav"));
+                    break;
                 case "wav":
                     // يحفظ كل الأصوات كملفات WAV عشان نسمعها ونفحصها
                     var sound = Object.FindAnyObjectByType<SoundManager>();
