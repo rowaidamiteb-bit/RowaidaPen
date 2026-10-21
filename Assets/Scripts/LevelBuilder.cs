@@ -41,6 +41,7 @@ public static class LevelBuilder
         TimeFeatures.Build(root.transform, data, gm, rng);
         MusicFeatures.Build(root.transform, data, gm, rng);
         foreach (HazardSpec h in data.hazards) TimedHazard.Create(root.transform, h, gm);
+        Part2Details.Build(root.transform, data, gm, rng);
         LevelSfx.SetAmbience(data.ambience);
         return root;
     }

@@ -191,7 +191,7 @@ public class SeaWater : MonoBehaviour
 // سرطان يمشي جنب على الرمل رايح جاي. لو لمس رويدا يقرصها ويرجعها لورا
 public class Crab : MonoBehaviour
 {
-    float from, to, dir = 1f, nextPinch;
+    float from, to, dir = 1f;
     Transform body, clawL, clawR;
     readonly List<Transform> legs = new List<Transform>();
 
@@ -243,42 +243,160 @@ public class Crab : MonoBehaviour
             if (n == "Shell" || n == "Pincer A") r.sharedMaterial = shell;
             else if (n == "Leg" || n == "Stalk" || n == "Pincer B") r.sharedMaterial = dark;
         }
+        c.tail = new GameObject("Tail").transform;
+        c.tail.SetParent(c.body, false);
+        c.tail.localPosition = new Vector3(0.35f, 0.1f, 0.1f);
         for (int i = 0; i < 5; i++)
         {
             float a = i / 4f * Mathf.PI * 0.85f;
-            LevelBuilder.Visual("Tail", PrimitiveType.Sphere, c.body, new Vector3(0.35f + Mathf.Sin(a) * 0.35f, 0.1f + (1f - Mathf.Cos(a)) * 0.35f, 0.1f), Vector3.one * (0.22f - i * 0.02f), shell);
+            LevelBuilder.Visual("Tail", PrimitiveType.Sphere, c.tail, new Vector3(Mathf.Sin(a) * 0.35f, (1f - Mathf.Cos(a)) * 0.35f, 0f), Vector3.one * (0.22f - i * 0.02f), shell);
         }
-        LevelBuilder.Visual("Sting", PrimitiveType.Cube, c.body, new Vector3(0.25f, 0.82f, 0.1f), new Vector3(0.1f, 0.18f, 0.1f), sting).transform.localRotation = Quaternion.Euler(0f, 0f, 30f);
+        LevelBuilder.Visual("Sting", PrimitiveType.Cube, c.tail, new Vector3(-0.1f, 0.72f, 0f), new Vector3(0.1f, 0.18f, 0.1f), sting).transform.localRotation = Quaternion.Euler(0f, 0f, 30f);
+    }
+
+    // حالات السرطان/العقرب: يتمشى، يشوف رويدا ويهجم، يمسكها ويقرصها، أو مقلوب على ظهره
+    enum State { Wander, Charge, Grab, Retreat, Flipped }
+    State state;
+    float stateT, poisonUntil;
+    bool warned;
+    Transform tail;
+    bool IsScorpion => tail != null;
+
+    void Go(State s) { state = s; stateT = 0f; }
+
+    // أي خط مرسوم يلمسه يقلبه على ظهره
+    bool InkHits()
+    {
+        Bounds me = new Bounds(transform.position + Vector3.up * 0.15f, new Vector3(1.2f, 0.9f, 3f));
+        foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+        {
+            var r = m.GetComponent<MeshRenderer>();
+            if (r != null && r.bounds.Intersects(me)) return true;
+        }
+        return false;
     }
 
     void Update()
     {
         GameManager gm = GameManager.Instance;
         if (gm == null) return;
-        float t = Time.time;
+        float t = Time.time, dt = Time.deltaTime;
+        stateT += dt;
         Vector3 p = transform.position;
-        p.x += dir * 1.2f * Time.deltaTime;
-        if (p.x > to - 0.4f) dir = -1f;
-        if (p.x < from + 0.4f) dir = 1f;
+        RowaidaController r = gm.Rowaida;
+        Vector3 rp = r != null ? r.transform.position : p + Vector3.right * 99f;
+        float dx = rp.x - p.x;
+        bool sees = r != null && gm.IsPlaying && Mathf.Abs(dx) < 5f && rp.y - p.y > -0.6f && rp.y - p.y < 1.8f
+            && rp.x > from - 1.5f && rp.x < to + 1.5f;
+
+        // السم يخلص
+        if (poisonUntil > 0f && t > poisonUntil && r != null) { r.WalkBonus = 0f; poisonUntil = 0f; }
+        if (poisonUntil > 0f && r != null && Random.value < 0.2f) Fx.Sparkle(rp + Vector3.up * 0.6f, new Color(0.5f, 0.9f, 0.3f), 2);
+
+        if (state != State.Flipped && InkHits())
+        {
+            Go(State.Flipped);
+            LevelSfx.Play("thud", 0.7f);
+            Fx.Sparkle(p, new Color(1f, 0.9f, 0.4f), 12);
+            if (r != null && r.Held && grabbing) { r.Held = false; grabbing = false; }
+        }
+
+        float speed = 0f;
+        switch (state)
+        {
+            case State.Wander:
+                speed = 1.2f;
+                if (sees)
+                {
+                    Go(State.Charge);
+                    LevelSfx.Play("crab", 0.8f, IsScorpion ? 0.7f : 1.2f);
+                    if (!warned)
+                    {
+                        warned = true;
+                        gm.UI.ShowMessage("", 3f, IsScorpion ? "العقرب جاي يقرصك! ارسمي خط عليه يقلبه على ظهره" : "السلطعون جاي يهجم! ارسمي خط عليه يقلبه على ظهره");
+                    }
+                }
+                break;
+            case State.Charge:
+                dir = Mathf.Sign(dx);
+                speed = 3.4f;
+                if (!sees) Go(State.Wander);
+                else if (Mathf.Abs(dx) < 0.65f)
+                {
+                    Go(State.Grab);
+                    grabbing = true;
+                    r.Held = true; r.CarryX = 0f;
+                    LevelSfx.Play("crab", 1f, IsScorpion ? 0.8f : 1.4f);
+                }
+                break;
+            case State.Grab:
+                // يمسكها شوي (تهتز) وبعدين يقرص ويرميها لورا
+                if (r != null) r.transform.position += new Vector3(Mathf.Sin(t * 60f) * 0.01f, 0f, 0f);
+                if (stateT > 0.55f)
+                {
+                    grabbing = false;
+                    if (r != null)
+                    {
+                        r.Held = false;
+                        r.Knockback(dx >= 0f ? 1.6f : -1.6f);
+                        Fx.Sparkle(rp + Vector3.up * 0.5f, IsScorpion ? new Color(0.5f, 0.9f, 0.3f) : new Color(1f, 0.4f, 0.3f), 16);
+                        if (IsScorpion)
+                        {
+                            r.WalkBonus = -1.5f;
+                            poisonUntil = t + 3.5f;
+                            gm.UI.ShowMessage("", 2.2f, "آي! العقرب قرصك... بتمشين ببطء شوي");
+                        }
+                        else gm.UI.ShowMessage("", 1.6f, "آي! السلطعون قرصك");
+                        gm.Sound.PlaySqueak(1.4f);
+                    }
+                    LevelSfx.Play("snip", 0.8f);
+                    dir = -Mathf.Sign(dx);
+                    Go(State.Retreat);
+                }
+                break;
+            case State.Retreat:
+                speed = 2f;
+                if (stateT > 1.4f) Go(State.Wander);
+                break;
+            case State.Flipped:
+                if (stateT > 5f) { Go(State.Retreat); LevelSfx.Play("crab", 0.6f); }
+                break;
+        }
+
+        p.x += dir * speed * dt;
+        if (p.x > to - 0.4f) { p.x = to - 0.4f; if (state != State.Charge) dir = -1f; }
+        if (p.x < from + 0.4f) { p.x = from + 0.4f; if (state != State.Charge) dir = 1f; }
         transform.position = p;
-        // رجول تتحرك، ومقصات تفتح وتسكر
-        for (int i = 0; i < legs.Count; i++) legs[i].localPosition += new Vector3(0f, Mathf.Sin(t * 18f + i * 2f) * 0.002f, 0f);
-        float snap = Mathf.Abs(Mathf.Sin(t * 5f)) * 25f;
+
+        // الشكل: مقلوب، أو يمشي، أو يقرص
+        bool flipped = state == State.Flipped;
+        body.localRotation = Quaternion.Slerp(body.localRotation, Quaternion.Euler(0f, 0f, flipped ? 180f : 0f), dt * 10f);
+        body.localPosition = new Vector3(0f, flipped ? 0.25f : Mathf.Abs(Mathf.Sin(t * (speed > 2f ? 18f : 9f))) * 0.05f, 0f);
+        float legSpeed = flipped ? 30f : speed > 0f ? 18f : 4f;
+        for (int i = 0; i < legs.Count; i++)
+        {
+            Vector3 lp = legs[i].localPosition;
+            legs[i].localRotation = Quaternion.Euler(0f, 0f, (lp.x < 0f ? 35f : -35f) + Mathf.Sin(t * legSpeed + i * 2f) * (flipped ? 35f : 12f));
+        }
+        float snap = state == State.Grab ? Mathf.Abs(Mathf.Sin(t * 25f)) * 40f
+            : state == State.Charge ? 30f + Mathf.Sin(t * 14f) * 15f
+            : Mathf.Abs(Mathf.Sin(t * 5f)) * 25f;
         clawL.localRotation = Quaternion.Euler(0f, 0f, snap);
         clawR.localRotation = Quaternion.Euler(0f, 0f, -snap);
-        body.localPosition = new Vector3(0f, Mathf.Abs(Mathf.Sin(t * 9f)) * 0.04f, 0f);
-
-        RowaidaController r = gm.Rowaida;
-        if (r == null || !gm.IsPlaying || t < nextPinch) return;
-        Vector3 d = r.transform.position - p;
-        if (Mathf.Abs(d.x) < 0.6f && d.y > -0.2f && d.y < 1.1f)
+        // ذيل العقرب يضرب قدام وقت القرصة
+        if (tail != null)
         {
-            nextPinch = t + 2.5f;
-            dir = Mathf.Sign(p.x - r.transform.position.x);   // يقرص مرة ويهرب
-            r.Knockback(-1f);
-            LevelSfx.Play("crab");
-            Fx.Sparkle(r.transform.position, new Color(1f, 0.5f, 0.3f), 10);
+            float strike = state == State.Grab ? Mathf.Sin(Mathf.Clamp01(stateT / 0.5f) * Mathf.PI) : state == State.Charge ? 0.2f + Mathf.Sin(t * 10f) * 0.1f : 0f;
+            tail.localRotation = Quaternion.Euler(0f, 0f, strike * 70f);
         }
+    }
+
+    bool grabbing;
+
+    void OnDisable()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm != null && gm.Rowaida != null && poisonUntil > 0f) gm.Rowaida.WalkBonus = 0f;
     }
 }
 

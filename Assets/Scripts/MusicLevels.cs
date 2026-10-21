@@ -19,6 +19,7 @@ public static class MusicFeatures
         foreach (Vector3 d in data.drumPits) DrumPit.Create(root, d, gm);
         foreach (NoteSpec n in data.noteSections) NoteSection.Create(root, n, gm);
         foreach (Vector3 s in data.strings) StringBridge.Create(root, s, gm);
+        foreach (StaffSpec s in data.staffs) StaffBridge.Create(root, s, gm);
     }
 }
 
@@ -624,5 +625,162 @@ public class FloorPiano : MonoBehaviour
             keys[i].GetComponent<Renderer>().sharedMaterial = glow[i] > 0.05f ? lit[i] : ivory;
             keys[i].localPosition = new Vector3(keys[i].localPosition.x, 0.02f - glow[i] * 0.03f, 0f);
         }
+    }
+}
+
+// سطر موسيقي (المدرج) فوق حفرة. عليه دواير منقطة: ارسمي نوتة (دايرة) بكل مكان منقط.
+// كل نوتة تعزف نغمتها، ولما يكتمل اللحن يعزف كله والسطور تصير جسر
+public class StaffSpec
+{
+    public float from, to, top;
+    public Vector2[] notes;   // (x، درجة على السطر: 0 أوطى سطر، كل 1 = نص مسافة)
+    public StaffSpec(float from, float to, float top, params Vector2[] notes) { this.from = from; this.to = to; this.top = top; this.notes = notes; }
+}
+
+public class StaffBridge : MonoBehaviour
+{
+    // دو ري مي فا صول لا سي دو ري
+    static readonly float[] Scale = { 1f, 1.122f, 1.26f, 1.335f, 1.498f, 1.682f, 1.888f, 2f, 2.245f };
+    const float Line0 = 0.55f, Step = 0.24f;
+
+    StaffSpec spec;
+    readonly List<Transform> lines = new List<Transform>();
+    readonly List<GameObject> hints = new List<GameObject>();
+    Transform[] heads;
+    bool[] filled;
+    bool done, holding, prompted;
+    float doneAt = -1f, nextWrong;
+    int played;
+    BoxCollider bridge;
+    Material ink, glow, hintMat;
+
+    Vector3 Target(int i) => new Vector3(spec.notes[i].x, spec.top + Line0 + spec.notes[i].y * Step, 0f);
+
+    public static void Create(Transform root, StaffSpec spec, GameManager gm)
+    {
+        var go = new GameObject("Staff");
+        go.transform.SetParent(root, false);
+        var s = go.AddComponent<StaffBridge>();
+        s.spec = spec;
+        s.filled = new bool[spec.notes.Length];
+        s.heads = new Transform[spec.notes.Length];
+        s.ink = gm.Mat("Note Black", new Color(0.12f, 0.1f, 0.15f), 0.6f);
+        s.glow = gm.Mat("Staff Glow", new Color(1.4f, 1.1f, 0.4f), 0.6f);
+        s.hintMat = gm.Mat("Staff Hint", new Color(0.55f, 0.6f, 0.95f), 0.3f);
+        float w = spec.to - spec.from, cx = (spec.from + spec.to) * 0.5f;
+        for (int i = 0; i < 5; i++)
+            s.lines.Add(LevelBuilder.Visual("Staff Line", PrimitiveType.Cube, go.transform, new Vector3(cx, spec.top + Line0 + i * Step * 2f - 0.55f, 0f), new Vector3(w, 0.04f, 0.04f), s.ink, false).transform);
+        // مفتاح صول بسيط على أول السطر
+        var clef = LevelBuilder.Visual("Clef", PrimitiveType.Capsule, go.transform, new Vector3(spec.from + 0.35f, spec.top + Line0 + 4f * Step - 0.55f, 0f), new Vector3(0.18f, 0.75f, 0.1f), s.ink, false).transform;
+        clef.localRotation = Quaternion.Euler(0f, 0f, -12f);
+        LevelBuilder.Visual("Clef Loop", PrimitiveType.Sphere, go.transform, new Vector3(spec.from + 0.42f, spec.top + Line0 + 2f * Step - 0.55f, 0f), new Vector3(0.45f, 0.5f, 0.08f), s.ink, false);
+        // أماكن النوتات المنقطة
+        for (int n = 0; n < spec.notes.Length; n++)
+        {
+            var ring = new GameObject("Note Hint");
+            ring.transform.SetParent(go.transform, false);
+            Vector3 c = s.Target(n) - new Vector3(0f, 0.55f, 0f);
+            for (int k = 0; k < 10; k++)
+            {
+                float a = k / 10f * Mathf.PI * 2f;
+                LevelBuilder.Visual("Dot", PrimitiveType.Sphere, ring.transform, c + new Vector3(Mathf.Cos(a) * 0.34f, Mathf.Sin(a) * 0.26f, -0.05f), Vector3.one * 0.07f, s.hintMat, false);
+            }
+            s.hints.Add(ring);
+        }
+        var b = new GameObject("Staff Bridge");
+        b.transform.SetParent(go.transform, false);
+        b.transform.position = new Vector3(cx, spec.top - 0.15f, 0f);
+        s.bridge = b.AddComponent<BoxCollider>();
+        s.bridge.size = new Vector3(w + 0.3f, 0.3f, 2f);
+        s.bridge.enabled = false;
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time;
+
+        // نوتة مرسومة؟ إذا جنب مكان منقط تثبت فيه، وإلا تطلع نشاز وتختفي
+        if (!done)
+            foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                if (m.beingEaten) continue;
+                var r = m.GetComponent<MeshRenderer>();
+                if (r == null) continue;
+                Vector3 c = r.bounds.center;
+                Vector3 sz = r.bounds.size;
+                bool overlaps = r.bounds.max.x > spec.from + 0.2f && r.bounds.min.x < spec.to - 0.2f && c.y > spec.top - 1.5f && c.y < spec.top + 3.2f;
+                bool small = m.closed || (sz.x < 1.3f && sz.y < 1.3f);
+                // خط طويل فوق السطر (يبي يعدي بدون لحن)؟ يختفي
+                if (!small && overlaps)
+                {
+                    Destroy(m.gameObject);
+                    LevelSfx.Play("error", 0.7f);
+                    if (t >= nextWrong) { nextWrong = t + 2f; gm.UI.ShowMessage("", 2.4f, "السطر يبي نوتات مو خطوط! ارسمي دايرة بكل مكان منقط"); }
+                    continue;
+                }
+                if (c.x < spec.from - 0.5f || c.x > spec.to + 0.5f || c.y < spec.top - 0.5f || c.y > spec.top + 3.2f) continue;
+                int best = -1; float bd = 0.8f;
+                for (int n = 0; n < filled.Length; n++)
+                {
+                    if (filled[n]) continue;
+                    float d = Vector2.Distance(c, Target(n) - new Vector3(0f, 0.55f, 0f));
+                    if (d < bd) { bd = d; best = n; }
+                }
+                Destroy(m.gameObject);
+                if (best >= 0) Fill(best, gm);
+                else if (t >= nextWrong)
+                {
+                    nextWrong = t + 0.3f;
+                    LevelSfx.Play("error", 0.7f);
+                    Fx.Sparkle(c, new Color(0.5f, 0.3f, 0.6f), 10);
+                }
+            }
+
+        // كل النوتات تمام: اللحن يعزف كله، وبعدين السطور تضوي وتصير جسر
+        if (!done && System.Array.TrueForAll(filled, f => f)) { done = true; doneAt = t; played = 0; }
+        if (done)
+        {
+            float k = t - doneAt;
+            while (played < heads.Length && k > 0.3f + played * 0.28f)
+            {
+                LevelSfx.Play("piano", 0.7f, Scale[Mathf.Clamp(Mathf.RoundToInt(spec.notes[played].y), 0, Scale.Length - 1)]);
+                Fx.Sparkle(heads[played].position, MusicFeatures.KeyColors[played % 5], 8);
+                heads[played].localScale = new Vector3(0.62f, 0.46f, 0.2f) * 1.3f;
+                played++;
+            }
+            for (int i = 0; i < heads.Length; i++) heads[i].localScale = Vector3.Lerp(heads[i].localScale, new Vector3(0.62f, 0.46f, 0.2f), Time.deltaTime * 6f);
+            if (played >= heads.Length && !bridge.enabled)
+            {
+                bridge.enabled = true;
+                LevelSfx.Play("chime", 0.8f, 1.5f);
+                foreach (Transform l in lines) l.GetComponent<MeshRenderer>().sharedMaterial = glow;
+                lines[0].localScale = new Vector3(lines[0].localScale.x, 0.12f, 1.2f);
+                lines[0].position = new Vector3(lines[0].position.x, spec.top - 0.05f, 0f);
+            }
+        }
+        // السطور تتموج شوي (أقوى وهي تعزف)
+        for (int i = 0; i < lines.Count; i++)
+            if (!(bridge.enabled && i == 0))
+                lines[i].localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 2f + i) * (done ? 0.6f : 0.25f));
+
+        bool wait = HoldHelper.Before(spec.from) && !bridge.enabled;
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "ارسمي نوتة (دايرة) بكل مكان منقط عشان يكتمل اللحن"); }
+        HoldHelper.Hold(ref holding, wait);
+    }
+
+    void Fill(int n, GameManager gm)
+    {
+        filled[n] = true;
+        Destroy(hints[n]);
+        Vector3 p = Target(n) - new Vector3(0f, 0.55f, 0f);
+        var head = LevelBuilder.Visual("Note Head", PrimitiveType.Sphere, transform, p, new Vector3(0.62f, 0.46f, 0.2f), ink, false).transform;
+        head.localRotation = Quaternion.Euler(0f, 0f, 20f);
+        LevelBuilder.Visual("Stem", PrimitiveType.Cube, transform, p + new Vector3(0.28f, 0.6f, 0f), new Vector3(0.06f, 1.2f, 0.06f), ink, false);
+        heads[n] = head;
+        int step = Mathf.Clamp(Mathf.RoundToInt(spec.notes[n].y), 0, Scale.Length - 1);
+        LevelSfx.Play("piano", 0.8f, Scale[step]);
+        Fx.Sparkle(p, MusicFeatures.KeyColors[n % 5], 12);
     }
 }

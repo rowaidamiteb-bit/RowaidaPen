@@ -170,6 +170,9 @@ public class LevelData
     public List<Vector3> colorGates = new List<Vector3>();  // أبواب ملونة (x، اللون، اللون الثاني أو -1). الألوان: 1 أحمر، 2 أزرق، 3 أخضر
     public List<CalcSpec> calcs = new List<CalcSpec>();     // آلة حاسبة: أزرار أرقام وباب ينفتح إذا المجموع صح
     public List<Vector3> scissors = new List<Vector3>();    // مقص كبير على حفرة (من x، لـ x)
+    public List<Vector3> zippers = new List<Vector3>();     // المقلمة: سحاب مفتوح فوق حفرة (من x، لـ x، سطحها)
+    public List<Vector3> sharpeners = new List<Vector3>();  // المقلمة: براية جوعانة تاكل الخطوط فوق الحفرة (من x، لـ x، سطحها)
+    public List<Vector3> glues = new List<Vector3>();       // المقلمة: صمغ على الطريق (من x، لـ x، سطحها)
 
     // الجزء الثاني: الوقت
     public List<Vector3> clocks = new List<Vector3>();      // ساعة على حفرة (من x، لـ x، سرعة العقرب درجة بالثانية)
@@ -185,6 +188,7 @@ public class LevelData
     public List<Vector3> drumPits = new List<Vector3>();    // حفرة طبول (من x، لـ x، قاعها)
     public List<NoteSpec> noteSections = new List<NoteSpec>(); // نوتات تنجمع عشان ينفتح الباب
     public List<Vector3> strings = new List<Vector3>();     // أوتار على الحفر (من x، لـ x، ترجع تهتز بعد كم ثانية)
+    public List<StaffSpec> staffs = new List<StaffSpec>();  // اللحن الأخير: سطر موسيقي فوق حفرة، النوتات تكمل اللحن وتصير جسر
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
     public Vector2 meteorZone;                              // الفضاء: مطر نيازك بين x و x (صفر = ما فيه)
@@ -535,7 +539,7 @@ public static class Levels
                 new Vector3(14f, 28f, -0.3f),
                 new Vector3(31f, 38f, -0.3f),
             },
-            crabs = { new Vector3(33.3f, 35.7f, -0.3f) },
+            crabs = { new Vector3(33.3f, 35.7f, -0.3f), new Vector3(39.3f, 42.6f, 0.8f) },
             hints = { new HintLine(new Vector3(14.2f, 0.85f, 0f), new Vector3(27.8f, 0.85f, 0f), new Color(0.3f, 0.55f, 0.85f)) },
         };
     }
@@ -822,36 +826,35 @@ public static class Levels
         return level;
     }
 
-    // المقلمة (نهاية فصل أدوات المدرسة): كل الأدوات مع بعض: مسطرة، باب ملون، مقص، آلة حاسبة، ومسطرة أثقل
+    // المقلمة (نهاية فصل أدوات المدرسة): رويدا داخل مقلمة.
+    // 1) سحاب مفتوح: ارسمي خط من المسكة يسكره  2) صمغ: ارسمي خط فوقه  3) براية جوعانة: أكليها خط، وهي تبري ارسمي الجسر
+    // 4) صمغ وقلم يتدحرج  5) سحاب أطول
     static LevelData PencilCaseLevel()
     {
-        return new LevelData
+        var level = new LevelData
         {
             ambience = "classroom",
-            hazards = { new HazardSpec("pencil", 39f, 2.4f, 4f), new HazardSpec("crayons", 56f, 2f, 3.4f, 1f) },
+            hazards = { new HazardSpec("pencil", 36.5f, 2.4f, 4f), new HazardSpec("crayons", 51f, 2f, 3.4f, 1f) },
             title = "المقلمة",
             theme = LevelTheme.KraftDawn(),
-            subtitle = "كل أدوات المدرسة مع بعض... وريها وش تعلمتي!",
+            subtitle = "انتِ داخل المقلمة! سكري السحاب، انتبهي من الصمغ، والبراية جوعانة",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(59f, 0f, 0f),
-            ink = 46f,
-            colors = true,
+            door = new Vector3(55f, 0f, 0f),
+            ink = 44f,
             blocks =
             {
-                Page(-7f, 4f),
-                Page(12f, 22f),
-                Page(27.5f, 44f),
-                Page(52f, 62f),
+                Page(-7f, 5f),
+                Page(11f, 20f),
+                Page(25f, 40f),
+                Page(46.5f, 58f),
             },
-            rulers =
-            {
-                new Vector4(4.1f, 12.9f, 6.6f, 1.5f),
-                new Vector4(44.1f, 52.9f, 46.4f, 2.6f),
-            },
-            colorGates = { new Vector3(17f, 2f, -1f) },
-            scissors = { new Vector3(22f, 27.5f, 0f) },
-            calcs = { new CalcSpec(33f, 34.6f, 6, 1, 2, 4, 5) },
+            zippers = { new Vector3(5f, 11f, 0f), new Vector3(40f, 46.5f, 0f) },
+            glues = { new Vector3(14f, 17f, 0f), new Vector3(29.5f, 32.5f, 0f) },
+            sharpeners = { new Vector3(20f, 25f, 0f) },
         };
+        level.hints.Add(new HintLine(new Vector3(5.3f, 0.3f, 0f), new Vector3(10.8f, 0.3f, 0f), new Color(0.95f, 0.7f, 0.3f)));
+        level.hints.Add(new HintLine(new Vector3(40.3f, 0.3f, 0f), new Vector3(46.3f, 0.3f, 0f), new Color(0.95f, 0.7f, 0.3f)));
+        return level;
     }
 
     // ===== الوقت =====
@@ -1148,31 +1151,35 @@ public static class Levels
         return level;
     }
 
-    // الحفلة (نهاية الجزء الثاني): بيانو، طبل، وتر، ونوتات... كل الموسيقى مع بعض
+    // اللحن الأخير (نهاية الجزء الثاني): سطور موسيقية فوق الحفر، ارسمي النوتات بأماكنها يكتمل اللحن ويصير جسر.
+    // ومترونوم كبير يتأرجح فوق الطريق
     static LevelData ConcertLevel()
     {
         var level = new LevelData
         {
-            ambience = "crowd",
-            hazards = { new HazardSpec("cannon", 17f, 2f, 4f), new HazardSpec("cannon", 64f, 2f, 3.6f, 1f) },
-            title = "الحفلة",
+            ambience = "hall",
+            hazards = { new HazardSpec("metronome", 17f, 2f, 3.6f), new HazardSpec("metronome", 34f, 2f, 3.2f, 1f), new HazardSpec("metronome", 52f, 2f, 2.8f, 0.5f) },
+            title = "اللحن الأخير",
             theme = LevelTheme.Cosmic(),
-            subtitle = "الحفلة بدت! اعزفي، نطي، سكتي الوتر، وجمعي النوتات",
+            subtitle = "ارسمي النوتات بأماكنها المنقطة عشان يكتمل اللحن... وانتبهي من المترونوم!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(67f, 0f, 0f),
-            ink = 50f,
+            door = new Vector3(56f, 0f, 0f),
+            ink = 40f,
             blocks =
             {
-                Page(-7f, 20f),
-                Page(20f, 27f, -2.5f),      // حفرة الطبل
-                Wall(27f, 35f, 2f, -3.7f),
-                Page(35f, 40f),
-                Page(46f, 70f),
+                Page(-7f, 6f),
+                Page(12f, 22f),
+                Page(29f, 39f),
+                Page(47f, 60f),
             },
-            pianos = { new PianoSpec(9f, 10.6f, 3, 1) },
-            drumPits = { new Vector3(20f, 27f, -2.5f) },
-            strings = { new Vector3(40f, 46f, 3.5f) },
-            noteSections = { new NoteSpec(48f, 62f, new Vector2(53f, 3f), new Vector2(58f, 3.2f)) },
+            staffs =
+            {
+                new StaffSpec(6f, 12f, 0f, new Vector2(8f, 2f), new Vector2(10f, 4f)),
+                new StaffSpec(22f, 29f, 0f, new Vector2(23.8f, 4f), new Vector2(25.5f, 2f), new Vector2(27.2f, 6f)),
+                new StaffSpec(39f, 47f, 0f, new Vector2(40.6f, 0f), new Vector2(42.2f, 2f), new Vector2(43.8f, 4f), new Vector2(45.4f, 7f)),
+            },
+            floorPianos = { new Vector2(47.5f, 50.2f) },
+            badNotes = { new Vector2(31.5f, 2.4f) },
         };
         return level;
     }

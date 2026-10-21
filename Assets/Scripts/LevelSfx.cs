@@ -502,6 +502,45 @@ public static class LevelSfx
                 }
                 return Normalize(b, 0.7f);
             }
+            case "grind":
+            {
+                // البراية تبري: خشخشة خشب متقطعة
+                b = Buf(1.2f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float chop = 0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * 14f * t);
+                    b[i] = Noise(r) * chop * (0.6f + 0.4f * Mathf.Sin(2f * Mathf.PI * 180f * t)) * Mathf.Clamp01((1.2f - t) / 0.2f);
+                }
+                return Normalize(b, 0.45f);
+            }
+            case "zip":
+            {
+                // سحاب ينسحب: تكات سريعة ورا بعض
+                b = Buf(0.7f);
+                for (int k = 0; k < 40; k++) AddClick(b, k * 0.016f, 2500f + k * 40f, 0.6f, r);
+                for (int i = 0; i < b.Length; i++) b[i] += Noise(r) * 0.15f * Mathf.Clamp01((0.65f - i / (float)Rate) / 0.1f);
+                return Normalize(b, 0.5f);
+            }
+            case "glue":
+            {
+                // صمغ يلزق: صوت مطاطي واطي
+                b = Buf(0.45f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float f = 140f + 260f * t;
+                    b[i] = Mathf.Sin(2f * Mathf.PI * f * t + Mathf.Sin(t * 60f) * 2f) * Mathf.Exp(-t * 6f);
+                }
+                return Normalize(b, 0.5f);
+            }
+            case "tock":
+            {
+                b = Buf(0.15f);
+                AddTone(b, 0f, 0.15f, 880f * p, 0.6f, 40f, 0f);
+                AddClick(b, 0f, 1500f, 0.8f, r);
+                return Normalize(b, 0.6f);
+            }
             case "clank":
             {
                 b = Buf(0.6f);

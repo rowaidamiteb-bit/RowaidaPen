@@ -10,6 +10,9 @@ public static class SchoolFeatures
         foreach (Vector3 g in data.colorGates) ColorGate.Create(root, g, gm);
         foreach (CalcSpec c in data.calcs) CalcPuzzle.Create(root, c, gm);
         foreach (Vector3 s in data.scissors) GiantScissors.Create(root, s, gm);
+        foreach (Vector3 z in data.zippers) Zipper.Create(root, z, gm);
+        foreach (Vector3 s in data.sharpeners) Sharpener.Create(root, s, gm);
+        foreach (Vector3 g in data.glues) GluePuddle.Create(root, g, gm);
     }
 }
 
@@ -582,5 +585,321 @@ public class GiantScissors : MonoBehaviour
         }
         if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; }
         else if (holding) { rw.Held = false; holding = false; }
+    }
+}
+
+// ---------- المقلمة ----------
+
+// رويدا تستنى قبل حفرة لين شرط معين يصير
+static class HoldHelper
+{
+    public static void Hold(ref bool holding, bool wait)
+    {
+        RowaidaController r = GameManager.Instance != null ? GameManager.Instance.Rowaida : null;
+        if (r == null) return;
+        if (wait) { r.Held = true; r.CarryX = 0f; holding = true; }
+        else if (holding) { r.Held = false; holding = false; }
+    }
+
+    public static bool Before(float x0)
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null || gm.Rowaida == null || !gm.IsPlaying) return false;
+        float x = gm.Rowaida.transform.position.x;
+        return x > x0 - 1.6f && x < x0 - 0.4f;
+    }
+}
+
+// سحاب المقلمة مفتوح فوق حفرة: ارسمي خط من المسكة لقدام، المسكة تمشي عليه وتسكر السحاب ويصير جسر
+public class Zipper : MonoBehaviour
+{
+    float from, to, top, slider, target;
+    bool holding, prompted;
+    readonly List<Transform> upper = new List<Transform>(), lower = new List<Transform>();
+    Transform pull, bridgeT;
+    BoxCollider bridge;
+    const float Tooth = 0.26f;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Zipper");
+        go.transform.SetParent(root, false);
+        var z = go.AddComponent<Zipper>();
+        z.from = spec.x; z.to = spec.y; z.top = spec.z;
+        z.slider = z.target = z.from;
+        Material cloth = gm.Mat("Zip Cloth", new Color(0.35f, 0.45f, 0.75f), 0.2f);
+        Material teeth = gm.Mat("Zip Teeth", new Color(0.85f, 0.85f, 0.88f), 0.8f, 0.6f);
+        Material metal = gm.Mat("Zip Pull", new Color(0.95f, 0.75f, 0.3f), 0.8f, 0.7f);
+        int n = Mathf.CeilToInt((z.to - z.from) / Tooth);
+        for (int i = 0; i < n; i++)
+        {
+            var a = LevelBuilder.Visual("Tooth", PrimitiveType.Cube, go.transform, Vector3.zero, new Vector3(Tooth * 0.75f, 0.12f, 0.35f), teeth, false).transform;
+            LevelBuilder.Visual("Cloth", PrimitiveType.Cube, a, new Vector3(0f, 0f, -1.3f), new Vector3(1.4f, 0.5f, 2f), cloth, false);
+            z.upper.Add(a);
+            var b = LevelBuilder.Visual("Tooth", PrimitiveType.Cube, go.transform, Vector3.zero, new Vector3(Tooth * 0.75f, 0.12f, 0.35f), teeth, false).transform;
+            LevelBuilder.Visual("Cloth", PrimitiveType.Cube, b, new Vector3(0f, 0f, 1.3f), new Vector3(1.4f, 0.5f, 2f), cloth, false);
+            z.lower.Add(b);
+        }
+        z.pull = new GameObject("Pull").transform;
+        z.pull.SetParent(go.transform, false);
+        LevelBuilder.Visual("Slider", PrimitiveType.Cube, z.pull, new Vector3(0f, 0.05f, 0f), new Vector3(0.5f, 0.28f, 0.9f), metal);
+        var tab = LevelBuilder.Visual("Tab", PrimitiveType.Cube, z.pull, new Vector3(0.35f, 0.25f, -0.2f), new Vector3(0.55f, 0.1f, 0.3f), metal).transform;
+        tab.localRotation = Quaternion.Euler(0f, 0f, 25f);
+        z.bridgeT = new GameObject("Zip Bridge").transform;
+        z.bridgeT.SetParent(go.transform, false);
+        z.bridge = z.bridgeT.gameObject.AddComponent<BoxCollider>();
+        z.bridge.enabled = false;
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time;
+
+        // خط يبدأ عند المسكة؟ المسكة تمشي لين آخره
+        if (target < to - 0.05f)
+            foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                if (m.closed) continue;
+                var r = m.GetComponent<MeshRenderer>();
+                if (r == null) continue;
+                Bounds b = r.bounds;
+                if (b.min.x < slider + 1.3f && b.max.x > slider + 0.8f && Mathf.Abs(b.center.y - top) < 1.6f)
+                {
+                    target = Mathf.Clamp(b.max.x, slider, to);
+                    if (to - target < 0.6f) target = to;
+                    Destroy(m.gameObject);
+                    LevelSfx.Play("zip", 0.9f, Random.Range(0.95f, 1.1f));
+                }
+            }
+        if (slider < target)
+        {
+            slider = Mathf.MoveTowards(slider, target, 7f * Time.deltaTime);
+            if (slider >= to - 0.01f) Fx.Sparkle(new Vector3(to, top, 0f), new Color(1f, 0.85f, 0.4f), 14);
+        }
+
+        // الجزء المسكر مستوي، والباقي مفتوح ومتدلي
+        float open = to - slider;
+        for (int i = 0; i < upper.Count; i++)
+        {
+            float x = from + (i + 0.5f) * Tooth;
+            if (x <= slider)
+            {
+                upper[i].position = new Vector3(x, top - 0.08f, -0.12f);
+                lower[i].position = new Vector3(x + Tooth * 0.5f, top - 0.08f, 0.12f);
+                upper[i].localRotation = lower[i].localRotation = Quaternion.identity;
+            }
+            else
+            {
+                float k = Mathf.Sin(Mathf.PI * Mathf.Clamp01((x - slider) / Mathf.Max(0.01f, open)));
+                float sway = Mathf.Sin(t * 2f + i * 0.4f) * 0.05f;
+                upper[i].position = new Vector3(x, top - 0.08f - k * 0.9f + sway, -0.12f - k * 1.1f);
+                lower[i].position = new Vector3(x + Tooth * 0.5f, top - 0.08f - k * 1.5f - sway, 0.12f + k * 1.1f);
+                upper[i].localRotation = Quaternion.Euler(-k * 35f, 0f, 0f);
+                lower[i].localRotation = Quaternion.Euler(k * 35f, 0f, 0f);
+            }
+        }
+        pull.position = new Vector3(slider, top, 0f);
+        pull.localRotation = Quaternion.Euler(0f, 0f, slider < target ? Mathf.Sin(t * 30f) * 8f : 0f);
+
+        // الجسر: من بداية الحفرة لين المسكة
+        float w = slider - from;
+        bridge.enabled = w > 0.2f;
+        bridgeT.position = new Vector3(from + w * 0.5f, top - 0.15f, 0f);
+        bridge.size = new Vector3(Mathf.Max(0.01f, w + 0.2f), 0.3f, 2f);
+
+        bool wait = HoldHelper.Before(from) && slider < to - 0.01f;
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "السحاب مفتوح! ارسمي خط من المسكة لين آخر الحفرة عشان يتسكر"); }
+        HoldHelper.Hold(ref holding, wait);
+    }
+}
+
+// براية عملاقة جوعانة جنب حفرة: أي خط فوق الحفرة تسحبه وتبريه. وهي تبري (مشغولة) ارسمي الجسر بسرعة
+public class Sharpener : MonoBehaviour
+{
+    float from, to, top, busyUntil;
+    bool holding, prompted, promptedEat;
+    Transform blade, crank, box;
+    InkMark eating;
+    float eatT;
+    Vector3 eatStart;
+    Material shaving;
+    const float Busy = 5f;
+
+    bool IsBusy => Time.time < busyUntil;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Sharpener");
+        go.transform.SetParent(root, false);
+        var s = go.AddComponent<Sharpener>();
+        s.from = spec.x; s.to = spec.y; s.top = spec.z;
+        Material body = gm.Mat("Sharpener Body", new Color(0.3f, 0.55f, 0.9f), 0.6f, 0.3f);
+        Material steel = gm.Mat("Sharpener Steel", new Color(0.8f, 0.82f, 0.86f), 0.9f, 0.8f);
+        Material hole = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
+        Material white = gm.Mat("Monster Eye", Color.white, 0.7f);
+        s.shaving = gm.Mat("Shaving Wood", new Color(0.85f, 0.65f, 0.4f), 0.2f);
+        s.box = new GameObject("Box").transform;
+        s.box.SetParent(go.transform, false);
+        s.box.position = new Vector3(s.to + 1.3f, s.top, 1f);
+        LevelBuilder.Visual("Body", PrimitiveType.Cube, s.box, new Vector3(0f, 1.1f, 0f), new Vector3(2.2f, 2.2f, 1.8f), body);
+        var h = LevelBuilder.Visual("Hole", PrimitiveType.Cylinder, s.box, new Vector3(-1.12f, 1f, 0f), new Vector3(0.9f, 0.05f, 0.9f), hole, false).transform;
+        h.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        s.blade = LevelBuilder.Visual("Blade", PrimitiveType.Cube, s.box, new Vector3(-1.14f, 1f, -0.05f), new Vector3(0.05f, 0.8f, 0.12f), steel, false).transform;
+        // عيون فوق الفتحة (عشان تبان إنها جوعانة)
+        for (int i = -1; i <= 1; i += 2)
+        {
+            LevelBuilder.Visual("Eye", PrimitiveType.Sphere, s.box, new Vector3(-1.12f, 1.75f, i * 0.35f), Vector3.one * 0.32f, white, false);
+            LevelBuilder.Visual("Pupil", PrimitiveType.Sphere, s.box, new Vector3(-1.25f, 1.75f, i * 0.35f), Vector3.one * 0.14f, hole, false);
+        }
+        s.crank = new GameObject("Crank").transform;
+        s.crank.SetParent(s.box, false);
+        s.crank.localPosition = new Vector3(0.4f, 1.1f, -0.95f);
+        LevelBuilder.Visual("Arm", PrimitiveType.Cube, s.crank, new Vector3(0f, 0.4f, 0f), new Vector3(0.12f, 0.8f, 0.08f), steel);
+        LevelBuilder.Visual("Knob", PrimitiveType.Sphere, s.crank, new Vector3(0f, 0.8f, -0.12f), Vector3.one * 0.22f, gm.Mat("Tower Red", new Color(0.85f, 0.2f, 0.22f), 0.35f));
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time;
+        RowaidaController r = gm.Rowaida;
+        bool rowaidaOn = r != null && r.transform.position.x > from - 0.3f && r.transform.position.x < to + 0.3f;
+
+        // تسحب الخط اللي فوق الحفرة (إلا لو رويدا عليه)
+        if (eating == null && !IsBusy && !rowaidaOn)
+            foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+            {
+                var mr = m.GetComponent<MeshRenderer>();
+                if (mr == null) continue;
+                Bounds b = mr.bounds;
+                if (b.max.x > from + 0.3f && b.min.x < to - 0.3f && b.center.y > top - 2.5f && b.center.y < top + 2.5f)
+                {
+                    eating = m; eatT = 0f; eatStart = m.transform.position;
+                    foreach (Collider c in m.GetComponentsInChildren<Collider>()) c.enabled = false;
+                    var rb = m.GetComponent<Rigidbody>();
+                    if (rb != null) rb.isKinematic = true;
+                    LevelSfx.Play("grind", 0.9f);
+                    if (!promptedEat) { promptedEat = true; gm.UI.ShowMessage("", 3.2f, "البراية أكلت خطك! وهي تبري ارسمي الجسر بسرعة"); }
+                    break;
+                }
+            }
+        if (eating != null)
+        {
+            eatT += Time.deltaTime;
+            Vector3 mouth = box.position + new Vector3(-1.2f, 1f, -1f);
+            Vector3 c0 = eating.GetComponent<MeshRenderer>().bounds.center - eating.transform.position;
+            eating.transform.position = Vector3.Lerp(eatStart, mouth - c0 * 0.05f, Mathf.SmoothStep(0f, 1f, eatT / 0.7f));
+            eating.transform.localScale = Vector3.one * Mathf.Lerp(1f, 0.05f, eatT / 0.7f);
+            if (eatT >= 0.7f)
+            {
+                Destroy(eating.gameObject);
+                eating = null;
+                busyUntil = t + Busy;
+                LevelSfx.Play("grind", 0.8f, 0.9f);
+            }
+        }
+
+        // وهي مشغولة: الذراع يلف، والبراية تهتز، ونشارة تطلع
+        bool working = IsBusy || eating != null;
+        crank.localRotation = Quaternion.Euler(0f, 0f, working ? -t * 400f : Mathf.Sin(t * 2f) * 10f);
+        blade.localPosition = new Vector3(-1.14f, 1f + (working ? Mathf.Sin(t * 40f) * 0.15f : 0f), -0.05f);
+        box.localScale = Vector3.one * (working ? 1f + Mathf.Sin(t * 30f) * 0.02f : 1f + Mathf.Sin(t * 3f) * 0.03f);
+        if (working && Random.value < 0.4f)
+        {
+            var sh = LevelBuilder.Visual("Shaving", PrimitiveType.Cube, null, box.position + new Vector3(0.3f, 2.3f, 0f), new Vector3(0.25f, 0.04f, 0.18f), shaving, false);
+            sh.transform.rotation = Random.rotation;
+            var fx = sh.AddComponent<FxParticle>();
+            fx.velocity = new Vector3(Random.Range(-1.5f, 1.5f), Random.Range(3f, 5f), Random.Range(-1f, 0f));
+            fx.gravity = 9f; fx.spin = Random.insideUnitSphere * 400f; fx.life = 1f;
+        }
+        if (IsBusy && Mathf.Repeat(t, 1.2f) < Time.deltaTime) LevelSfx.Play("grind", 0.5f);
+
+        // رويدا تستنى إلا لو فيه جسر والبراية مشغولة (عندها وقت تعدي)
+        float cross = (to - from + 1.6f) / (r != null ? r.walkSpeed : 2.8f);
+        bool safe = RowaidaController.BridgeCovers(from, to, top) && (busyUntil - t > cross || rowaidaOn);
+        bool wait = HoldHelper.Before(from) && !safe;
+        if (wait && !prompted && !IsBusy) { prompted = true; gm.UI.ShowMessage("", 3.2f, "البراية جوعانة! ارسمي خط تاكله، وهي تبري ارسمي الجسر"); }
+        HoldHelper.Hold(ref holding, wait);
+    }
+}
+
+// صمغ على الطريق: يلزق رويدا. ارسمي خط فوقه تمشي عليه. الصمغ يبلع الخط بعد شوي
+public class GluePuddle : MonoBehaviour
+{
+    float from, to, top;
+    bool holding, prompted;
+    readonly List<Transform> bubbles = new List<Transform>();
+    readonly Dictionary<InkMark, float> sinking = new Dictionary<InkMark, float>();
+    const float Swallow = 6f;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Glue");
+        go.transform.SetParent(root, false);
+        var g = go.AddComponent<GluePuddle>();
+        g.from = spec.x; g.to = spec.y; g.top = spec.z;
+        Material glue = gm.Mat("Glue", new Color(0.92f, 0.95f, 1f), 0.95f);
+        Material bottle = gm.Mat("Glue Bottle", new Color(0.95f, 0.95f, 0.92f), 0.5f);
+        Material cap = gm.Mat("Glue Cap", new Color(1f, 0.5f, 0.2f), 0.5f);
+        float w = g.to - g.from, cx = (g.from + g.to) * 0.5f;
+        LevelBuilder.Visual("Puddle", PrimitiveType.Cylinder, go.transform, new Vector3(cx, g.top + 0.02f, 0f), new Vector3(w, 0.04f, 2.6f), glue, false);
+        for (int i = 0; i < 5; i++)
+            LevelBuilder.Visual("Blob", PrimitiveType.Sphere, go.transform, new Vector3(g.from + w * (0.15f + i * 0.17f), g.top + 0.05f, -0.8f + i * 0.4f), new Vector3(0.6f, 0.12f, 0.5f), glue, false);
+        for (int i = 0; i < 4; i++)
+            g.bubbles.Add(LevelBuilder.Visual("Bubble", PrimitiveType.Sphere, go.transform, new Vector3(g.from + w * (0.2f + i * 0.2f), g.top, -0.4f + i * 0.25f), Vector3.one * 0.1f, glue, false).transform);
+        // علبة صمغ مقلوبة ورا (هي اللي كبت)
+        var b = LevelBuilder.Visual("Glue Bottle", PrimitiveType.Cylinder, go.transform, new Vector3(g.to + 0.6f, g.top + 0.5f, 1.3f), new Vector3(0.9f, 0.6f, 0.9f), bottle).transform;
+        b.localRotation = Quaternion.Euler(0f, 0f, 70f);
+        LevelBuilder.Visual("Cap", PrimitiveType.Cylinder, b, new Vector3(0f, -1.15f, 0f), new Vector3(0.5f, 0.3f, 0.5f), cap);
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time;
+        for (int i = 0; i < bubbles.Count; i++)
+        {
+            float k = Mathf.Repeat(t * 0.6f + i * 0.37f, 1f);
+            bubbles[i].localScale = Vector3.one * (0.05f + k * 0.3f);
+            bubbles[i].gameObject.SetActive(k < 0.95f);
+        }
+
+        // الخطوط اللي على الصمغ تغرق بعد شوي
+        foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+        {
+            if (m.closed || sinking.ContainsKey(m)) continue;
+            var r = m.GetComponent<MeshRenderer>();
+            if (r == null) continue;
+            Bounds b = r.bounds;
+            if (b.max.x > from && b.min.x < to && b.min.y < top + 0.6f) sinking[m] = t;
+        }
+        var gone = new List<InkMark>();
+        RowaidaController rw = gm.Rowaida;
+        bool onIt = rw != null && rw.transform.position.x > from - 0.5f && rw.transform.position.x < to + 0.5f;
+        foreach (var kv in sinking)
+        {
+            if (kv.Key == null) { gone.Add(kv.Key); continue; }
+            if (t - kv.Value > Swallow && !onIt)
+            {
+                LevelSfx.Play("glue", 0.6f, 0.8f);
+                Destroy(kv.Key.gameObject);
+                gone.Add(kv.Key);
+            }
+        }
+        foreach (var k in gone) sinking.Remove(k);
+
+        bool covered = RowaidaController.BridgeCovers(from, to, top);
+        bool wait = HoldHelper.Before(from) && !covered;
+        if (wait && !prompted)
+        {
+            prompted = true;
+            LevelSfx.Play("glue", 0.7f);
+            gm.UI.ShowMessage("", 3f, "صمغ! بتلزقين فيه... ارسمي خط فوقه تمشين عليه");
+        }
+        HoldHelper.Hold(ref holding, wait);
     }
 }

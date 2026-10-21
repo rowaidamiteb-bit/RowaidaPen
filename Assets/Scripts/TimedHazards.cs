@@ -29,6 +29,12 @@ public class TimedHazard : MonoBehaviour
 
     public static void Create(Transform root, HazardSpec spec, GameManager gm)
     {
+        // الخفافيش تطير لحالها بشكل عشوائي (مو بوقت ثابت)
+        if (spec.kind == "bat")
+        {
+            for (int i = 0; i < 3; i++) WanderBat.Create(root, spec, i, gm);
+            return;
+        }
         var go = new GameObject("Hazard " + spec.kind);
         go.transform.SetParent(root, false);
         var h = go.AddComponent<TimedHazard>();
@@ -76,9 +82,9 @@ public class TimedHazard : MonoBehaviour
             {
                 Material yellow = gm.Mat("Big Pencil", new Color(1f, 0.75f, 0.2f), 0.35f);
                 Material pink = gm.Mat("Eraser Rubber", new Color(1f, 0.6f, 0.66f), 0.25f);
-                var body = Part(PrimitiveType.Cylinder, Vector3.zero, new Vector3(0.45f, 1f, 0.45f), yellow);
+                var body = Part(PrimitiveType.Cylinder, Vector3.zero, new Vector3(0.6f, 0.9f, 0.6f), yellow);
                 body.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                var er = Part(PrimitiveType.Cylinder, new Vector3(0f, 0f, 1.05f), new Vector3(0.45f, 0.1f, 0.45f), pink);
+                var er = Part(PrimitiveType.Cylinder, new Vector3(0f, 0f, 0.98f), new Vector3(0.6f, 0.12f, 0.6f), pink);
                 er.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 break;
             }
@@ -154,6 +160,26 @@ public class TimedHazard : MonoBehaviour
                 Part(PrimitiveType.Cube, new Vector3(1.55f, 0.05f, 0f), new Vector3(0.2f, 0.35f, 0.15f), wood);
                 break;
             }
+            case "metronome":
+            {
+                // مترونوم كبير معلق: إطار خشب فوق الطريق، وذراع بثقل يتأرجح
+                Material wood = gm.Mat("Guitar Wood", new Color(0.55f, 0.3f, 0.15f), 0.5f);
+                Material brass = gm.Mat("Gear Brass", new Color(0.85f, 0.65f, 0.3f), 0.7f, 0.5f);
+                Material dark = gm.Mat("Piano Wood", new Color(0.15f, 0.12f, 0.14f), 0.7f);
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    var leg = LevelBuilder.Visual("Frame Leg", PrimitiveType.Cube, transform, new Vector3(spec.x + s * 2.6f, 3.5f, 1.4f), new Vector3(0.35f, 7f, 0.35f), wood).transform;
+                    leg.localRotation = Quaternion.Euler(0f, 0f, s * 6f);
+                }
+                LevelBuilder.Visual("Frame Top", PrimitiveType.Cube, transform, new Vector3(spec.x, 6.9f, 1f), new Vector3(5.2f, 0.5f, 1.2f), wood);
+                LevelBuilder.Visual("Pivot", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 6.6f, 0.3f), new Vector3(0.4f, 0.5f, 0.4f), brass).transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                // الذراع والثقل (تحت المحور)
+                Part(PrimitiveType.Cube, new Vector3(0f, -2.7f, 0f), new Vector3(0.14f, 5.4f, 0.14f), brass);
+                Part(PrimitiveType.Cube, new Vector3(0f, -4.7f, 0f), new Vector3(1f, 0.8f, 0.6f), dark);
+                Part(PrimitiveType.Cube, new Vector3(0f, -4.7f, -0.31f), new Vector3(0.7f, 0.12f, 0.02f), brass);
+                Part(PrimitiveType.Sphere, new Vector3(0f, -5.45f, 0f), Vector3.one * 0.4f, brass);
+                break;
+            }
             case "cannon":
             {
                 Material metal = gm.Mat("Cannon", new Color(0.85f, 0.25f, 0.4f), 0.6f, 0.3f);
@@ -188,7 +214,7 @@ public class TimedHazard : MonoBehaviour
             }
             case "pencil":
                 // يتدحرج من اليمين لليسار على الطريق
-                model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 0.25f, -0.5f);
+                model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 0.3f, 0f);
                 model.localRotation = Quaternion.Euler(0f, 0f, k * 720f);
                 break;
             case "crayons":
@@ -232,6 +258,17 @@ public class TimedHazard : MonoBehaviour
             case "bow":
                 model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 1f, -0.2f);
                 break;
+            case "metronome":
+            {
+                // يتأرجح يمين ويسار، ويمر من الطريق مرة كل دورة
+                float x = Mathf.Repeat(Time.time - start + spec.phase - Active * 0.5f, spec.period);
+                int cycle = Mathf.FloorToInt((Time.time - start + spec.phase - Active * 0.5f) / spec.period);
+                float side = cycle % 2 == 0 ? 1f : -1f;
+                model.gameObject.SetActive(true);
+                model.position = new Vector3(cx, 6.6f, 0f);
+                model.localRotation = Quaternion.Euler(0f, 0f, side * 58f * Mathf.Sin(Mathf.PI * x / spec.period));
+                break;
+            }
             case "cannon":
                 if (on && Random.value < 0.5f)
                 {
@@ -262,6 +299,7 @@ public class TimedHazard : MonoBehaviour
             case "cymbals": return "cymbal";
             case "bow": return "string_buzz";
             case "cannon": return "applause";
+            case "metronome": return "tock";
         }
         return null;
     }
@@ -280,6 +318,10 @@ public class TimedHazard : MonoBehaviour
             bool near = r0 != null && Mathf.Abs(r0.transform.position.x - spec.x) < 14f;
             if (snd == "squeak") { if (near) gm.Sound.PlaySqueak(2f); }
             else if (snd != null && near) LevelSfx.Play(snd, 0.6f);
+            // البخار: دخان كثيف يغطي الرؤية شوي
+            if (spec.kind == "steam" && near && Mathf.Abs(r0.transform.position.x - spec.x) < 9f)
+                for (int i = 0; i < 7; i++)
+                    SmokeCloud.Puff(new Vector3(spec.x + Random.Range(-4f, 6f), spec.y + Random.Range(0.3f, 3.8f), Random.Range(-3f, -0.8f)), Random.Range(2.8f, 5f));
         }
         if (!on) played = false;
 
@@ -299,5 +341,151 @@ public class TimedHazard : MonoBehaviour
         bool wait = before && Enabled && (on || UntilOn < cross) && gm.IsPlaying;
         if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; }
         else if (holding) { rw.Held = false; holding = false; }
+    }
+}
+
+// دخان كثيف يطلع من فتحات البخار ويغطي الشاشة شوي (بين الكاميرا ورويدا)، ويخف مع الوقت
+public class SmokeCloud : MonoBehaviour
+{
+    static Texture2D tex;
+    Material mat;
+    Vector3 drift;
+    float age, life, maxAlpha, baseSize;
+
+    static Texture2D Tex()
+    {
+        if (tex != null) return tex;
+        tex = new Texture2D(64, 64, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        for (int y = 0; y < 64; y++)
+            for (int x = 0; x < 64; x++)
+            {
+                float dx = (x - 31.5f) / 31.5f, dy = (y - 31.5f) / 31.5f;
+                // دايرة ناعمة مع شوية تكتلات عشان تبان مثل الدخان
+                float n = Mathf.PerlinNoise(x * 0.12f, y * 0.12f) * 0.35f;
+                float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy) - n * 0.5f + 0.15f);
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, a * a));
+            }
+        tex.Apply();
+        return tex;
+    }
+
+    public static void Puff(Vector3 pos, float size)
+    {
+        var go = LevelBuilder.Visual("Smoke", PrimitiveType.Quad, null, pos, Vector3.one * size, null, false);
+        var s = go.AddComponent<SmokeCloud>();
+        s.mat = NightSky.Transparent("Smoke", Tex(), new Color(0.93f, 0.93f, 0.95f, 0f));
+        go.GetComponent<MeshRenderer>().sharedMaterial = s.mat;
+        s.drift = new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(0.2f, 0.6f), 0f);
+        s.life = Random.Range(3.5f, 5f);
+        s.maxAlpha = Random.Range(0.75f, 0.95f);
+        s.baseSize = size;
+        go.transform.rotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
+    }
+
+    void Update()
+    {
+        age += Time.deltaTime;
+        float k = age / life;
+        float a = k < 0.15f ? k / 0.15f : 1f - Mathf.Clamp01((k - 0.5f) / 0.5f);
+        mat.SetColor("_BaseColor", new Color(0.93f, 0.93f, 0.95f, a * maxAlpha));
+        transform.position += drift * Time.deltaTime;
+        transform.localScale = Vector3.one * baseSize * (1f + k * 0.5f);
+        transform.Rotate(0f, 0f, 8f * Time.deltaTime);
+        if (age >= life) { Destroy(mat); Destroy(gameObject); }
+    }
+}
+
+// خفاش يطير بشكل عشوائي بالليل حول مكانه، وأحيانًا ينقض على رويدا. بالنهار نايم معلق بالمقلوب
+public class WanderBat : MonoBehaviour
+{
+    Vector3 home, target, vel;
+    Transform wingL, wingR, body;
+    float nextPick, nextHit, seed;
+    bool diving;
+
+    public static void Create(Transform root, HazardSpec spec, int index, GameManager gm)
+    {
+        var go = new GameObject("Bat");
+        go.transform.SetParent(root, false);
+        var b = go.AddComponent<WanderBat>();
+        b.seed = index * 1.7f + spec.x;
+        b.home = new Vector3(spec.x - 2f + index * 2f, spec.y + 5.2f + (index % 2) * 0.4f, 0.4f);
+        go.transform.position = b.home;
+        b.target = b.home;
+        Material dark = gm.Mat("Bat", new Color(0.18f, 0.12f, 0.25f), 0.3f);
+        Material eye = gm.Mat("Bat Eye", new Color(1.5f, 1.3f, 0.3f), 0.5f);
+        b.body = new GameObject("Body").transform;
+        b.body.SetParent(go.transform, false);
+        LevelBuilder.Visual("Torso", PrimitiveType.Sphere, b.body, Vector3.zero, new Vector3(0.45f, 0.42f, 0.38f), dark);
+        for (int s = -1; s <= 1; s += 2)
+        {
+            LevelBuilder.Visual("Ear", PrimitiveType.Cube, b.body, new Vector3(s * 0.12f, 0.24f, 0f), new Vector3(0.08f, 0.16f, 0.05f), dark, false).transform.localRotation = Quaternion.Euler(0f, 0f, s * -15f);
+            LevelBuilder.Visual("Eye", PrimitiveType.Sphere, b.body, new Vector3(s * 0.09f, 0.06f, -0.18f), Vector3.one * 0.09f, eye, false);
+            var wing = new GameObject("Wing").transform;
+            wing.SetParent(b.body, false);
+            wing.localPosition = new Vector3(s * 0.15f, 0.05f, 0f);
+            LevelBuilder.Visual("Membrane", PrimitiveType.Cube, wing, new Vector3(s * 0.35f, 0f, 0f), new Vector3(0.65f, 0.05f, 0.38f), dark, false);
+            LevelBuilder.Visual("Tip", PrimitiveType.Cube, wing, new Vector3(s * 0.62f, -0.08f, 0f), new Vector3(0.18f, 0.05f, 0.3f), dark, false).transform.localRotation = Quaternion.Euler(0f, 0f, s * 30f);
+            if (s < 0) b.wingL = wing; else b.wingR = wing;
+        }
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time, dt = Time.deltaTime;
+        Vector3 p = transform.position;
+
+        if (!DayNight.Night)
+        {
+            // بالنهار: يرجع لمكانه وينام معلق
+            diving = false;
+            p = Vector3.Lerp(p, home, dt * 3f);
+            transform.position = p;
+            body.localRotation = Quaternion.Slerp(body.localRotation, Quaternion.Euler(0f, 0f, 180f), dt * 6f);
+            wingL.localRotation = Quaternion.Euler(0f, 0f, -70f);
+            wingR.localRotation = Quaternion.Euler(0f, 0f, 70f);
+            body.localScale = Vector3.one * (1f + Mathf.Sin(t * 2f + seed) * 0.03f);
+            return;
+        }
+
+        RowaidaController r = gm.Rowaida;
+        Vector3 rp = r != null ? r.transform.position + Vector3.up * 0.6f : home;
+        bool close = r != null && Mathf.Abs(rp.x - home.x) < 6f;
+        if (t >= nextPick)
+        {
+            // يختار مكان عشوائي جديد، وأحيانًا ينقض عليها
+            diving = close && Random.value < 0.35f;
+            target = diving ? rp + new Vector3(Random.Range(-0.3f, 0.3f), 0f, 0f)
+                : home + new Vector3(Random.Range(-4.5f, 4.5f), Random.Range(-4.2f, -0.5f), Random.Range(-0.6f, 0.6f));
+            nextPick = t + (diving ? 1.1f : Random.Range(0.4f, 1.3f));
+            if (diving && Random.value < 0.6f) gm.Sound.PlaySqueak(2.2f);
+        }
+        if (diving && r != null) target = Vector3.Lerp(target, rp, dt * 2f);
+        Vector3 want = (target - p);
+        float speed = diving ? 6f : 3.5f;
+        vel = Vector3.Lerp(vel, want.normalized * Mathf.Min(speed, want.magnitude * 3f), dt * 4f);
+        vel += new Vector3(Mathf.PerlinNoise(t * 1.5f, seed) - 0.5f, Mathf.PerlinNoise(seed, t * 1.5f) - 0.5f, 0f) * dt * 20f;
+        p += vel * dt;
+        p.y = Mathf.Max(p.y, home.y - 5f);
+        transform.position = p;
+
+        body.localRotation = Quaternion.Slerp(body.localRotation, Quaternion.Euler(0f, 0f, Mathf.Clamp(-vel.x * 6f, -30f, 30f)), dt * 8f);
+        body.localScale = Vector3.one;
+        float flap = Mathf.Sin(t * (diving ? 40f : 26f) + seed) * 45f;
+        wingL.localRotation = Quaternion.Euler(0f, 0f, flap);
+        wingR.localRotation = Quaternion.Euler(0f, 0f, -flap);
+
+        // لمسها؟ ترجع لورا
+        if (r != null && gm.IsPlaying && t >= nextHit && (rp - p).sqrMagnitude < 0.55f * 0.55f && !r.IsKnocked)
+        {
+            nextHit = t + 1.5f;
+            r.Knockback(-1f);
+            gm.Sound.PlaySqueak(2.5f);
+            Fx.Sparkle(p, new Color(0.6f, 0.4f, 0.8f), 10);
+            diving = false;
+            nextPick = t + 0.2f;
+        }
     }
 }
