@@ -196,6 +196,18 @@ public class LevelData
     public List<Vector3> rivers = new List<Vector3>();      // نهر بجذوع (من x، لـ x، كل كم ثانية جذع)
     public List<Vector3> hives = new List<Vector3>();       // خلية نحل (x، سطح الأرض، مسافة الحراسة)
     public List<Vector3> honeys = new List<Vector3>();      // بقع عسل تلزق (من x، لـ x، سطحها)
+    // الجزء الثالث: المطبخ
+    public List<Vector3> recipePots = new List<Vector3>();  // قدر الوصفة (من x، لـ x، سطحها)
+    public List<Vector3> fridges = new List<Vector3>();     // ثلاجة بريح باردة (x، سطح الأرض، طول الريح)
+    public List<Vector3> chocoRivers = new List<Vector3>(); // نهر شوكولاتة ومارشملو (من x، لـ x، سطحها)
+    public List<Vector3> gumballPits = new List<Vector3>(); // مكينة علك تعبي حفرة (من x، لـ x، سطحها)
+    public List<Vector2> candyGates = new List<Vector2>();  // بوابة عصا حلاوة (x، سطح الأرض)
+    public List<Vector3> pancakePans = new List<Vector3>(); // مقلاة بان كيك (من x، لـ x، سطحها)
+    public List<Vector3> ovenDoors = new List<Vector3>();   // باب فرن جسر (من x، لـ x، كل كم ثانية)
+    public List<Vector3> conveyors = new List<Vector3>();   // سير متحرك (من x، لـ x، سطحه)
+    public List<Vector4> jellyBears = new List<Vector4>();  // دببة جيلي حول حفرة (من x، لـ x، سطحها، مسافة)
+    public List<Vector3> cakes = new List<Vector3>();       // كيكة بشموع (من x، لـ x، ارتفاعها)
+    public int kitchenScenery;                              // 1 مطبخ، 2 أرض حلويات
     public List<Vector3> deadTrees = new List<Vector3>();   // شجرة يابسة تنطاح جسر (من x، لـ x، سطحها)
     public List<Vector2> webs = new List<Vector2>();        // شبكة عنكبوت تسد الطريق (x، سطح الأرض)
     public List<Vector3> owls = new List<Vector3>();        // بومة تراقب (x، سطح الأرض، مسافة المراقبة)
@@ -267,6 +279,10 @@ public static class Levels
         ForestMushroomsLevel(),
         ForestRiverLevel(),
         ForestHiveLevel(),
+        KitchenPotLevel(),
+        ChocolateRiverLevel(),
+        OvenLevel(),
+        CandyCastleLevel(),
         LastPage(),
     };
 
@@ -1327,6 +1343,119 @@ public static class Levels
             mushrooms = { new Vector3(33.8f, 0f, 11f) },
             rivers = { new Vector3(42.5f, 49f, 4f) },
             sticker = new Vector3(37.5f, 6.8f, 0f),
+        };
+    }
+
+    // ===== الجزء الثالث: المطبخ =====
+
+    // قدر الطبخ: فلفل يعطس رويدا، وصفة بالقدر (المغرفة جسر)، ثلاجة بريح باردة، محمصة تنط توست، ونار البوتجاز
+    static LevelData KitchenPotLevel()
+    {
+        return new LevelData
+        {
+            ambience = "kitchen",
+            kitchenScenery = 1,
+            hazards = { new HazardSpec("pepper", 2.5f, 1.6f, 3.8f), new HazardSpec("toast", 26f, 1.6f, 3.6f, 1f), new HazardSpec("flame", 30.5f, 1.4f, 3.2f, 0.5f) },
+            title = "قدر الطبخ",
+            theme = LevelTheme.Kitchen(),
+            subtitle = "اتبعي الوصفة، سكري الثلاجة، وانتبهي من الفلفل والتوست والنار!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(34f, 0f, 0f),
+            ink = 14f,
+            blocks =
+            {
+                Page(-7f, 6f),
+                Page(13f, 37f),
+            },
+            recipePots = { new Vector3(6f, 13f, 0f) },
+            fridges = { new Vector3(21f, 0f, 4f) },
+            sticker = new Vector3(16f, 5.8f, 0f),
+        };
+    }
+
+    // نهر الشوكولاتة: حبيبات ملونة تمطر، بوابة عصا حلاوة، نهر شوكولاتة (مارشملو)، شلال شوكولاتة، ومكينة علك تعبي حفرة
+    static LevelData ChocolateRiverLevel()
+    {
+        return new LevelData
+        {
+            ambience = "candy",
+            kitchenScenery = 2,
+            hazards = { new HazardSpec("sprinkles", 2.5f, 1.8f, 3.6f), new HazardSpec("chocofall", 20f, 1.6f, 3.8f, 1f) },
+            title = "نهر الشوكولاتة",
+            theme = LevelTheme.Candy(),
+            subtitle = "ارفعي العصا، ارسمي مارشملو بالشوكولاتة، ودوري يد مكينة العلك!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(36f, 0f, 0f),
+            ink = 18f,
+            blocks =
+            {
+                Page(-7f, 10f),
+                Page(16f, 24f),
+                Page(29f, 40f),
+            },
+            candyGates = { new Vector2(7f, 0f) },
+            chocoRivers = { new Vector3(10f, 16f, 0f) },
+            gumballPits = { new Vector3(24f, 29f, 0f) },
+            sticker = new Vector3(13f, 5f, 0f),
+        };
+    }
+
+    // الفرن والمقلاة: زيت يطرطش، مقلاة بان كيك (يطير جسر)، سير متحرك بمفتاح، إبريق يصفر، وباب فرن يصير جسر
+    static LevelData OvenLevel()
+    {
+        return new LevelData
+        {
+            ambience = "kitchen",
+            kitchenScenery = 1,
+            hazards = { new HazardSpec("oil", 2.5f, 1.6f, 3.6f), new HazardSpec("kettle", 23.5f, 1.6f, 3.4f, 1f) },
+            title = "الفرن والمقلاة",
+            theme = LevelTheme.Kitchen(),
+            subtitle = "اقلبي البان كيك، اعكسي السير، وخلي باب الفرن جسر!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(39f, 0f, 0f),
+            ink = 12f,
+            blocks =
+            {
+                Page(-7f, 6f),
+                Page(12f, 27.5f),
+                Page(32.5f, 43f),
+            },
+            pancakePans = { new Vector3(6f, 12f, 0f) },
+            conveyors = { new Vector3(14f, 20f, 0f) },
+            ovenDoors = { new Vector3(27.5f, 32.5f, 4.6f) },
+            sticker = new Vector3(9f, 5.5f, 0f),
+        };
+    }
+
+    // قلعة الحلاوة (نهاية فصل المطبخ): دببة جيلي تاكل الخطوط، حبيبات ملونة، كيكة بشموع (درج كريمة)، نهر شوكولاتة، بوابة عصا، ومقلاة بان كيك
+    static LevelData CandyCastleLevel()
+    {
+        return new LevelData
+        {
+            ambience = "candy",
+            kitchenScenery = 2,
+            hazards = { new HazardSpec("sprinkles", 18.5f, 1.6f, 3.6f) },
+            title = "قلعة الحلاوة",
+            theme = LevelTheme.CandyCastle(),
+            subtitle = "لهي الدببة، اطلعي الكيكة وطفي الشموع، وكملي لين باب القلعة!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(60f, 0f, 0f),
+            ink = 40f,
+            blocks =
+            {
+                Page(-7f, 8f),
+                Page(13f, 24f),
+                Wall(24f, 31f, 3f),
+                Page(31f, 35f),
+                Page(41f, 47f),
+                Page(53f, 64f),
+            },
+            jellyBears = { new Vector4(8f, 13f, 0f, 4f) },
+            cakes = { new Vector3(24f, 31f, 3f) },
+            chocoRivers = { new Vector3(35f, 41f, 0f) },
+            candyGates = { new Vector2(44.5f, 0f) },
+            pancakePans = { new Vector3(47f, 53f, 0f) },
+            sticker = new Vector3(29f, 6.2f, 0f),
         };
     }
 

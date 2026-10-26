@@ -386,6 +386,53 @@ public class LevelTheme
         ringColor = new Color(0.35f, 0.28f, 0.45f),
     };
 
+    // ===== الجزء الثالث: المطبخ =====
+
+    // المطبخ: ورق مربعات مثل بلاط المطبخ، ضو دافي من الشباك
+    public static LevelTheme Kitchen() => new LevelTheme
+    {
+        name = "Kitchen",
+        paper = new Color(0.99f, 0.96f, 0.9f), pattern = PaperPattern.Grid, patternColor = new Color(0.55f, 0.8f, 0.8f), colorfulDoodles = true,
+        pageEdge = new Color(0.95f, 0.88f, 0.75f), pencil = new Color(0.45f, 0.3f, 0.25f), doodleColor = new Color(0.85f, 0.4f, 0.35f),
+        skyTop = new Color(0.98f, 0.82f, 0.6f), skyMid = new Color(1f, 0.92f, 0.78f), skyBottom = new Color(1f, 0.97f, 0.9f),
+        sun = true, moonColor = new Color(3f, 2.5f, 1.6f), stars = 0f, cloudTint = new Color(1.1f, 1.05f, 1f), cloudAlpha = 0.5f,
+        sunLight = new Color(1f, 0.9f, 0.75f), sunIntensity = 1.45f, sunAngles = new Vector3(40f, -50f, 0f),
+        ambientSky = new Color(0.95f, 0.85f, 0.75f), ambientEquator = new Color(0.75f, 0.65f, 0.55f), ambientGround = new Color(0.4f, 0.32f, 0.25f),
+        fog = new Color(1f, 0.92f, 0.8f), props = PropSet.Crayons, floating = FloatKind.Sparkles,
+        floatColors = new[] { new Color(1f, 0.95f, 0.8f), Color.white },
+        ringColor = new Color(0.75f, 0.35f, 0.3f),
+    };
+
+    // أرض الحلويات: وردي وأزرق فاتح، ونجوم سكر تلمع
+    public static LevelTheme Candy() => new LevelTheme
+    {
+        name = "Candy",
+        paper = new Color(1f, 0.93f, 0.95f), pattern = PaperPattern.Dots, patternColor = new Color(1f, 0.6f, 0.75f), colorfulDoodles = true, glitter = true,
+        pageEdge = new Color(0.98f, 0.78f, 0.85f), pencil = new Color(0.6f, 0.3f, 0.45f), doodleColor = new Color(0.9f, 0.45f, 0.65f),
+        skyTop = new Color(0.55f, 0.75f, 1f), skyMid = new Color(0.95f, 0.8f, 0.95f), skyBottom = new Color(1f, 0.9f, 0.85f),
+        sun = true, moonColor = new Color(3f, 2.4f, 2.4f), stars = 0f, cloudTint = new Color(1.15f, 1f, 1.1f), cloudAlpha = 0.9f,
+        sunLight = new Color(1f, 0.92f, 0.95f), sunIntensity = 1.5f, sunAngles = new Vector3(45f, -35f, 0f),
+        ambientSky = new Color(0.95f, 0.85f, 0.95f), ambientEquator = new Color(0.8f, 0.7f, 0.8f), ambientGround = new Color(0.4f, 0.3f, 0.38f),
+        fog = new Color(1f, 0.88f, 0.92f), props = PropSet.Crayons, floating = FloatKind.Sparkles,
+        floatColors = new[] { new Color(1f, 0.7f, 0.85f), new Color(0.7f, 0.9f, 1f), new Color(1f, 0.95f, 0.6f) },
+        ringColor = new Color(0.9f, 0.4f, 0.6f),
+    };
+
+    // قلعة الحلاوة: غروب وردي بنفسجي
+    public static LevelTheme CandyCastle() => new LevelTheme
+    {
+        name = "CandyCastle",
+        paper = new Color(0.98f, 0.92f, 0.97f), pattern = PaperPattern.Dots, patternColor = new Color(0.8f, 0.6f, 0.95f), colorfulDoodles = true, glitter = true,
+        pageEdge = new Color(0.9f, 0.78f, 0.92f), pencil = new Color(0.5f, 0.3f, 0.55f), doodleColor = new Color(0.75f, 0.45f, 0.85f),
+        skyTop = new Color(0.35f, 0.3f, 0.7f), skyMid = new Color(0.85f, 0.55f, 0.85f), skyBottom = new Color(1f, 0.75f, 0.7f),
+        moonColor = new Color(2.6f, 2.3f, 2.6f), stars = 0.5f, cloudTint = new Color(1.1f, 0.85f, 1.05f), cloudAlpha = 0.8f,
+        sunLight = new Color(1f, 0.85f, 0.95f), sunIntensity = 1.25f, sunAngles = new Vector3(30f, -40f, 0f),
+        ambientSky = new Color(0.85f, 0.7f, 0.9f), ambientEquator = new Color(0.7f, 0.55f, 0.75f), ambientGround = new Color(0.32f, 0.22f, 0.35f),
+        fog = new Color(0.9f, 0.7f, 0.85f), props = PropSet.Crayons, floating = FloatKind.Sparkles,
+        floatColors = new[] { new Color(1f, 0.7f, 0.9f), new Color(0.8f, 0.7f, 1f), new Color(1f, 0.95f, 0.6f) },
+        ringColor = new Color(0.65f, 0.4f, 0.75f),
+    };
+
     // البحر: ورق أزرق فاتح، سما صيف صافية، وشمس
     public static LevelTheme Ocean() => new LevelTheme
     {

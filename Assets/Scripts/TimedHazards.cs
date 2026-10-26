@@ -161,6 +161,86 @@ public class TimedHazard : MonoBehaviour
                 Part(PrimitiveType.Cube, new Vector3(1.55f, 0.05f, 0f), new Vector3(0.2f, 0.35f, 0.15f), wood);
                 break;
             }
+            case "pepper":
+            {
+                // علبة فلفل فوق الطريق تنهز وتنثر فلفل
+                Material glass = gm.Mat("Shaker Glass", new Color(0.92f, 0.95f, 0.97f), 0.9f);
+                Material capM = gm.Mat("Sharpener Steel", new Color(0.8f, 0.82f, 0.86f), 0.9f, 0.8f);
+                Material pep = gm.Mat("Pepper Dark", new Color(0.2f, 0.18f, 0.16f), 0.3f);
+                Part(PrimitiveType.Cylinder, Vector3.zero, new Vector3(0.7f, 0.55f, 0.7f), glass);
+                Part(PrimitiveType.Cylinder, new Vector3(0f, -0.25f, 0f), new Vector3(0.6f, 0.3f, 0.6f), pep);
+                Part(PrimitiveType.Sphere, new Vector3(0f, -0.65f, 0f), new Vector3(0.72f, 0.3f, 0.72f), capM);
+                break;
+            }
+            case "toast":
+            {
+                // محمصة ورا الطريق، والتوست ينط منها ويطير فوق الطريق
+                Material body = gm.Mat("Toaster", new Color(0.85f, 0.88f, 0.92f), 0.9f, 0.7f);
+                Material bread = gm.Mat("Toast", new Color(0.95f, 0.75f, 0.45f), 0.3f);
+                Material crust = gm.Mat("Toast Crust", new Color(0.7f, 0.45f, 0.2f), 0.3f);
+                Vector3 tp = new Vector3(spec.x + spec.width * 0.5f + 1.1f, 0.6f, 1.3f);
+                LevelBuilder.Visual("Toaster", PrimitiveType.Cube, transform, tp, new Vector3(1.4f, 1.2f, 0.9f), body);
+                LevelBuilder.Visual("Slot", PrimitiveType.Cube, transform, tp + new Vector3(0f, 0.6f, 0f), new Vector3(1f, 0.04f, 0.2f), black, false);
+                LevelBuilder.Visual("Lever", PrimitiveType.Cube, transform, tp + new Vector3(0.72f, 0.2f, 0f), new Vector3(0.12f, 0.12f, 0.25f), gm.Mat("Tower Red", new Color(0.85f, 0.2f, 0.22f), 0.35f), false);
+                Part(PrimitiveType.Cube, Vector3.zero, new Vector3(0.8f, 0.8f, 0.12f), crust);
+                Part(PrimitiveType.Cube, new Vector3(0f, 0f, -0.01f), new Vector3(0.68f, 0.68f, 0.13f), bread);
+                break;
+            }
+            case "flame":
+            {
+                // عين بوتجاز على الطريق، ونار تطلع منها
+                Material ring = gm.Mat("Stove Black", new Color(0.15f, 0.14f, 0.16f), 0.6f, 0.3f);
+                LevelBuilder.Visual("Burner", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 0.03f, 0f), new Vector3(spec.width + 0.3f, 0.04f, 1.6f), ring, false);
+                LevelBuilder.Visual("Burner Cap", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 0.06f, 0f), new Vector3(0.6f, 0.04f, 0.6f), gm.Mat("Sharpener Steel", new Color(0.8f, 0.82f, 0.86f), 0.9f, 0.8f), false);
+                Material fo = gm.Mat("Flame Orange", new Color(2f, 0.8f, 0.2f), 0.5f);
+                Material fy = gm.Mat("Flame Yellow", new Color(2.2f, 1.8f, 0.5f), 0.5f);
+                for (int i = 0; i < 6; i++)
+                    Part(PrimitiveType.Capsule, new Vector3(-spec.width * 0.4f + i * spec.width * 0.16f, 0f, (i % 2) * 0.3f - 0.15f), new Vector3(0.28f, 0.5f, 0.28f), i % 2 == 0 ? fo : fy);
+                break;
+            }
+            case "chocofall":
+            {
+                // صنبور شوكولاتة فوق، وشلال شوكولاتة ينزل على الطريق
+                Material choc = gm.Mat("Choco Drip", new Color(0.4f, 0.22f, 0.13f), 0.7f);
+                Material gold = gm.Mat("Gear Brass", new Color(0.85f, 0.65f, 0.3f), 0.7f, 0.5f);
+                LevelBuilder.Visual("Spout", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 5.3f, 0f), new Vector3(spec.width + 0.4f, 0.25f, 1.2f), gold);
+                LevelBuilder.Visual("Pipe", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 6.2f, 0.4f), new Vector3(0.4f, 0.8f, 0.4f), gold);
+                LevelBuilder.Visual("Puddle", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 0.02f, 0f), new Vector3(spec.width + 0.6f, 0.02f, 1.6f), choc, false);
+                Part(PrimitiveType.Cube, new Vector3(0f, 2.6f, 0f), new Vector3(spec.width, 5.2f, 0.9f), choc);
+                break;
+            }
+            case "sprinkles":
+            {
+                // غيمة غزل بنات فوق الطريق تمطر حبيبات ملونة
+                Material cotton = gm.Mat("Cotton Candy", new Color(1f, 0.8f, 0.9f), 0.2f);
+                for (int i = 0; i < 4; i++)
+                    LevelBuilder.Visual("Cloud Puff", PrimitiveType.Sphere, transform, new Vector3(spec.x + (i - 1.5f) * 0.6f, 4.6f + Mathf.Sin(i * 2f) * 0.2f, 0.2f), Vector3.one * (1f + (i % 2) * 0.3f), cotton, false);
+                break;
+            }
+            case "kettle":
+            {
+                // إبريق على رف يمين الطريق، وبخار يطلع من بوزه بقوة على الطريق
+                Material kettle = gm.Mat("Kettle", new Color(0.3f, 0.75f, 0.85f), 0.8f, 0.3f);
+                Material shelf = gm.Mat("Shelf Wood", new Color(0.75f, 0.55f, 0.35f), 0.3f);
+                Vector3 kp = new Vector3(spec.x + spec.width * 0.5f + 1.3f, 1.4f, 0.4f);
+                LevelBuilder.Visual("Shelf", PrimitiveType.Cube, transform, kp + new Vector3(0f, -0.6f, 0.3f), new Vector3(1.6f, 0.15f, 1.4f), shelf);
+                LevelBuilder.Visual("Shelf Leg", PrimitiveType.Cube, transform, kp + new Vector3(0f, -1.1f, 0.6f), new Vector3(0.15f, 1f, 0.15f), shelf);
+                LevelBuilder.Visual("Kettle", PrimitiveType.Sphere, transform, kp, new Vector3(1f, 0.9f, 0.9f), kettle);
+                var sp = LevelBuilder.Visual("Spout", PrimitiveType.Cylinder, transform, kp + new Vector3(-0.6f, 0.15f, 0f), new Vector3(0.16f, 0.35f, 0.16f), kettle).transform;
+                sp.localRotation = Quaternion.Euler(0f, 0f, 60f);
+                LevelBuilder.Visual("Knob", PrimitiveType.Sphere, transform, kp + new Vector3(0f, 0.5f, 0f), Vector3.one * 0.18f, gm.Mat("Tower Red", new Color(0.85f, 0.2f, 0.22f), 0.35f), false);
+                break;
+            }
+            case "oil":
+            {
+                // مقلاة زيت ورا الطريق تطرطش قطرات حارة فوقه
+                Material iron = gm.Mat("Pan Iron", new Color(0.22f, 0.22f, 0.25f), 0.6f, 0.4f);
+                Material oilM = gm.Mat("Hot Oil", new Color(1f, 0.85f, 0.3f), 0.95f);
+                LevelBuilder.Visual("Oil Pan", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 0.15f, 1.3f), new Vector3(1.6f, 0.1f, 1.2f), iron);
+                LevelBuilder.Visual("Oil", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 0.24f, 1.3f), new Vector3(1.4f, 0.02f, 1f), oilM, false);
+                for (int i = 0; i < 3; i++) Part(PrimitiveType.Sphere, Vector3.zero, Vector3.one * 0.2f, oilM);
+                break;
+            }
             case "mole":
             {
                 // كومة تراب وحفرة على الطريق، والخلد يطلع منها فجأة
@@ -376,6 +456,103 @@ public class TimedHazard : MonoBehaviour
             case "bow":
                 model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 1f, -0.2f);
                 break;
+            case "pepper":
+            {
+                model.position = new Vector3(cx, 4.4f, 0f);
+                model.localRotation = Quaternion.Euler(0f, 0f, 180f + (on ? Mathf.Sin(t * 30f) * 25f : Mathf.Sin(t * 2f) * 5f));
+                model.gameObject.SetActive(true);
+                if (on && Random.value < 0.9f)
+                {
+                    var dot = LevelBuilder.Visual("Pepper", PrimitiveType.Cube, null, new Vector3(cx + Random.Range(-0.3f, 0.3f), 3.8f + spec.y, Random.Range(-0.3f, 0.3f)), Vector3.one * Random.Range(0.05f, 0.1f), GameManager.Instance.Mat("Pepper Dark", new Color(0.2f, 0.18f, 0.16f), 0.3f), false);
+                    var fx = dot.AddComponent<FxParticle>();
+                    fx.velocity = new Vector3(Random.Range(-0.8f, 0.8f), -Random.Range(2f, 4f), Random.Range(-0.5f, 0.5f));
+                    fx.flutter = 0.6f; fx.life = 1.2f;
+                }
+                break;
+            }
+            case "toast":
+            {
+                Vector3 a = new Vector3(cx + w * 0.5f + 1.1f, 1.3f, 1.3f), b = new Vector3(cx - w * 0.5f - 1.2f, 0.4f, 0f);
+                model.position = Vector3.Lerp(a, b, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * 2.2f;
+                model.localRotation = Quaternion.Euler(0f, 0f, k * 540f);
+                break;
+            }
+            case "flame":
+            {
+                model.position = new Vector3(cx, 0.15f, 0f);
+                float h = on ? (k < 0.15f ? k / 0.15f : k > 0.85f ? (1f - k) / 0.15f : 1f) : 0f;
+                for (int i = 0; i < parts.Count; i++)
+                {
+                    float f = h * (0.9f + Mathf.Sin(t * 20f + i * 1.7f) * 0.25f);
+                    parts[i].localScale = new Vector3(0.28f, 0.1f + f * 1.1f, 0.28f);
+                    parts[i].localPosition = new Vector3(parts[i].localPosition.x, f * 1.1f, parts[i].localPosition.z);
+                }
+                model.gameObject.SetActive(true);
+                // النار تحرق الخطوط اللي فوقها
+                if (on && h > 0.5f)
+                {
+                    Bounds burn = new Bounds(new Vector3(cx, 1.2f + spec.y, 0f), new Vector3(w + 0.4f, 2.4f, 4f));
+                    foreach (InkMark m in Object.FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+                    {
+                        var mr = m.GetComponent<MeshRenderer>();
+                        if (mr == null || !mr.bounds.Intersects(burn)) continue;
+                        SmokeCloud.Puff(mr.bounds.center, 1f);
+                        LevelSfx.Play("sizzle", 0.6f);
+                        Object.Destroy(m.gameObject);
+                    }
+                }
+                break;
+            }
+            case "chocofall":
+            {
+                float h = on ? (k < 0.2f ? k / 0.2f : k > 0.85f ? (1f - k) / 0.15f : 1f) : 0f;
+                model.position = new Vector3(cx, 5.2f * (1f - h), 0f);
+                model.localScale = new Vector3(1f, Mathf.Max(0.01f, h), 1f);
+                model.gameObject.SetActive(h > 0.01f);
+                if (on && Random.value < 0.4f)
+                {
+                    var sp = LevelBuilder.Visual("Choco Splash", PrimitiveType.Sphere, null, new Vector3(cx + Random.Range(-0.5f, 0.5f), 0.1f + spec.y, Random.Range(-0.6f, 0.6f)), Vector3.one * Random.Range(0.12f, 0.22f), GameManager.Instance.Mat("Choco Drip", new Color(0.4f, 0.22f, 0.13f), 0.7f), false);
+                    var fx = sp.AddComponent<FxParticle>();
+                    fx.velocity = new Vector3(Random.Range(-2f, 2f), Random.Range(1.5f, 3f), Random.Range(-1f, 1f));
+                    fx.gravity = 10f; fx.life = 0.5f;
+                }
+                break;
+            }
+            case "sprinkles":
+                model.gameObject.SetActive(false);
+                if (on)
+                    for (int s = 0; s < 3; s++)
+                    {
+                        var sp = LevelBuilder.Visual("Sprinkle", PrimitiveType.Capsule, null, new Vector3(cx + Random.Range(-1f, 1f), 4.1f + spec.y, Random.Range(-0.5f, 0.5f)), new Vector3(0.06f, 0.12f, 0.06f), GameManager.Instance.Mat("Crayon Fall " + Random.Range(0, 4), MusicFeatures.KeyColors[Random.Range(0, 4)], 0.4f), false);
+                        sp.transform.rotation = Random.rotation;
+                        var fx = sp.AddComponent<FxParticle>();
+                        fx.velocity = new Vector3(Random.Range(-0.5f, 0.5f), -Random.Range(4f, 6f), 0f);
+                        fx.spin = Random.insideUnitSphere * 400f; fx.life = 0.9f;
+                    }
+                break;
+            case "kettle":
+                model.gameObject.SetActive(false);
+                if (on && Random.value < 0.8f)
+                {
+                    Vector3 from = new Vector3(cx + w * 0.5f + 0.6f, 1.75f + spec.y, 0.4f);
+                    var puff = LevelBuilder.Visual("Steam Jet", PrimitiveType.Sphere, null, from, Vector3.one * Random.Range(0.3f, 0.5f), GameManager.Instance.Mat("Steam Puff", new Color(0.95f, 0.95f, 1f), 0.2f), false);
+                    var fx = puff.AddComponent<FxParticle>();
+                    fx.velocity = new Vector3(-Random.Range(5f, 7f), Random.Range(-0.6f, 0.2f), -0.3f);
+                    fx.grow = 2f; fx.life = 0.6f;
+                }
+                break;
+            case "oil":
+            {
+                model.position = Vector3.zero;
+                for (int i = 0; i < parts.Count; i++)
+                {
+                    float kk = Mathf.Repeat(k * 1.5f + i * 0.3f, 1f);
+                    Vector3 a = new Vector3(cx + (i - 1) * 0.3f, 0.3f, 1.3f), b = new Vector3(cx + (i - 1) * 0.8f - 0.3f, 0.2f, -0.6f);
+                    parts[i].localPosition = Vector3.Lerp(a, b, kk) + Vector3.up * Mathf.Sin(kk * Mathf.PI) * 2.2f;
+                }
+                if (on && Random.value < 0.05f) LevelSfx.Play("sizzle", 0.3f);
+                break;
+            }
             case "mole":
             {
                 // يطلع بسرعة، يتلفت، ويرجع ينزل
@@ -507,6 +684,13 @@ public class TimedHazard : MonoBehaviour
             case "speaker": return "drum";
             case "pinecone": return "crack";
             case "mole": return "dig";
+            case "pepper": return "sneeze";
+            case "toast": return "toaster";
+            case "flame": return "sizzle";
+            case "chocofall": return "slurp";
+            case "sprinkles": return "chime";
+            case "kettle": return "whistle";
+            case "oil": return "sizzle";
             case "rollinglog": return "rumble";
             case "acorn": return "pop";
             case "paperball": return "whoosh";
