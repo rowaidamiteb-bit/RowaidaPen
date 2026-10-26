@@ -161,6 +161,52 @@ public class TimedHazard : MonoBehaviour
                 Part(PrimitiveType.Cube, new Vector3(1.55f, 0.05f, 0f), new Vector3(0.2f, 0.35f, 0.15f), wood);
                 break;
             }
+            case "pinecone":
+            {
+                // غصن صنوبر فوق الطريق، ومنه تطيح أكواز
+                Material bark = gm.Mat("Tree Bark", new Color(0.5f, 0.33f, 0.2f), 0.2f);
+                Material pine = gm.Mat("Pine Needles", new Color(0.2f, 0.5f, 0.32f), 0.3f);
+                Material cone = gm.Mat("Pine Cone", new Color(0.58f, 0.38f, 0.2f), 0.25f);
+                Material coneDark = gm.Mat("Pine Cone Dark", new Color(0.42f, 0.26f, 0.14f), 0.2f);
+                LevelBuilder.Visual("Pine Trunk", PrimitiveType.Cylinder, transform, new Vector3(spec.x + 2.4f, 3.2f, 2.3f), new Vector3(0.7f, 4f, 0.7f), bark);
+                var br = LevelBuilder.Visual("Pine Branch", PrimitiveType.Cylinder, transform, new Vector3(spec.x + 1f, 5.4f, 0.8f), new Vector3(0.2f, 1.6f, 0.2f), bark).transform;
+                br.localRotation = Quaternion.Euler(25f, 0f, 80f);
+                for (int i = 0; i < 5; i++)
+                {
+                    var n = LevelBuilder.Visual("Needles", PrimitiveType.Sphere, transform, new Vector3(spec.x - 0.6f + i * 0.75f, 5.6f + (i % 2) * 0.25f, 0.6f + (i % 3) * 0.3f), new Vector3(1.4f, 0.7f, 1.2f), pine).transform;
+                    n.localRotation = Quaternion.Euler(0f, 0f, i * 13f);
+                }
+                for (int i = 0; i < 4; i++)
+                    Part(PrimitiveType.Sphere, new Vector3(0f, 0.22f - i * 0.15f, 0f), new Vector3(0.42f - i * 0.07f, 0.2f, 0.42f - i * 0.07f), i % 2 == 0 ? cone : coneDark);
+                break;
+            }
+            case "acorn":
+            {
+                // سنجاب على غصن يرمي بندق على الطريق
+                Material bark = gm.Mat("Tree Bark", new Color(0.5f, 0.33f, 0.2f), 0.2f);
+                Material fur = gm.Mat("Squirrel Fur", new Color(0.82f, 0.45f, 0.2f), 0.35f);
+                Material belly = gm.Mat("Squirrel Belly", new Color(1f, 0.88f, 0.72f), 0.3f);
+                Material nut = gm.Mat("Acorn", new Color(0.72f, 0.48f, 0.22f), 0.45f);
+                Material capM = gm.Mat("Acorn Cap", new Color(0.45f, 0.3f, 0.15f), 0.3f);
+                Vector3 sq = new Vector3(spec.x + spec.width * 0.5f + 1.6f, 3.3f, 0.6f);
+                var limb = LevelBuilder.Visual("Branch", PrimitiveType.Cylinder, transform, sq + new Vector3(0.6f, -0.35f, 0.3f), new Vector3(0.25f, 1.4f, 0.25f), bark).transform;
+                limb.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                LevelBuilder.Visual("Tree Trunk", PrimitiveType.Cylinder, transform, sq + new Vector3(2f, -1.2f, 0.8f), new Vector3(0.8f, 2.5f, 0.8f), bark);
+                var body = new GameObject("Squirrel").transform;
+                body.SetParent(transform, false);
+                body.position = sq;
+                LevelBuilder.Visual("Body", PrimitiveType.Sphere, body, Vector3.zero, new Vector3(0.45f, 0.55f, 0.4f), fur);
+                LevelBuilder.Visual("Belly", PrimitiveType.Sphere, body, new Vector3(-0.1f, -0.02f, -0.1f), new Vector3(0.3f, 0.4f, 0.25f), belly, false);
+                LevelBuilder.Visual("Head", PrimitiveType.Sphere, body, new Vector3(-0.12f, 0.38f, 0f), Vector3.one * 0.32f, fur);
+                LevelBuilder.Visual("Eye", PrimitiveType.Sphere, body, new Vector3(-0.24f, 0.45f, -0.12f), Vector3.one * 0.07f, black, false);
+                for (int s = -1; s <= 1; s += 2)
+                    LevelBuilder.Visual("Ear", PrimitiveType.Sphere, body, new Vector3(-0.08f, 0.56f, s * 0.1f), new Vector3(0.08f, 0.14f, 0.06f), fur, false);
+                for (int i = 0; i < 4; i++)
+                    LevelBuilder.Visual("Tail", PrimitiveType.Sphere, body, new Vector3(0.3f + Mathf.Sin(i * 0.8f) * 0.15f, -0.1f + i * 0.22f, 0.05f), Vector3.one * (0.34f - i * 0.03f), fur, false);
+                Part(PrimitiveType.Sphere, Vector3.zero, new Vector3(0.32f, 0.38f, 0.32f), nut);
+                Part(PrimitiveType.Sphere, new Vector3(0f, 0.15f, 0f), new Vector3(0.36f, 0.16f, 0.36f), capM);
+                break;
+            }
             case "speaker":
             {
                 // سماعة ضخمة يمين المنطقة، تطلق موجات صوت على الطريق
@@ -299,6 +345,22 @@ public class TimedHazard : MonoBehaviour
             case "bow":
                 model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 1f, -0.2f);
                 break;
+            case "pinecone":
+            {
+                // يطيح من الغصن، ينط نطة صغيرة، ويتدحرج شوي
+                if (k < 0.45f) { float a = k / 0.45f; model.position = new Vector3(cx, 5.2f - a * a * 4.95f, 0f); model.localRotation = Quaternion.Euler(0f, 0f, a * 200f); }
+                else { float a = (k - 0.45f) / 0.55f; model.position = new Vector3(cx - a * 1.2f, 0.25f + Mathf.Sin(Mathf.Min(1f, a * 2.5f) * Mathf.PI) * 0.5f, 0f); model.localRotation = Quaternion.Euler(0f, 0f, 200f + a * 360f); }
+                break;
+            }
+            case "acorn":
+            {
+                float land = 0.4f;
+                Vector3 from = new Vector3(cx + w * 0.5f + 1.4f, 3.3f, 0.3f), hitP = new Vector3(cx + w * 0.5f, 0.2f, 0f);
+                if (k < land) { float a = k / land; model.position = Vector3.Lerp(from, hitP, a) + Vector3.up * Mathf.Sin(a * Mathf.PI) * 1.2f; }
+                else model.position = hitP + Vector3.left * ((k - land) / (1f - land)) * (w + 1.2f);
+                model.localRotation = Quaternion.Euler(0f, 0f, k * 720f);
+                break;
+            }
             case "speaker":
             {
                 // موجات تطلع من السماعة وتمشي لليسار وهي تكبر
@@ -392,6 +454,8 @@ public class TimedHazard : MonoBehaviour
             case "metronome": return "tock";
             case "stapler": return "clank";
             case "speaker": return "drum";
+            case "pinecone": return "crack";
+            case "acorn": return "pop";
             case "paperball": return "whoosh";
         }
         return null;

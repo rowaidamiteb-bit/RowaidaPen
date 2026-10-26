@@ -830,18 +830,19 @@ public class Sharpener : MonoBehaviour
 public class GluePuddle : MonoBehaviour
 {
     float from, to, top;
-    bool holding, prompted;
+    bool holding, prompted, honey;
     readonly List<Transform> bubbles = new List<Transform>();
     readonly Dictionary<InkMark, float> sinking = new Dictionary<InkMark, float>();
     const float Swallow = 6f;
 
-    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    public static void Create(Transform root, Vector3 spec, GameManager gm, bool honey = false)
     {
-        var go = new GameObject("Glue");
+        var go = new GameObject(honey ? "Honey" : "Glue");
         go.transform.SetParent(root, false);
         var g = go.AddComponent<GluePuddle>();
         g.from = spec.x; g.to = spec.y; g.top = spec.z;
-        Material glue = gm.Mat("Glue", new Color(0.92f, 0.95f, 1f), 0.95f);
+        g.honey = honey;
+        Material glue = honey ? gm.Mat("Honey", new Color(1f, 0.68f, 0.12f), 0.95f) : gm.Mat("Glue", new Color(0.92f, 0.95f, 1f), 0.95f);
         Material bottle = gm.Mat("Glue Bottle", new Color(0.95f, 0.95f, 0.92f), 0.5f);
         Material cap = gm.Mat("Glue Cap", new Color(1f, 0.5f, 0.2f), 0.5f);
         float w = g.to - g.from, cx = (g.from + g.to) * 0.5f;
@@ -850,6 +851,17 @@ public class GluePuddle : MonoBehaviour
             LevelBuilder.Visual("Blob", PrimitiveType.Sphere, go.transform, new Vector3(g.from + w * (0.15f + i * 0.17f), g.top + 0.05f, -0.8f + i * 0.4f), new Vector3(0.6f, 0.12f, 0.5f), glue, false);
         for (int i = 0; i < 4; i++)
             g.bubbles.Add(LevelBuilder.Visual("Bubble", PrimitiveType.Sphere, go.transform, new Vector3(g.from + w * (0.2f + i * 0.2f), g.top, -0.4f + i * 0.25f), Vector3.one * 0.1f, glue, false).transform);
+        if (honey)
+        {
+            // جرة عسل طايحة ورا، ومنها يسيل العسل
+            Material jar = gm.Mat("Honey Jar", new Color(0.95f, 0.78f, 0.35f), 0.7f);
+            Material cloth = gm.Mat("Jar Cloth", new Color(0.85f, 0.25f, 0.3f), 0.3f);
+            var j = LevelBuilder.Visual("Honey Jar", PrimitiveType.Sphere, go.transform, new Vector3(g.to + 0.5f, g.top + 0.55f, 1.3f), new Vector3(1.1f, 1f, 1f), jar).transform;
+            j.localRotation = Quaternion.Euler(0f, 0f, 75f);
+            LevelBuilder.Visual("Lid Cloth", PrimitiveType.Cylinder, j, new Vector3(0f, 0.5f, 0f), new Vector3(0.75f, 0.08f, 0.75f), cloth);
+            LevelBuilder.Visual("Drip", PrimitiveType.Capsule, go.transform, new Vector3(g.to - 0.2f, g.top + 0.12f, 0.9f), new Vector3(0.3f, 0.2f, 0.8f), glue, false);
+            return;
+        }
         // علبة صمغ مقلوبة ورا (هي اللي كبت)
         var b = LevelBuilder.Visual("Glue Bottle", PrimitiveType.Cylinder, go.transform, new Vector3(g.to + 0.6f, g.top + 0.5f, 1.3f), new Vector3(0.9f, 0.6f, 0.9f), bottle).transform;
         b.localRotation = Quaternion.Euler(0f, 0f, 70f);
@@ -898,7 +910,7 @@ public class GluePuddle : MonoBehaviour
         {
             prompted = true;
             LevelSfx.Play("glue", 0.7f);
-            gm.UI.ShowMessage("", 3f, "صمغ! بتلزقين فيه... ارسمي خط فوقه تمشين عليه");
+            gm.UI.ShowMessage("", 3f, honey ? "عسل! بتلزقين فيه... ارسمي خط فوقه تمشين عليه" : "صمغ! بتلزقين فيه... ارسمي خط فوقه تمشين عليه");
         }
         HoldHelper.Hold(ref holding, wait);
     }

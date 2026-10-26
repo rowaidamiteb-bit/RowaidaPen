@@ -306,6 +306,186 @@ public static class LevelSfx
                 }
                 return Normalize(Loop(b, 0.5f), 0.5f);
             }
+            case "amb_forest":
+            case "amb_river":
+            case "amb_hive":
+            case "amb_magic":
+            {
+                // الغابة: حفيف أوراق (نويز ناعم يتموج)، وأصوات طبيعة حسب المكان
+                b = Buf(8.5f);
+                float lp = 0f, lp2 = 0f;
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    lp += (Noise(r) - lp) * 0.05f;
+                    lp2 += (lp - lp2) * 0.3f;
+                    float gust = 0.55f + 0.45f * Mathf.Sin(t * 0.7f) * Mathf.Sin(t * 0.31f + 1f);
+                    b[i] = (lp - lp2) * 1.4f * gust;
+                }
+                if (key == "amb_river")
+                {
+                    // مويه تجري: خرير وفقاعات صغيرة
+                    float w = 0f;
+                    for (int i = 0; i < b.Length; i++) { w += (Noise(r) - w) * 0.25f; b[i] += w * 0.35f; }
+                    for (int k = 0; k < 70; k++)
+                    {
+                        int s = r.Next(b.Length - Rate / 10);
+                        float f0 = 500f + (float)r.NextDouble() * 900f;
+                        for (int i = 0; i < Rate / 30; i++)
+                        {
+                            float t = i / (float)Rate;
+                            b[s + i] += Mathf.Sin(2f * Mathf.PI * f0 * (1f + t * 12f) * t) * Mathf.Exp(-t * 90f) * 0.25f;
+                        }
+                    }
+                }
+                if (key == "amb_hive")
+                {
+                    // طنين نحل بعيد يطلع وينزل
+                    for (int i = 0; i < b.Length; i++)
+                    {
+                        float t = i / (float)Rate;
+                        float f = 210f + Mathf.Sin(t * 1.3f) * 15f;
+                        float saw = Mathf.Repeat(f * t, 1f) * 2f - 1f;
+                        b[i] += saw * 0.06f * (0.6f + 0.4f * Mathf.Sin(t * 0.9f));
+                    }
+                }
+                if (key == "amb_magic")
+                {
+                    // ليل سحري: صراصير ورنات ناعمة
+                    for (int i = 0; i < b.Length; i++)
+                    {
+                        float t = i / (float)Rate;
+                        float chirp = Mathf.Repeat(t * 3.1f, 1f) < 0.25f ? 1f : 0f;
+                        b[i] += Mathf.Sin(2f * Mathf.PI * 4400f * t) * chirp * Mathf.Abs(Mathf.Sin(t * 120f)) * 0.03f;
+                    }
+                    for (int k = 0; k < 9; k++)
+                        AddTone(b, (float)r.NextDouble() * 7.5f, 1f, 1046f * (k % 3 == 0 ? 1f : k % 3 == 1 ? 1.26f : 1.5f), 0.07f, 3f, 0.1f);
+                }
+                else
+                {
+                    // عصافير بعيدة
+                    for (int k = 0; k < 6; k++)
+                    {
+                        float t0 = (float)r.NextDouble() * 7.5f, f0 = 2800f + (float)r.NextDouble() * 1400f;
+                        for (int c = 0; c < 2 + r.Next(3); c++)
+                        {
+                            int s = Mathf.RoundToInt((t0 + c * 0.13f) * Rate);
+                            for (int i = 0; i < Rate / 16 && s + i < b.Length; i++)
+                            {
+                                float t = i / (float)Rate;
+                                b[s + i] += Mathf.Sin(2f * Mathf.PI * (f0 + 700f * Mathf.Sin(t * 60f)) * t) * Mathf.Sin(t / 0.0625f * Mathf.PI) * 0.09f;
+                            }
+                        }
+                    }
+                }
+                return Normalize(Loop(b, 0.5f), 0.45f);
+            }
+            case "chirp":
+            {
+                // عصفور يغرد: تغريدات قصيرة صاعدة
+                b = Buf(0.9f);
+                float f0 = 2600f + (float)r.NextDouble() * 1200f;
+                int n = 3 + r.Next(4);
+                for (int c = 0; c < n; c++)
+                {
+                    int s = Mathf.RoundToInt(c * 0.12f * Rate);
+                    float up = c == n - 1 ? 1.4f : 1f;
+                    for (int i = 0; i < Rate / 12 && s + i < b.Length; i++)
+                    {
+                        float t = i / (float)Rate;
+                        float f = f0 * up + 1600f * t / 0.083f * (c % 2 == 0 ? 1f : -0.5f);
+                        b[s + i] += Mathf.Sin(2f * Mathf.PI * f * t) * Mathf.Sin(t / 0.083f * Mathf.PI) * 0.6f;
+                    }
+                }
+                return Normalize(b, 0.45f);
+            }
+            case "woodpecker":
+            {
+                b = Buf(0.8f);
+                for (int k = 0; k < 12; k++) AddClick(b, k * 0.045f, 900f + r.Next(200), 1f - k * 0.04f, r);
+                return Normalize(b, 0.5f);
+            }
+            case "grow":
+            {
+                // شجرة تطلع: صرير خشب وحفيف أوراق يطلع
+                b = Buf(2f);
+                float lp = 0f;
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float creak = Mathf.Sin(2f * Mathf.PI * (90f + 60f * t) * t + Mathf.Sin(t * 37f) * 3f) * (Mathf.Repeat(t * 9f, 1f) < 0.5f ? 1f : 0.3f);
+                    lp += (Noise(r) - lp) * Mathf.Lerp(0.02f, 0.3f, t / 2f);
+                    b[i] = creak * 0.35f * Mathf.Clamp01(1.6f - t) + lp * 0.5f * Mathf.Clamp01(t * 2f) * Mathf.Clamp01((2f - t) * 2f);
+                }
+                AddTone(b, 1.4f, 0.6f, 784f, 0.25f, 4f, 0.2f);
+                AddTone(b, 1.55f, 0.45f, 1175f, 0.2f, 5f, 0.2f);
+                return Normalize(b, 0.55f);
+            }
+            case "boing":
+            {
+                b = Buf(0.6f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float f = 180f + 260f * (1f - Mathf.Exp(-t * 8f)) + Mathf.Sin(t * 70f) * 40f * Mathf.Exp(-t * 4f);
+                    b[i] = Mathf.Sin(2f * Mathf.PI * f * t) * Mathf.Exp(-t * 5f);
+                }
+                return Normalize(b, 0.6f);
+            }
+            case "pop":
+            {
+                b = Buf(0.18f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = Mathf.Sin(2f * Mathf.PI * (900f * p - 3000f * t) * t) * Mathf.Exp(-t * 35f) + Noise(r) * Mathf.Exp(-t * 200f) * 0.4f;
+                }
+                return Normalize(b, 0.55f);
+            }
+            case "rope":
+            {
+                // حبل ينرمي وينشد: صفير قصير وطقة
+                b = Buf(0.45f);
+                float lp = 0f;
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    lp += (Noise(r) - lp) * 0.4f;
+                    b[i] = lp * Mathf.Sin(Mathf.Clamp01(t / 0.25f) * Mathf.PI) * 0.6f;
+                }
+                AddClick(b, 0.26f, 600f, 1f, r);
+                AddTone(b, 0.26f, 0.19f, 140f, 0.5f, 18f, 0.3f);
+                return Normalize(b, 0.55f);
+            }
+            case "crack":
+            {
+                b = Buf(0.5f);
+                for (int k = 0; k < 5; k++) AddClick(b, k * 0.03f + (float)r.NextDouble() * 0.02f, 400f + r.Next(500), 1f, r);
+                AddTone(b, 0f, 0.5f, 70f, 0.5f, 9f, 0.4f);
+                return Normalize(b, 0.6f);
+            }
+            case "bee":
+            {
+                // طنين نحلة (يتكرر)
+                b = Buf(1f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float f = 230f * p + Mathf.Sin(t * 2f * Mathf.PI * 6f) * 12f;
+                    float saw = Mathf.Repeat(f * t, 1f) * 2f - 1f;
+                    b[i] = saw * (0.7f + 0.3f * Mathf.Sin(t * 2f * Mathf.PI * 3f));
+                }
+                return Normalize(Loop(b, 0.1f), 0.3f);
+            }
+            case "sticker":
+            {
+                // جمعتي ملصق: أربع نغمات تطلع ولمعة
+                b = Buf(1.1f);
+                float[] notes = { 1046f, 1318f, 1568f, 2093f };
+                for (int k = 0; k < notes.Length; k++) AddTone(b, k * 0.08f, 0.8f, notes[k], 0.35f, 5f, 0.15f);
+                for (int k = 0; k < 6; k++) AddTone(b, 0.35f + k * 0.05f, 0.3f, 3000f + k * 300f, 0.06f, 12f, 0f);
+                return Normalize(b, 0.55f);
+            }
             case "amb_night":
             {
                 b = Buf(6.5f);
@@ -784,11 +964,13 @@ public static class LevelSfx
 public class AmbiencePlayer : MonoBehaviour
 {
     string extraKey;
+    string[] extras;   // أكثر من صوت يطلع (نختار واحد عشوائي)
     float minGap, maxGap, nextAt, volume;
 
     public void Configure(string ambienceKey)
     {
         extraKey = null;
+        extras = null;
         switch (ambienceKey)
         {
             case "sea": extraKey = "gull"; minGap = 5f; maxGap = 10f; volume = 0.5f; break;
@@ -796,16 +978,21 @@ public class AmbiencePlayer : MonoBehaviour
             case "storm": extraKey = "swirl"; minGap = 4f; maxGap = 8f; volume = 0.4f; break;
             case "underwater": extraKey = "bubble"; minGap = 1.5f; maxGap = 4f; volume = 0.35f; break;
             case "day": extraKey = null; break;
+            case "forest": extras = new[] { "chirp", "chirp", "woodpecker" }; minGap = 3f; maxGap = 7f; volume = 0.35f; break;
+            case "river": extras = new[] { "chirp", "splash" }; minGap = 4f; maxGap = 8f; volume = 0.3f; break;
+            case "hive": extras = new[] { "chirp", "bee" }; minGap = 3f; maxGap = 6f; volume = 0.3f; break;
+            case "magic": extras = new[] { "owl", "chime" }; minGap = 5f; maxGap = 9f; volume = 0.3f; break;
         }
         nextAt = Time.time + Random.Range(2f, 5f);
     }
 
     void Update()
     {
+        if (extras != null) extraKey = extras[Random.Range(0, extras.Length)];
         if (string.IsNullOrEmpty(extraKey) || Time.time < nextAt) return;
         nextAt = Time.time + Random.Range(minGap, maxGap);
         GameManager gm = GameManager.Instance;
         if (gm == null || !gm.IsPlaying) return;
-        LevelSfx.Play(extraKey, volume, extraKey == "bubble" ? Random.Range(0.8f, 1.4f) : 1f);
+        LevelSfx.Play(extraKey, volume, extraKey == "bubble" || extraKey == "chirp" || extraKey == "chime" ? Random.Range(0.8f, 1.3f) : 1f);
     }
 }

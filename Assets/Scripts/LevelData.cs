@@ -190,6 +190,14 @@ public class LevelData
     public List<Vector3> strings = new List<Vector3>();     // أوتار على الحفر (من x، لـ x، ترجع تهتز بعد كم ثانية)
     public List<StaffSpec> staffs = new List<StaffSpec>();  // اللحن الأخير: سطر موسيقي فوق حفرة، النوتات تكمل اللحن وتصير جسر
     public List<Vector3> keyLifts = new List<Vector3>();    // مفاتيح بيانو تطلع وتنزل فوق حفرة (من x، لـ x، كل كم ثانية)
+    // الجزء الثالث: الغابة
+    public List<Vector3> seedPits = new List<Vector3>();    // حفرة تراب: البذرة تطلع شجرة جسر (من x، لـ x، سطحها)
+    public List<Vector3> mushrooms = new List<Vector3>();   // فطر نايم ينطط (x، سطح الأرض، قوة النطة)
+    public List<Vector3> rivers = new List<Vector3>();      // نهر بجذوع (من x، لـ x، كل كم ثانية جذع)
+    public List<Vector3> hives = new List<Vector3>();       // خلية نحل (x، سطح الأرض، مسافة الحراسة)
+    public List<Vector3> honeys = new List<Vector3>();      // بقع عسل تلزق (من x، لـ x، سطحها)
+    public bool forest;                                     // منظر الغابة (شجر، عشب، فراشات، أرانب، طيور)
+    public Vector3? sticker;                                // ملصق مخفي (الجزء الثالث)
     public bool concertStage;                               // اللحن الأخير: المرحلة مسرح (ستارة، جمهور، أضواء، قائد أوركسترا)
     public bool risingPianos;                               // البيانو: كل بيانو نغمته أعلى من اللي قبله لين آخر المرحلة
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
@@ -248,6 +256,10 @@ public static class Levels
         NotesLevel(),
         StringsLevel(),
         ConcertLevel(),
+        ForestSeedsLevel(),
+        ForestMushroomsLevel(),
+        ForestRiverLevel(),
+        ForestHiveLevel(),
         LastPage(),
     };
 
@@ -1189,6 +1201,125 @@ public static class Levels
             keyLifts = { new Vector3(58f, 64f, 3.2f) },
         };
         return level;
+    }
+
+    // ===== الجزء الثالث: الغابة =====
+
+    // البذور السحرية: ثلاث حفر تحتها تراب. ارسمي بذرة (دايرة) فوق الحفرة تطيح، تطلع شجرة وغصنها يصير جسر.
+    // وأكواز صنوبر تطيح، وسنجاب يرمي بندق قبل الباب
+    static LevelData ForestSeedsLevel()
+    {
+        var level = new LevelData
+        {
+            ambience = "forest",
+            forest = true,
+            hazards = { new HazardSpec("pinecone", 16f, 1.8f, 4.2f), new HazardSpec("pinecone", 32f, 1.8f, 3.8f, 1.5f), new HazardSpec("acorn", 47f, 1.8f, 4f, 0.7f) },
+            title = "البذور السحرية",
+            theme = LevelTheme.Forest(),
+            subtitle = "ارسمي بذرة (دايرة) فوق الحفرة... تطيح بالتراب وتطلع شجرة تعدين عليها!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(52f, 0f, 0f),
+            ink = 16f,
+            blocks =
+            {
+                Page(-7f, 5f),
+                Page(11f, 21f),
+                Page(28f, 36f),
+                Page(43f, 56f),
+            },
+            seedPits = { new Vector3(5f, 11f, 0f), new Vector3(21f, 28f, 0f), new Vector3(36f, 43f, 0f) },
+            sticker = new Vector3(24.5f, 4.8f, 0f),
+        };
+        Oval(level, 8f, 2.4f, new Color(0.45f, 0.75f, 0.35f));
+        return level;
+    }
+
+    // الفطر القافز: فطر نايم قبل جدران عالية وحفرة. المسيه بخط يصحى، ورويدا تنط عليه
+    static LevelData ForestMushroomsLevel()
+    {
+        return new LevelData
+        {
+            ambience = "forest",
+            forest = true,
+            hazards = { new HazardSpec("acorn", 28.5f, 1.8f, 4f), new HazardSpec("pinecone", 37f, 1.6f, 3.6f, 1f) { y = 3.5f } },
+            title = "الفطر القافز",
+            theme = LevelTheme.Forest(),
+            subtitle = "الفطر نايم! المسيه بخط يصحى... ورويدا تنط عليه فوق الجدران",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(46f, 0f, 0f),
+            ink = 14f,
+            blocks =
+            {
+                Page(-7f, 6f),
+                Wall(6f, 12f, 3f),
+                Page(12f, 20.5f),
+                Page(24.5f, 33f),
+                Wall(33f, 40f, 3.5f),
+                Page(40f, 50f),
+            },
+            mushrooms = { new Vector3(4.8f, 0f, 10f), new Vector3(19.3f, 0f, 11f), new Vector3(31.8f, 0f, 11f) },
+            sticker = new Vector3(15.5f, 6.5f, 0f),
+        };
+    }
+
+    // النهر: ثلاث أنهار تجيب جذوع. ارسمي خط على النهر يصير حبل يصيد جذع ويوقفه جسر. وبالنص فطرة وجدار
+    static LevelData ForestRiverLevel()
+    {
+        return new LevelData
+        {
+            ambience = "river",
+            forest = true,
+            hazards = { new HazardSpec("pinecone", 15f, 1.8f, 4f), new HazardSpec("acorn", 49.5f, 1.8f, 3.8f, 1f) },
+            title = "النهر",
+            theme = LevelTheme.ForestRiver(),
+            subtitle = "النهر يجري! ارسمي خط على المويه يصير حبل يصيد جذع ويوقفه جسر",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(53f, 0f, 0f),
+            ink = 14f,
+            blocks =
+            {
+                Page(-7f, 4f),
+                Page(10f, 19f),
+                Page(26f, 32.5f),
+                Wall(32.5f, 37f, 3f),
+                Page(37f, 39f),
+                Page(46f, 57f),
+            },
+            rivers = { new Vector3(4f, 10f, 4.5f), new Vector3(19f, 26f, 4f), new Vector3(39f, 46f, 3.6f) },
+            mushrooms = { new Vector3(31.3f, 0f, 10.5f) },
+            sticker = new Vector3(14f, 5.2f, 0f),
+        };
+    }
+
+    // خلية النحل (نهاية فصل الغابة): نحل يحرس الطريق (دايرة تصير وردة تلهيه)، عسل يلزق، بذرة، فطرة، ونهر
+    static LevelData ForestHiveLevel()
+    {
+        return new LevelData
+        {
+            ambience = "hive",
+            forest = true,
+            hazards = { new HazardSpec("pinecone", 3f, 1.6f, 4f, 2f), new HazardSpec("acorn", 37.5f, 1.8f, 3.6f) { y = 3f } },
+            title = "خلية النحل",
+            theme = LevelTheme.ForestGold(),
+            subtitle = "النحل يحرس الطريق! ارسمي دايرة تصير وردة تلهيه... وانتبهي من العسل",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(59f, 0f, 0f),
+            ink = 26f,
+            blocks =
+            {
+                Page(-7f, 14f),
+                Page(20f, 35f),
+                Wall(35f, 40f, 3f),
+                Page(40f, 42.5f),
+                Page(49f, 62f),
+            },
+            hives = { new Vector3(8.5f, 0f, 3f), new Vector3(28.5f, 0f, 3f), new Vector3(55f, 0f, 2.6f) },
+            honeys = { new Vector3(22f, 25f, 0f) },
+            seedPits = { new Vector3(14f, 20f, 0f) },
+            mushrooms = { new Vector3(33.8f, 0f, 11f) },
+            rivers = { new Vector3(42.5f, 49f, 4f) },
+            sticker = new Vector3(37.5f, 6.8f, 0f),
+        };
     }
 
     // صفحة البالونات: الشكل المغلق يصير سلة تحت بالونة.

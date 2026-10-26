@@ -324,6 +324,68 @@ public class LevelTheme
         ringColor = new Color(0.3f, 0.32f, 0.3f),
     };
 
+    // ===== الجزء الثالث: الغابة =====
+
+    // الغابة الصبح: ورق مائي أخضر فاتح، سما صافية مع ضباب أخضر خفيف، وأوراق تطيح
+    public static LevelTheme Forest() => new LevelTheme
+    {
+        name = "Forest",
+        paper = new Color(0.95f, 0.97f, 0.86f), pattern = PaperPattern.Watercolor, patternColor = new Color(0.6f, 0.8f, 0.55f), colorfulDoodles = true,
+        pageEdge = new Color(0.8f, 0.88f, 0.68f), pencil = new Color(0.3f, 0.45f, 0.25f), doodleColor = new Color(0.35f, 0.55f, 0.3f),
+        skyTop = new Color(0.35f, 0.7f, 0.95f), skyMid = new Color(0.7f, 0.9f, 0.95f), skyBottom = new Color(0.88f, 0.97f, 0.85f),
+        sun = true, moonColor = new Color(2.8f, 2.6f, 1.8f), stars = 0f, cloudTint = new Color(1.1f, 1.12f, 1.08f), cloudAlpha = 0.8f,
+        sunLight = new Color(1f, 0.95f, 0.8f), sunIntensity = 1.5f, sunAngles = new Vector3(50f, -35f, 0f),
+        ambientSky = new Color(0.75f, 0.88f, 0.8f), ambientEquator = new Color(0.6f, 0.7f, 0.55f), ambientGround = new Color(0.3f, 0.38f, 0.25f),
+        fog = new Color(0.78f, 0.9f, 0.8f), props = PropSet.Crayons, floating = FloatKind.Leaves,
+        floatColors = new[] { new Color(0.45f, 0.75f, 0.3f), new Color(0.7f, 0.85f, 0.3f), new Color(1f, 0.7f, 0.25f) },
+        ringColor = new Color(0.4f, 0.3f, 0.2f),
+    };
+
+    // النهر: نفس الغابة بس أزرق أكثر وندي
+    public static LevelTheme ForestRiver() => new LevelTheme
+    {
+        name = "ForestRiver",
+        paper = new Color(0.93f, 0.97f, 0.93f), pattern = PaperPattern.Watercolor, patternColor = new Color(0.5f, 0.75f, 0.8f), colorfulDoodles = true,
+        pageEdge = new Color(0.75f, 0.87f, 0.8f), pencil = new Color(0.25f, 0.4f, 0.45f), doodleColor = new Color(0.3f, 0.5f, 0.55f),
+        skyTop = new Color(0.3f, 0.62f, 0.95f), skyMid = new Color(0.62f, 0.86f, 0.98f), skyBottom = new Color(0.85f, 0.97f, 0.95f),
+        sun = true, moonColor = new Color(2.8f, 2.6f, 1.9f), stars = 0f, cloudTint = new Color(1.12f, 1.12f, 1.12f), cloudAlpha = 0.85f,
+        sunLight = new Color(1f, 0.97f, 0.88f), sunIntensity = 1.5f, sunAngles = new Vector3(46f, -30f, 0f),
+        ambientSky = new Color(0.75f, 0.88f, 0.95f), ambientEquator = new Color(0.6f, 0.72f, 0.7f), ambientGround = new Color(0.3f, 0.38f, 0.35f),
+        fog = new Color(0.78f, 0.9f, 0.95f), props = PropSet.Crayons, floating = FloatKind.Leaves,
+        floatColors = new[] { new Color(0.45f, 0.75f, 0.3f), new Color(0.6f, 0.85f, 0.4f) },
+        ringColor = new Color(0.35f, 0.3f, 0.25f), seaColor = new Color(0.25f, 0.6f, 0.85f),
+    };
+
+    // خلية النحل: عصر ذهبي دافي
+    public static LevelTheme ForestGold() => new LevelTheme
+    {
+        name = "ForestGold",
+        paper = new Color(0.99f, 0.95f, 0.8f), pattern = PaperPattern.Watercolor, patternColor = new Color(0.95f, 0.75f, 0.35f), colorfulDoodles = true,
+        pageEdge = new Color(0.93f, 0.82f, 0.6f), pencil = new Color(0.45f, 0.32f, 0.15f), doodleColor = new Color(0.6f, 0.45f, 0.2f),
+        skyTop = new Color(0.45f, 0.65f, 0.95f), skyMid = new Color(0.95f, 0.85f, 0.65f), skyBottom = new Color(1f, 0.92f, 0.7f),
+        sun = true, moonColor = new Color(3f, 2.4f, 1.4f), stars = 0f, cloudTint = new Color(1.15f, 1.05f, 0.9f), cloudAlpha = 0.8f,
+        sunLight = new Color(1f, 0.85f, 0.6f), sunIntensity = 1.5f, sunAngles = new Vector3(30f, -45f, 0f),
+        ambientSky = new Color(0.9f, 0.82f, 0.65f), ambientEquator = new Color(0.75f, 0.65f, 0.45f), ambientGround = new Color(0.38f, 0.3f, 0.2f),
+        fog = new Color(0.98f, 0.88f, 0.7f), props = PropSet.Crayons, floating = FloatKind.Petals,
+        floatColors = new[] { new Color(1f, 0.85f, 0.3f), new Color(1f, 0.6f, 0.75f), Color.white },
+        ringColor = new Color(0.45f, 0.32f, 0.15f),
+    };
+
+    // الغابة المسحورة: غروب بنفسجي، فطر يضوي، ويراعات
+    public static LevelTheme MagicForest() => new LevelTheme
+    {
+        name = "MagicForest",
+        paper = new Color(0.9f, 0.92f, 0.98f), pattern = PaperPattern.Watercolor, patternColor = new Color(0.6f, 0.5f, 0.85f), colorfulDoodles = true,
+        pageEdge = new Color(0.75f, 0.72f, 0.88f), pencil = new Color(0.35f, 0.3f, 0.55f), doodleColor = new Color(0.5f, 0.4f, 0.75f),
+        skyTop = new Color(0.12f, 0.08f, 0.3f), skyMid = new Color(0.45f, 0.25f, 0.55f), skyBottom = new Color(0.95f, 0.55f, 0.55f),
+        moonColor = new Color(2.2f, 2.1f, 2.6f), stars = 0.7f, cloudTint = new Color(0.8f, 0.55f, 0.85f), cloudAlpha = 0.6f,
+        sunLight = new Color(0.9f, 0.75f, 1f), sunIntensity = 0.9f, sunAngles = new Vector3(25f, -40f, 0f),
+        ambientSky = new Color(0.55f, 0.45f, 0.75f), ambientEquator = new Color(0.45f, 0.35f, 0.55f), ambientGround = new Color(0.2f, 0.15f, 0.3f),
+        fog = new Color(0.4f, 0.28f, 0.5f), props = PropSet.Crayons, floating = FloatKind.Fireflies,
+        floatColors = new[] { new Color(0.8f, 1f, 0.5f), new Color(0.6f, 0.9f, 1f), new Color(1f, 0.7f, 1f) },
+        ringColor = new Color(0.35f, 0.28f, 0.45f),
+    };
+
     // البحر: ورق أزرق فاتح، سما صيف صافية، وشمس
     public static LevelTheme Ocean() => new LevelTheme
     {

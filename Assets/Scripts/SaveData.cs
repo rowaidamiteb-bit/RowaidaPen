@@ -77,6 +77,15 @@ public static class SaveData
         PlayerPrefs.Save();
     }
 
+    // الملصقات المخفية (الجزء الثالث): ملصق واحد بكل مرحلة
+    public static bool HasSticker(int index) => PlayerPrefs.GetInt("sticker" + Key(Levels.All[index].title).Substring(5), 0) == 1;
+
+    public static void SetSticker(int index)
+    {
+        PlayerPrefs.SetInt("sticker" + Key(Levels.All[index].title).Substring(5), 1);
+        PlayerPrefs.Save();
+    }
+
     public static int TotalStars
     {
         get

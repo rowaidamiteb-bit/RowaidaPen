@@ -358,41 +358,20 @@ public static class ClaudeCapture
             cam.fieldOfView = 35f;
         }
 
+        // القوائم فوق الشاشة ما تنرسم مع الكاميرا: نحولها مؤقتًا للكاميرا ونصور مرة ثانية
+        var overlays = new List<Canvas>();
+        if (kind == "main")
+            foreach (Canvas c in Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+                if (c.isRootCanvas && c.renderMode == RenderMode.ScreenSpaceOverlay && c.gameObject.activeInHierarchy) overlays.Add(c);
+        foreach (Canvas c in overlays) { c.renderMode = RenderMode.ScreenSpaceCamera; c.worldCamera = cam; c.planeDistance = 0.35f; }
+        if (overlays.Count > 0) Canvas.ForceUpdateCanvases();
         var rt = new RenderTexture(1600, 900, 24, RenderTextureFormat.ARGB32);
         RenderTexture prevTarget = cam.targetTexture;
         cam.targetTexture = rt;
         cam.Render();
         cam.targetTexture = prevTarget;
+        foreach (Canvas c in overlays) c.renderMode = RenderMode.ScreenSpaceOverlay;
 
-        // القوائم (فوق الشاشة) ما تنرسم مع الكاميرا: نرسمها فوق الصورة بكاميرا ثانية بدون مؤثرات
-        if (kind == "main")
-        {
-            var overlays = new List<Canvas>();
-            foreach (Canvas c in Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None))
-                if (c.isRootCanvas && c.renderMode == RenderMode.ScreenSpaceOverlay && c.gameObject.activeInHierarchy) overlays.Add(c);
-            if (overlays.Count > 0)
-            {
-                var uiGo = new GameObject("Claude UI Camera");
-                var uiCam = uiGo.AddComponent<Camera>();
-                uiCam.clearFlags = CameraClearFlags.Nothing;
-                uiCam.cullingMask = 1 << 5;
-                uiCam.orthographic = true;
-                uiCam.targetTexture = rt;
-                var data = uiGo.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
-                data.renderPostProcessing = false;
-                foreach (Canvas c in overlays)
-                {
-                    c.renderMode = RenderMode.ScreenSpaceCamera;
-                    c.worldCamera = uiCam;
-                    c.planeDistance = 1f;
-                }
-                Canvas.ForceUpdateCanvases();
-                uiCam.Render();
-                foreach (Canvas c in overlays) c.renderMode = RenderMode.ScreenSpaceOverlay;
-                uiCam.targetTexture = null;
-                Object.DestroyImmediate(uiGo);
-            }
-        }
 
         RenderTexture prevActive = RenderTexture.active;
         RenderTexture.active = rt;
