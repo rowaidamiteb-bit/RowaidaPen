@@ -266,6 +266,12 @@ public static class ClaudeCapture
                 case "jump":
                     GameManager.Instance.Rowaida.Jump();
                     break;
+                case "menu":
+                    GameManager.Instance.GoToMainMenu();
+                    break;
+                case "pencilmenu":
+                    Object.FindAnyObjectByType<MenuUI>().ShowPencil();
+                    break;
                 case "levels":
                     Object.FindAnyObjectByType<MenuUI>().ShowLevels(false);
                     break;
