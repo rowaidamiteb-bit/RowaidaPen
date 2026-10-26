@@ -35,6 +35,7 @@ public static class MusicFeatures
         foreach (NoteSpec n in data.noteSections) NoteSection.Create(root, n, gm);
         foreach (Vector3 s in data.strings) StringBridge.Create(root, s, gm);
         foreach (StaffSpec s in data.staffs) StaffBridge.Create(root, s, gm);
+        foreach (Vector3 k in data.keyLifts) KeyLift.Create(root, k, gm);
     }
 }
 
@@ -812,5 +813,111 @@ public class StaffBridge : MonoBehaviour
         int step = Mathf.Clamp(Mathf.RoundToInt(spec.notes[n].y), 0, Scale.Length - 1);
         LevelSfx.Play("piano", 0.8f, NotePitch(n));
         Fx.Sparkle(p, MusicFeatures.KeyColors[n % 5], 12);
+    }
+}
+
+// مفاتيح بيانو عملاقة تسد حفرة: تطلع وتنزل ورا بعض مثل موجة، وكل مفتاح يعزف نغمته لما يوصل فوق.
+// رويدا تمشي عليها، وتستنى على المفتاح لين اللي بعده يصير بنفس ارتفاعه
+public class KeyLift : MonoBehaviour
+{
+    const float Down = 1.7f, Lag = 0.32f;
+    float from, to, period, keyW, start;
+    readonly List<Rigidbody> keys = new List<Rigidbody>();
+    readonly List<Transform> visuals = new List<Transform>();
+    bool[] wasUp;
+    bool holding, prompted;
+    Material ivory, lit;
+
+    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    {
+        var go = new GameObject("Key Lift");
+        go.transform.SetParent(root, false);
+        var k = go.AddComponent<KeyLift>();
+        k.from = spec.x; k.to = spec.y; k.period = spec.z;
+        k.start = Time.time;
+        int n = Mathf.Max(2, Mathf.RoundToInt(k.to - k.from));
+        k.keyW = (k.to - k.from) / n;
+        k.wasUp = new bool[n];
+        k.ivory = gm.Mat("Piano Ivory", new Color(0.97f, 0.96f, 0.92f), 0.6f);
+        k.lit = gm.Mat("Key Lift Glow", new Color(1.3f, 1.15f, 0.6f), 0.6f);
+        Material ebony = gm.Mat("Piano Wood", new Color(0.15f, 0.12f, 0.14f), 0.7f);
+        for (int i = 0; i < n; i++)
+        {
+            var key = new GameObject("Lift Key " + i);
+            key.transform.SetParent(go.transform, false);
+            key.transform.position = new Vector3(k.from + (i + 0.5f) * k.keyW, -Down, 0f);
+            var rb = key.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            var col = key.AddComponent<BoxCollider>();
+            col.center = new Vector3(0f, -1.5f, 0f);
+            col.size = new Vector3(k.keyW - 0.06f, 3f, 2f);
+            k.visuals.Add(LevelBuilder.Visual("Key", PrimitiveType.Cube, key.transform, new Vector3(0f, -1.5f, 0f), new Vector3(k.keyW - 0.08f, 3f, 2.2f), k.ivory).transform);
+            // مفتاح أسود صغير ورا بين بعض المفاتيح
+            if (i < n - 1 && i % 7 != 2 && i % 7 != 6)
+                LevelBuilder.Visual("Black Key", PrimitiveType.Cube, key.transform, new Vector3(k.keyW * 0.5f, 0.12f, 0.75f), new Vector3(k.keyW * 0.5f, 0.25f, 0.8f), ebony);
+            k.keys.Add(rb);
+        }
+    }
+
+    // ارتفاع سطح المفتاح i بوقت معين: فوق (0) نص الوقت، وتحت شوي، والموجة تمشي لليمين
+    float TopAt(int i, float t)
+    {
+        float ph = Mathf.Repeat((t - start) / period - i * Lag / period, 1f);
+        float up;
+        if (ph < 0.5f) up = 1f;
+        else if (ph < 0.62f) up = 1f - (ph - 0.5f) / 0.12f;
+        else if (ph < 0.86f) up = 0f;
+        else up = (ph - 0.86f) / 0.14f;
+        return -Down * (1f - Mathf.SmoothStep(0f, 1f, up));
+    }
+
+    void FixedUpdate()
+    {
+        float t = Time.time;
+        for (int i = 0; i < keys.Count; i++)
+        {
+            Vector3 p = keys[i].position;
+            keys[i].MovePosition(new Vector3(p.x, TopAt(i, t), p.z));
+        }
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        float t = Time.time;
+        for (int i = 0; i < keys.Count; i++)
+        {
+            bool up = TopAt(i, t) > -0.05f;
+            if (up && !wasUp[i])
+            {
+                RowaidaController r0 = gm.Rowaida;
+                if (r0 != null && Mathf.Abs(r0.transform.position.x - keys[i].position.x) < 12f)
+                    LevelSfx.Play("piano", 0.5f, MusicFeatures.KeyPitch[i % 5] * (i >= 5 ? 2f : 1f));
+            }
+            wasUp[i] = up;
+            visuals[i].GetComponent<MeshRenderer>().sharedMaterial = up ? lit : ivory;
+        }
+
+        // رويدا: تستنى إذا الخطوة الجاية أوطى أو أعلى من اللي هي عليه
+        RowaidaController r = gm.Rowaida;
+        bool wait = false;
+        if (r != null && gm.IsPlaying)
+        {
+            float x = r.transform.position.x;
+            if (x > from - 1.6f && x < to + 0.2f)
+            {
+                int cur = Mathf.FloorToInt((x - from) / keyW);
+                int next = Mathf.FloorToInt((x + 0.5f - from) / keyW);
+                float curTop = cur < 0 || cur >= keys.Count ? 0f : TopAt(cur, t);
+                // نشوف المفتاح الجاي بعد شوي (وقت ما توصله)
+                float nextTop = next < 0 || next >= keys.Count ? 0f : TopAt(next, t + 0.35f);
+                float nextNow = next < 0 || next >= keys.Count ? 0f : TopAt(next, t);
+                if (next != cur && (Mathf.Abs(nextTop - curTop) > 0.25f || Mathf.Abs(nextNow - curTop) > 0.25f)) wait = true;
+            }
+        }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "مفاتيح البيانو تطلع وتنزل! رويدا تمشي عليها لما تصير بنفس الارتفاع"); }
+        HoldHelper.Hold(ref holding, wait);
     }
 }

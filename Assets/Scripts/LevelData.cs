@@ -189,6 +189,7 @@ public class LevelData
     public List<NoteSpec> noteSections = new List<NoteSpec>(); // نوتات تنجمع عشان ينفتح الباب
     public List<Vector3> strings = new List<Vector3>();     // أوتار على الحفر (من x، لـ x، ترجع تهتز بعد كم ثانية)
     public List<StaffSpec> staffs = new List<StaffSpec>();  // اللحن الأخير: سطر موسيقي فوق حفرة، النوتات تكمل اللحن وتصير جسر
+    public List<Vector3> keyLifts = new List<Vector3>();    // مفاتيح بيانو تطلع وتنزل فوق حفرة (من x، لـ x، كل كم ثانية)
     public bool concertStage;                               // اللحن الأخير: المرحلة مسرح (ستارة، جمهور، أضواء، قائد أوركسترا)
     public bool risingPianos;                               // البيانو: كل بيانو نغمته أعلى من اللي قبله لين آخر المرحلة
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
@@ -1162,19 +1163,20 @@ public static class Levels
         {
             ambience = "hall",
             concertStage = true,
-            hazards = { new HazardSpec("metronome", 17f, 2f, 3.6f), new HazardSpec("metronome", 34f, 2f, 3.2f, 1f), new HazardSpec("metronome", 52f, 2f, 2.8f, 0.5f) },
+            hazards = { new HazardSpec("metronome", 17f, 2f, 3.6f), new HazardSpec("metronome", 34f, 2f, 3.2f, 1f), new HazardSpec("metronome", 52f, 2f, 2.8f, 0.5f), new HazardSpec("paperball", 2.5f, 1.6f, 3.4f), new HazardSpec("speaker", 68f, 2.2f, 3.4f), new HazardSpec("paperball", 72.5f, 1.6f, 3f, 1.4f) },
             title = "اللحن الأخير",
             theme = LevelTheme.Cosmic(),
-            subtitle = "ارسمي النوتات بأماكنها المنقطة عشان يكتمل اللحن... وانتبهي من المترونوم!",
+            subtitle = "ارسمي النوتات بأماكنها المنقطة عشان يكتمل اللحن... وانتبهي من المترونوم والسماعة والجمهور المشاغب!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(56f, 0f, 0f),
+            door = new Vector3(76f, 0f, 0f),
             ink = 40f,
             blocks =
             {
                 Page(-7f, 6f),
                 Page(12f, 22f),
                 Page(29f, 39f),
-                Page(47f, 60f),
+                Page(47f, 58f),
+                Page(64f, 81f),
             },
             staffs =
             {
@@ -1184,6 +1186,7 @@ public static class Levels
             },
             floorPianos = { new Vector2(47.5f, 50.2f) },
             badNotes = { new Vector2(31.5f, 2.4f) },
+            keyLifts = { new Vector3(58f, 64f, 3.2f) },
         };
         return level;
     }

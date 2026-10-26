@@ -161,6 +161,32 @@ public class TimedHazard : MonoBehaviour
                 Part(PrimitiveType.Cube, new Vector3(1.55f, 0.05f, 0f), new Vector3(0.2f, 0.35f, 0.15f), wood);
                 break;
             }
+            case "speaker":
+            {
+                // سماعة ضخمة يمين المنطقة، تطلق موجات صوت على الطريق
+                Material box = gm.Mat("Piano Wood", new Color(0.15f, 0.12f, 0.14f), 0.7f);
+                Material cone = gm.Mat("Speaker Cone", new Color(0.35f, 0.35f, 0.4f), 0.4f);
+                Material ring = gm.Mat("Sound Ring", new Color(0.7f, 0.85f, 1.4f), 0.5f);
+                var sp = LevelBuilder.Visual("Big Speaker", PrimitiveType.Cube, transform, new Vector3(spec.x + spec.width * 0.5f + 1.3f, 1.6f, 0.9f), new Vector3(1.8f, 3.2f, 1.4f), box).transform;
+                LevelBuilder.Visual("Woofer", PrimitiveType.Sphere, sp, new Vector3(-0.5f, -0.18f, 0f), new Vector3(0.1f, 0.42f, 0.7f), cone, false);
+                LevelBuilder.Visual("Tweeter", PrimitiveType.Sphere, sp, new Vector3(-0.5f, 0.28f, 0f), new Vector3(0.1f, 0.18f, 0.3f), cone, false);
+                // ثلاث حلقات موجة
+                for (int i = 0; i < 3; i++)
+                {
+                    var rp = Part(PrimitiveType.Cylinder, Vector3.zero, new Vector3(1.6f, 0.04f, 1.6f), ring);
+                    rp.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                }
+                break;
+            }
+            case "paperball":
+            {
+                Material paper = gm.Mat("Bird Paper", new Color(0.97f, 0.95f, 0.9f), 0.2f);
+                Material line = gm.Mat("Ink Scribble", new Color(0.2f, 0.25f, 0.45f), 0.2f);
+                Part(PrimitiveType.Sphere, Vector3.zero, Vector3.one * 0.7f, paper);
+                Part(PrimitiveType.Cube, new Vector3(0.1f, 0.1f, -0.3f), new Vector3(0.4f, 0.04f, 0.1f), line);
+                Part(PrimitiveType.Cube, new Vector3(-0.12f, -0.08f, -0.3f), new Vector3(0.3f, 0.04f, 0.1f), line);
+                break;
+            }
             case "stapler":
             {
                 // دباسة عملاقة: القاعدة على الأرض، والذراع يتحرك من مفصل ورا
@@ -273,6 +299,38 @@ public class TimedHazard : MonoBehaviour
             case "bow":
                 model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 1f, -0.2f);
                 break;
+            case "speaker":
+            {
+                // موجات تطلع من السماعة وتمشي لليسار وهي تكبر
+                model.position = Vector3.zero;
+                for (int i = 0; i < 3; i++)
+                {
+                    float kk = Mathf.Clamp01(k * 1.4f - i * 0.2f);
+                    parts[i].localPosition = new Vector3(cx + w * 0.5f + 0.4f - kk * (w + 1.6f), 1.1f, 0f);
+                    parts[i].localScale = new Vector3(0.6f + kk * 2.2f, 0.04f, 0.6f + kk * 2.2f);
+                    parts[i].gameObject.SetActive(on && kk > 0f && kk < 1f);
+                }
+                if (on && k < 0.1f && Random.value < 0.4f)
+                {
+                    var cam = Camera.main != null ? Camera.main.GetComponent<CameraFollow>() : null;
+                    if (cam != null) cam.Shake(0.06f, 0.15f);
+                }
+                break;
+            }
+            case "paperball":
+            {
+                // واحد من الجمهور يرميها: تطلع من قدام تحت، تنزل على الطريق، وتتدحرج لليسار
+                float land = 0.45f;
+                Vector3 from = new Vector3(cx + w * 0.5f + 1f, -1.2f, -3f), hitP = new Vector3(cx + w * 0.5f, 0.35f, 0f);
+                if (k < land)
+                {
+                    float a = k / land;
+                    model.position = Vector3.Lerp(from, hitP, a) + Vector3.up * Mathf.Sin(a * Mathf.PI) * 3f;
+                }
+                else model.position = hitP + Vector3.left * ((k - land) / (1f - land)) * (w + 1.5f);
+                model.localRotation = Quaternion.Euler(0f, 0f, k * 900f);
+                break;
+            }
             case "stapler":
             {
                 // تنفتح فوق، وتنطبق بقوة على الطريق، وترجع ترتفع
@@ -333,6 +391,8 @@ public class TimedHazard : MonoBehaviour
             case "cannon": return "applause";
             case "metronome": return "tock";
             case "stapler": return "clank";
+            case "speaker": return "drum";
+            case "paperball": return "whoosh";
         }
         return null;
     }
