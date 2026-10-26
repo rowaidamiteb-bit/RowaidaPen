@@ -41,6 +41,7 @@ public static class LevelBuilder
         TimeFeatures.Build(root.transform, data, gm, rng);
         MusicFeatures.Build(root.transform, data, gm, rng);
         ForestFeatures.Build(root.transform, data, gm, rng);
+        ForestFeatures2.Build(root.transform, data, gm);
         foreach (HazardSpec h in data.hazards) TimedHazard.Create(root.transform, h, gm);
         Part2Details.Build(root.transform, data, gm, rng);
         ConcertStage.Build(root.transform, data, gm);

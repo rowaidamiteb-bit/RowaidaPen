@@ -19,7 +19,7 @@ public class TimedHazard : MonoBehaviour
     Transform model;
     readonly List<Transform> parts = new List<Transform>();
     // كم ثانية تكون العقبة على الطريق (القلم أطول لأنه يتدحرج من بعيد على مهله)
-    float Active => spec.kind == "pencil" ? (spec.width + 6f) / 4f : 1.2f;
+    float Active => spec.kind == "pencil" || spec.kind == "rollinglog" ? (spec.width + 6f) / 4f : 1.2f;
 
     float Local => Mathf.Repeat(Time.time - start + spec.phase, spec.period);
     // العقبة على الطريق من 0 لين Active
@@ -159,6 +159,37 @@ public class TimedHazard : MonoBehaviour
                 Part(PrimitiveType.Cube, new Vector3(0f, 0.15f, 0f), new Vector3(3.2f, 0.09f, 0.09f), wood);
                 Part(PrimitiveType.Cube, new Vector3(0f, -0.05f, 0f), new Vector3(3f, 0.04f, 0.04f), hair);
                 Part(PrimitiveType.Cube, new Vector3(1.55f, 0.05f, 0f), new Vector3(0.2f, 0.35f, 0.15f), wood);
+                break;
+            }
+            case "mole":
+            {
+                // كومة تراب وحفرة على الطريق، والخلد يطلع منها فجأة
+                Material dirt = gm.Mat("Forest Soil", new Color(0.45f, 0.3f, 0.2f), 0.15f);
+                Material holeM = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
+                Material fur = gm.Mat("Mole Fur", new Color(0.32f, 0.27f, 0.3f), 0.35f);
+                Material pink = gm.Mat("Bunny Pink", new Color(1f, 0.7f, 0.75f), 0.3f);
+                LevelBuilder.Visual("Mound", PrimitiveType.Sphere, transform, new Vector3(spec.x, 0.02f, 0f), new Vector3(spec.width + 0.4f, 0.3f, 1.6f), dirt, false);
+                LevelBuilder.Visual("Hole", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 0.15f, -0.1f), new Vector3(0.75f, 0.01f, 0.75f), holeM, false);
+                Part(PrimitiveType.Sphere, Vector3.zero, new Vector3(0.7f, 0.85f, 0.6f), fur);
+                Part(PrimitiveType.Sphere, new Vector3(0f, 0.12f, -0.3f), Vector3.one * 0.16f, pink);
+                Part(PrimitiveType.Sphere, new Vector3(-0.12f, 0.28f, -0.25f), Vector3.one * 0.06f, black);
+                Part(PrimitiveType.Sphere, new Vector3(0.12f, 0.28f, -0.25f), Vector3.one * 0.06f, black);
+                Part(PrimitiveType.Sphere, new Vector3(-0.3f, -0.15f, -0.2f), new Vector3(0.22f, 0.1f, 0.15f), pink);
+                Part(PrimitiveType.Sphere, new Vector3(0.3f, -0.15f, -0.2f), new Vector3(0.22f, 0.1f, 0.15f), pink);
+                break;
+            }
+            case "rollinglog":
+            {
+                Material bark = gm.Mat("Tree Bark", new Color(0.5f, 0.33f, 0.2f), 0.2f);
+                Material ring = gm.Mat("Log Rings", new Color(0.9f, 0.75f, 0.5f), 0.25f);
+                var body = Part(PrimitiveType.Cylinder, Vector3.zero, new Vector3(0.7f, 0.85f, 0.7f), bark);
+                body.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    var end = Part(PrimitiveType.Cylinder, new Vector3(0f, 0f, s * 0.86f), new Vector3(0.62f, 0.02f, 0.62f), ring);
+                    end.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                }
+                Part(PrimitiveType.Cube, new Vector3(0f, 0.36f, 0.2f), new Vector3(0.08f, 0.12f, 0.08f), bark);
                 break;
             }
             case "pinecone":
@@ -345,6 +376,26 @@ public class TimedHazard : MonoBehaviour
             case "bow":
                 model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 1f, -0.2f);
                 break;
+            case "mole":
+            {
+                // يطلع بسرعة، يتلفت، ويرجع ينزل
+                float up = k < 0.15f ? k / 0.15f : k > 0.85f ? (1f - k) / 0.15f : 1f;
+                model.position = new Vector3(cx, -0.55f + up * 0.9f, 0f);
+                model.localRotation = Quaternion.Euler(0f, Mathf.Sin(k * 20f) * 25f, 0f);
+                model.gameObject.SetActive(on);
+                if (on && k < 0.2f && Random.value < 0.5f)
+                {
+                    var dirt = LevelBuilder.Visual("Dirt", PrimitiveType.Sphere, null, new Vector3(cx, 0.3f + spec.y, 0f), Vector3.one * Random.Range(0.1f, 0.2f), GameManager.Instance.Mat("Forest Soil", new Color(0.45f, 0.3f, 0.2f), 0.15f), false);
+                    var fx = dirt.AddComponent<FxParticle>();
+                    fx.velocity = new Vector3(Random.Range(-2f, 2f), Random.Range(2f, 4f), Random.Range(-1f, 1f));
+                    fx.gravity = 10f; fx.life = 0.6f;
+                }
+                break;
+            }
+            case "rollinglog":
+                model.position = new Vector3(cx + w * 0.5f + 3.5f - k * (w + 6f), 0.36f, 0f);
+                model.localRotation = Quaternion.Euler(0f, 0f, k * (w + 6f) / 0.35f * Mathf.Rad2Deg);
+                break;
             case "pinecone":
             {
                 // يطيح من الغصن، ينط نطة صغيرة، ويتدحرج شوي
@@ -455,6 +506,8 @@ public class TimedHazard : MonoBehaviour
             case "stapler": return "clank";
             case "speaker": return "drum";
             case "pinecone": return "crack";
+            case "mole": return "dig";
+            case "rollinglog": return "rumble";
             case "acorn": return "pop";
             case "paperball": return "whoosh";
         }
@@ -487,7 +540,7 @@ public class TimedHazard : MonoBehaviour
         Vector3 p = rw.transform.position;
         float x0 = spec.x - spec.width * 0.5f, x1 = spec.x + spec.width * 0.5f;
         // القلم: يتدحرج لها ورويدا تنط من فوقه (ولو لمسها يرجعها لورا)
-        if (spec.kind == "pencil")
+        if (spec.kind == "pencil" || spec.kind == "rollinglog")
         {
             float gap = model.position.x - p.x;
             if (on && gm.IsPlaying && gap > 1.1f && gap < 2.4f && Mathf.Abs(p.y - spec.y - 0.7f) < 0.4f) rw.Jump(true);

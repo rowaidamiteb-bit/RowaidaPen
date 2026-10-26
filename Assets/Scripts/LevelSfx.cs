@@ -380,6 +380,86 @@ public static class LevelSfx
                 }
                 return Normalize(Loop(b, 0.5f), 0.45f);
             }
+            case "croak":
+            {
+                // ضفدع: نقيق خشن مرتين
+                b = Buf(0.6f);
+                for (int c = 0; c < 2; c++)
+                {
+                    int s = Mathf.RoundToInt(c * 0.22f * Rate);
+                    for (int i = 0; i < Rate / 6 && s + i < b.Length; i++)
+                    {
+                        float t = i / (float)Rate;
+                        float f = 140f * p + Mathf.Sin(t * 2f * Mathf.PI * 30f) * 20f;
+                        float saw = Mathf.Repeat(f * t, 1f) * 2f - 1f;
+                        float pulse = Mathf.Repeat(t * 45f, 1f) < 0.5f ? 1f : 0.4f;
+                        b[s + i] += saw * pulse * Mathf.Sin(t / 0.166f * Mathf.PI);
+                    }
+                }
+                return Normalize(b, 0.5f);
+            }
+            case "rip":
+            {
+                // الشبكة تنقطع: خيوط تتمزع
+                b = Buf(0.5f);
+                for (int k = 0; k < 14; k++) AddClick(b, k * 0.025f + (float)r.NextDouble() * 0.01f, 2500f + r.Next(2500), 0.5f, r);
+                float lp = 0f;
+                for (int i = 0; i < b.Length; i++) { float t = i / (float)Rate; lp += (Noise(r) - lp) * 0.6f; b[i] += lp * Mathf.Exp(-t * 6f) * 0.3f; }
+                return Normalize(b, 0.5f);
+            }
+            case "timber":
+            {
+                // شجرة تطيح: صرير طويل وبعدين ضربة قوية
+                b = Buf(1.8f);
+                for (int i = 0; i < Rate * 1.1f; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = Mathf.Sin(2f * Mathf.PI * (60f + t * 40f) * t + Mathf.Sin(t * 23f) * 4f) * (Mathf.Repeat(t * 7f, 1f) < 0.6f ? 0.5f : 0.15f);
+                }
+                AddTone(b, 1.1f, 0.7f, 55f, 1f, 6f, 0.5f);
+                for (int i = Mathf.RoundToInt(1.1f * Rate); i < b.Length; i++) { float t = i / (float)Rate - 1.1f; b[i] += Noise(r) * Mathf.Exp(-t * 9f) * 0.6f; }
+                return Normalize(b, 0.7f);
+            }
+            case "dig":
+            {
+                b = Buf(0.5f);
+                for (int k = 0; k < 6; k++)
+                {
+                    int s = Mathf.RoundToInt(k * 0.07f * Rate);
+                    for (int i = 0; i < Rate / 25 && s + i < b.Length; i++) b[s + i] += Noise(r) * Mathf.Exp(-i / (float)Rate * 60f);
+                }
+                AddTone(b, 0f, 0.3f, 90f, 0.4f, 12f, 0.2f);
+                return Normalize(b, 0.5f);
+            }
+            case "munch":
+            {
+                b = Buf(0.6f);
+                for (int k = 0; k < 4; k++) { AddClick(b, k * 0.13f, 700f, 0.7f, r); AddTone(b, k * 0.13f, 0.08f, 180f, 0.4f, 30f, 0.3f); }
+                return Normalize(b, 0.45f);
+            }
+            case "rumble":
+            {
+                // جذع يتدحرج
+                b = Buf(1.2f);
+                float lp = 0f;
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    lp += (Noise(r) - lp) * 0.03f;
+                    b[i] = lp * 3f * (0.6f + 0.4f * Mathf.Sin(t * 2f * Mathf.PI * 5f)) * Mathf.Clamp01(t * 6f) * Mathf.Clamp01((1.2f - t) * 4f);
+                }
+                return Normalize(b, 0.6f);
+            }
+            case "plop":
+            {
+                b = Buf(0.35f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = Mathf.Sin(2f * Mathf.PI * (300f + 900f * t) * t) * Mathf.Exp(-t * 14f) + Noise(r) * Mathf.Exp(-t * 40f) * 0.3f;
+                }
+                return Normalize(b, 0.5f);
+            }
             case "chirp":
             {
                 // عصفور يغرد: تغريدات قصيرة صاعدة
@@ -979,9 +1059,9 @@ public class AmbiencePlayer : MonoBehaviour
             case "underwater": extraKey = "bubble"; minGap = 1.5f; maxGap = 4f; volume = 0.35f; break;
             case "day": extraKey = null; break;
             case "forest": extras = new[] { "chirp", "chirp", "woodpecker" }; minGap = 3f; maxGap = 7f; volume = 0.35f; break;
-            case "river": extras = new[] { "chirp", "splash" }; minGap = 4f; maxGap = 8f; volume = 0.3f; break;
+            case "river": extras = new[] { "chirp", "croak", "croak", "splash" }; minGap = 4f; maxGap = 8f; volume = 0.3f; break;
             case "hive": extras = new[] { "chirp", "bee" }; minGap = 3f; maxGap = 6f; volume = 0.3f; break;
-            case "magic": extras = new[] { "owl", "chime" }; minGap = 5f; maxGap = 9f; volume = 0.3f; break;
+            case "magic": extras = new[] { "owl", "chime", "croak" }; minGap = 5f; maxGap = 9f; volume = 0.3f; break;
         }
         nextAt = Time.time + Random.Range(2f, 5f);
     }

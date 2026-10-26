@@ -196,6 +196,13 @@ public class LevelData
     public List<Vector3> rivers = new List<Vector3>();      // نهر بجذوع (من x، لـ x، كل كم ثانية جذع)
     public List<Vector3> hives = new List<Vector3>();       // خلية نحل (x، سطح الأرض، مسافة الحراسة)
     public List<Vector3> honeys = new List<Vector3>();      // بقع عسل تلزق (من x، لـ x، سطحها)
+    public List<Vector3> deadTrees = new List<Vector3>();   // شجرة يابسة تنطاح جسر (من x، لـ x، سطحها)
+    public List<Vector2> webs = new List<Vector2>();        // شبكة عنكبوت تسد الطريق (x، سطح الأرض)
+    public List<Vector3> owls = new List<Vector3>();        // بومة تراقب (x، سطح الأرض، مسافة المراقبة)
+    public List<Vector3> vines = new List<Vector3>();       // حبل كرمة فوق حفرة (من x، لـ x، سطحها)
+    public List<Vector3> hedgehogs = new List<Vector3>();   // قنفذ يتدحرج (من x، لـ x، سطح الأرض)
+    public List<Vector3> turtlePonds = new List<Vector3>(); // بركة سلاحف (من x، لـ x، سطح الأرض)
+    public List<Vector3> stonePonds = new List<Vector3>();  // بركة حجار تطلع وتغطس (من x، لـ x، كل كم ثانية)
     public bool forest;                                     // منظر الغابة (شجر، عشب، فراشات، أرانب، طيور)
     public Vector3? sticker;                                // ملصق مخفي (الجزء الثالث)
     public bool concertStage;                               // اللحن الأخير: المرحلة مسرح (ستارة، جمهور، أضواء، قائد أوركسترا)
@@ -1205,89 +1212,90 @@ public static class Levels
 
     // ===== الجزء الثالث: الغابة =====
 
-    // البذور السحرية: ثلاث حفر تحتها تراب. ارسمي بذرة (دايرة) فوق الحفرة تطيح، تطلع شجرة وغصنها يصير جسر.
-    // وأكواز صنوبر تطيح، وسنجاب يرمي بندق قبل الباب
+    // مدخل الغابة: شبكة عنكبوت (قطعيها)، حفرة بذرة (شجرة جسر)، جذع يتدحرج (رويدا تنط)، شجرة يابسة (ادفعيها تطيح جسر)، وخلد يطلع من الأرض
     static LevelData ForestSeedsLevel()
     {
         var level = new LevelData
         {
             ambience = "forest",
             forest = true,
-            hazards = { new HazardSpec("pinecone", 16f, 1.8f, 4.2f), new HazardSpec("pinecone", 32f, 1.8f, 3.8f, 1.5f), new HazardSpec("acorn", 47f, 1.8f, 4f, 0.7f) },
-            title = "البذور السحرية",
+            hazards = { new HazardSpec("rollinglog", 17f, 1.8f, 4.2f), new HazardSpec("mole", 33f, 1.2f, 3.2f, 1f) },
+            title = "مدخل الغابة",
             theme = LevelTheme.Forest(),
-            subtitle = "ارسمي بذرة (دايرة) فوق الحفرة... تطيح بالتراب وتطلع شجرة تعدين عليها!",
+            subtitle = "قطعي الشبكة، ازرعي بذرة، نطي فوق الجذع، وادفعي الشجرة اليابسة!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(52f, 0f, 0f),
-            ink = 16f,
+            door = new Vector3(37f, 0f, 0f),
+            ink = 12f,
             blocks =
             {
-                Page(-7f, 5f),
-                Page(11f, 21f),
-                Page(28f, 36f),
-                Page(43f, 56f),
+                Page(-7f, 6f),
+                Page(12f, 22f),
+                Page(28f, 40f),
             },
-            seedPits = { new Vector3(5f, 11f, 0f), new Vector3(21f, 28f, 0f), new Vector3(36f, 43f, 0f) },
-            sticker = new Vector3(24.5f, 4.8f, 0f),
+            webs = { new Vector2(2.5f, 0f) },
+            seedPits = { new Vector3(6f, 12f, 0f) },
+            deadTrees = { new Vector3(22f, 28f, 0f) },
+            sticker = new Vector3(9f, 5.2f, 0f),
         };
-        Oval(level, 8f, 2.4f, new Color(0.45f, 0.75f, 0.35f));
+        Oval(level, 9f, 2.4f, new Color(0.45f, 0.75f, 0.35f));
         return level;
     }
 
-    // الفطر القافز: فطر نايم قبل جدران عالية وحفرة. المسيه بخط يصحى، ورويدا تنط عليه
+    // بستان الفطر (مساء): قنفذ يتدحرج (خط يوقفه)، حبل كرمة قصير (طوليه بخط وتمرجحي)، بومة تراقب، وفطرة نايمة قبل جدار
     static LevelData ForestMushroomsLevel()
     {
         return new LevelData
         {
-            ambience = "forest",
+            ambience = "magic",
             forest = true,
-            hazards = { new HazardSpec("acorn", 28.5f, 1.8f, 4f), new HazardSpec("pinecone", 37f, 1.6f, 3.6f, 1f) { y = 3.5f } },
-            title = "الفطر القافز",
-            theme = LevelTheme.Forest(),
-            subtitle = "الفطر نايم! المسيه بخط يصحى... ورويدا تنط عليه فوق الجدران",
+            hazards = { new HazardSpec("pinecone", 30f, 1.6f, 3.8f) },
+            title = "بستان الفطر",
+            theme = LevelTheme.MagicForest(),
+            subtitle = "وقفي القنفذ، طولي الكرمة وتمرجحي، انتبهي من البومة، وصحي الفطرة!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(46f, 0f, 0f),
-            ink = 14f,
+            door = new Vector3(44f, 0f, 0f),
+            ink = 12f,
             blocks =
             {
-                Page(-7f, 6f),
-                Wall(6f, 12f, 3f),
-                Page(12f, 20.5f),
-                Page(24.5f, 33f),
-                Wall(33f, 40f, 3.5f),
-                Page(40f, 50f),
+                Page(-7f, 13f),
+                Page(19f, 33f),
+                Wall(33f, 38f, 3f),
+                Page(38f, 48f),
             },
-            mushrooms = { new Vector3(4.8f, 0f, 10f), new Vector3(19.3f, 0f, 11f), new Vector3(31.8f, 0f, 11f) },
-            sticker = new Vector3(15.5f, 6.5f, 0f),
+            hedgehogs = { new Vector3(3f, 10f, 0f) },
+            vines = { new Vector3(13f, 19f, 0f) },
+            owls = { new Vector3(25f, 0f, 3f) },
+            mushrooms = { new Vector3(31.8f, 0f, 11f) },
+            sticker = new Vector3(16f, 7.2f, 0f),
         };
     }
 
-    // النهر: ثلاث أنهار تجيب جذوع. ارسمي خط على النهر يصير حبل يصيد جذع ويوقفه جسر. وبالنص فطرة وجدار
+    // ضفاف النهر: نهر بجذوع (خط يصير حبل)، سنجاب يرمي بندق، بركة سلاحف (دايرة تصير خس)، حجار تطلع وتغطس، وشبكة عنكبوت قبل الباب
     static LevelData ForestRiverLevel()
     {
         return new LevelData
         {
             ambience = "river",
             forest = true,
-            hazards = { new HazardSpec("pinecone", 15f, 1.8f, 4f), new HazardSpec("acorn", 49.5f, 1.8f, 3.8f, 1f) },
-            title = "النهر",
+            hazards = { new HazardSpec("acorn", 14f, 1.8f, 3.8f) },
+            title = "ضفاف النهر",
             theme = LevelTheme.ForestRiver(),
-            subtitle = "النهر يجري! ارسمي خط على المويه يصير حبل يصيد جذع ويوقفه جسر",
+            subtitle = "صيدي جذع بالحبل، أكلي السلاحف خس، ونطي على الحجار لما تطلع!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(53f, 0f, 0f),
+            door = new Vector3(45f, 0f, 0f),
             ink = 14f,
             blocks =
             {
                 Page(-7f, 4f),
-                Page(10f, 19f),
-                Page(26f, 32.5f),
-                Wall(32.5f, 37f, 3f),
-                Page(37f, 39f),
-                Page(46f, 57f),
+                Page(10f, 18f),
+                Page(24.5f, 31f),
+                Page(37.5f, 49f),
             },
-            rivers = { new Vector3(4f, 10f, 4.5f), new Vector3(19f, 26f, 4f), new Vector3(39f, 46f, 3.6f) },
-            mushrooms = { new Vector3(31.3f, 0f, 10.5f) },
-            sticker = new Vector3(14f, 5.2f, 0f),
+            rivers = { new Vector3(4f, 10f, 4.5f) },
+            turtlePonds = { new Vector3(18f, 24.5f, 0f) },
+            stonePonds = { new Vector3(31f, 37.5f, 4f) },
+            webs = { new Vector2(41.5f, 0f) },
+            sticker = new Vector3(21.2f, 5.5f, 0f),
         };
     }
 

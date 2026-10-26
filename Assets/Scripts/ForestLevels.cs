@@ -695,7 +695,10 @@ public class ForestScenery : MonoBehaviour
             float scale = layer == 0 ? 1.7f : 1.15f;
             for (float x = s.minX - 14f; x < s.maxX + 14f; x += R(5f, 9f) * scale)
             {
-                var tree = MakeTree(go.transform, new Vector3(x, -6f, z + R(-1.5f, 1.5f)), scale * R(0.8f, 1.2f), bark, gm.Mat("Forest Leaf " + layer + rng.Next(3), leafCols[rng.Next(leafCols.Length)] * (layer == 0 ? 0.85f : 1f), 0.3f), rng, layer == 0);
+                Vector3 tp = new Vector3(x, -6f, z + R(-1.5f, 1.5f));
+                var tree = s.magic && layer == 1 && rng.Next(3) > 0
+                    ? MakeGiantShroom(go.transform, tp, scale * R(0.8f, 1.2f), gm, rng)
+                    : MakeTree(go.transform, tp, scale * R(0.8f, 1.2f), bark, gm.Mat("Forest Leaf " + layer + rng.Next(3), leafCols[rng.Next(leafCols.Length)] * (layer == 0 ? 0.85f : 1f), 0.3f), rng, layer == 0);
                 s.sway.Add(tree);
             }
         }
@@ -810,6 +813,27 @@ public class ForestScenery : MonoBehaviour
             LevelBuilder.Visual("Leaves", PrimitiveType.Sphere, t, new Vector3(Mathf.Cos(a) * scale, h + Mathf.Sin(a) * 0.6f * scale, Mathf.Sin(a) * 0.4f * scale), Vector3.one * (2.2f + (float)rng.NextDouble()) * scale, leaf, !far);
         }
         LevelBuilder.Visual("Top", PrimitiveType.Sphere, t, new Vector3(0f, h + 1.2f * scale, 0f), Vector3.one * 2.4f * scale, leaf, !far);
+        return t;
+    }
+
+    // فطرة عملاقة تضوي (لبستان الفطر)
+    static Transform MakeGiantShroom(Transform parent, Vector3 basePos, float scale, GameManager gm, System.Random rng)
+    {
+        Color[] caps = { new Color(1.2f, 0.45f, 0.7f), new Color(0.5f, 0.8f, 1.4f), new Color(0.8f, 0.55f, 1.3f), new Color(1.3f, 0.75f, 0.35f) };
+        var t = new GameObject("Tree").transform;
+        t.SetParent(parent, false);
+        t.position = basePos;
+        float h = 10f * scale;
+        Material stem = gm.Mat("Giant Shroom Stem", new Color(0.95f, 0.9f, 0.85f), 0.3f);
+        Material cap = gm.Mat("Giant Shroom Cap " + rng.Next(4), caps[rng.Next(caps.Length)], 0.5f);
+        Material dot = gm.Mat("Giant Shroom Dot", new Color(1.3f, 1.25f, 1.1f), 0.4f);
+        LevelBuilder.Visual("Stem", PrimitiveType.Cylinder, t, new Vector3(0f, h * 0.5f, 0f), new Vector3(0.9f * scale, h * 0.5f, 0.9f * scale), stem, false);
+        LevelBuilder.Visual("Cap", PrimitiveType.Sphere, t, new Vector3(0f, h, 0f), new Vector3(5f, 2.2f, 5f) * scale, cap, false);
+        for (int i = 0; i < 6; i++)
+        {
+            float a = i / 6f * Mathf.PI * 2f;
+            LevelBuilder.Visual("Dot", PrimitiveType.Sphere, t, new Vector3(Mathf.Cos(a) * 1.5f * scale, h + 0.7f * scale, Mathf.Sin(a) * 1.5f * scale - 0.4f * scale), new Vector3(0.7f, 0.3f, 0.7f) * scale, dot, false);
+        }
         return t;
     }
 
