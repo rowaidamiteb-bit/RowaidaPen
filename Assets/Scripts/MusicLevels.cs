@@ -659,6 +659,8 @@ public class StaffSpec
 
 public class StaffBridge : MonoBehaviour
 {
+    // سطر اكتمل لحنه (الجمهور يصفق)
+    public static System.Action<Vector3> Completed;
     // دو ري مي فا صول لا سي دو ري
     static readonly float[] Scale = { 1f, 1.122f, 1.26f, 1.335f, 1.498f, 1.682f, 1.888f, 2f, 2.245f };
     const float Line0 = 0.55f, Step = 0.24f;
@@ -785,6 +787,7 @@ public class StaffBridge : MonoBehaviour
                 foreach (Transform l in lines) l.GetComponent<MeshRenderer>().sharedMaterial = glow;
                 lines[0].localScale = new Vector3(lines[0].localScale.x, 0.12f, 1.2f);
                 lines[0].position = new Vector3(lines[0].position.x, spec.top - 0.05f, 0f);
+                StaffBridge.Completed?.Invoke(new Vector3((spec.from + spec.to) * 0.5f, spec.top + 1f, 0f));
             }
         }
         // السطور تتموج شوي (أقوى وهي تعزف)

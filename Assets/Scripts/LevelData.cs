@@ -189,6 +189,7 @@ public class LevelData
     public List<NoteSpec> noteSections = new List<NoteSpec>(); // نوتات تنجمع عشان ينفتح الباب
     public List<Vector3> strings = new List<Vector3>();     // أوتار على الحفر (من x، لـ x، ترجع تهتز بعد كم ثانية)
     public List<StaffSpec> staffs = new List<StaffSpec>();  // اللحن الأخير: سطر موسيقي فوق حفرة، النوتات تكمل اللحن وتصير جسر
+    public bool concertStage;                               // اللحن الأخير: المرحلة مسرح (ستارة، جمهور، أضواء، قائد أوركسترا)
     public bool risingPianos;                               // البيانو: كل بيانو نغمته أعلى من اللي قبله لين آخر المرحلة
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
     public List<Vector3> shadows = new List<Vector3>();     // اليراعات: ظلال تخاف من الضو
@@ -1160,6 +1161,7 @@ public static class Levels
         var level = new LevelData
         {
             ambience = "hall",
+            concertStage = true,
             hazards = { new HazardSpec("metronome", 17f, 2f, 3.6f), new HazardSpec("metronome", 34f, 2f, 3.2f, 1f), new HazardSpec("metronome", 52f, 2f, 2.8f, 0.5f) },
             title = "اللحن الأخير",
             theme = LevelTheme.Cosmic(),
