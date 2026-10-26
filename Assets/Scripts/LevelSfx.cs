@@ -523,6 +523,100 @@ public static class LevelSfx
                 }
                 return Normalize(Loop(b, 0.1f), 0.25f);
             }
+            case "amb_chase":
+            {
+                // موسيقى مطاردة: أوتار سريعة ونبضة
+                b = Buf(4f);
+                float[] line = { 1f, 1.189f, 1.335f, 1.498f, 1.335f, 1.189f, 1f, 0.891f, 1f, 1.189f, 1.498f, 1.782f, 1.498f, 1.335f, 1.189f, 1.335f };
+                for (int k = 0; k < 32; k++)
+                {
+                    AddPluck(b, k * 0.125f, 330f * line[k % line.Length], 0.35f, 0.996f, r);
+                    if (k % 4 == 0) { AddTone(b, k * 0.125f, 0.2f, 55f, 0.5f, 18f, 0.3f); AddClick(b, k * 0.125f, 120f, 0.5f, r); }
+                    if (k % 4 == 2) AddClick(b, k * 0.125f, 3000f, 0.25f, r);
+                }
+                return Normalize(Loop(b, 0.05f), 0.45f);
+            }
+            case "faucet":
+            {
+                // مويه تنزل من الحنفية
+                b = Buf(2f);
+                float lp = 0f;
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    lp += (Noise(r) - lp) * 0.45f;
+                    b[i] = lp * (0.7f + 0.3f * Mathf.Sin(t * 37f)) ;
+                }
+                for (int k = 0; k < 30; k++)
+                {
+                    int s = r.Next(b.Length - Rate / 20);
+                    float f0 = 600f + (float)r.NextDouble() * 900f;
+                    for (int i = 0; i < Rate / 50; i++) { float t = i / (float)Rate; b[s + i] += Mathf.Sin(2f * Mathf.PI * f0 * (1f + t * 25f) * t) * Mathf.Exp(-t * 150f) * 0.4f; }
+                }
+                return Normalize(Loop(b, 0.2f), 0.4f);
+            }
+            case "mouse":
+            {
+                // فار يصيح: تيك تيك عالية
+                b = Buf(0.45f);
+                for (int c = 0; c < 3; c++)
+                {
+                    int s = Mathf.RoundToInt(c * 0.12f * Rate);
+                    for (int i = 0; i < Rate / 14 && s + i < b.Length; i++)
+                    {
+                        float t = i / (float)Rate;
+                        b[s + i] += Mathf.Sin(2f * Mathf.PI * (3200f + 1500f * Mathf.Sin(t * 90f)) * t) * Mathf.Sin(t / 0.07f * Mathf.PI) * 0.6f;
+                    }
+                }
+                return Normalize(b, 0.45f);
+            }
+            case "fizz":
+            {
+                // صودا تفور
+                b = Buf(2.2f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = Noise(r) * (r.NextDouble() < 0.12 ? 1f : 0.25f) * Mathf.Clamp01(t * 6f) * Mathf.Clamp01((2.2f - t) * 1.5f);
+                }
+                for (int i = 0; i < Rate * 0.4f; i++) { float t = i / (float)Rate; b[i] += Mathf.Sin(2f * Mathf.PI * (120f + 400f * t) * t) * Mathf.Exp(-t * 5f) * 0.6f; }
+                return Normalize(b, 0.55f);
+            }
+            case "blender":
+            {
+                b = Buf(1f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float saw = Mathf.Repeat(160f * t, 1f) * 2f - 1f;
+                    b[i] = saw * 0.4f + Mathf.Sin(2f * Mathf.PI * 320f * t) * 0.25f + Noise(r) * 0.15f;
+                }
+                return Normalize(Loop(b, 0.08f), 0.35f);
+            }
+            case "snap":
+            {
+                // مصيدة تنطبق
+                b = Buf(0.4f);
+                AddClick(b, 0f, 1500f, 1f, r);
+                AddClick(b, 0.01f, 600f, 1f, r);
+                AddTone(b, 0f, 0.4f, 180f, 0.6f, 14f, 0.5f);
+                return Normalize(b, 0.7f);
+            }
+            case "bake":
+            {
+                // الكوكيز ينخبز: فحيح ورنة جرس الفرن
+                b = Buf(1f);
+                for (int i = 0; i < Rate * 0.5f; i++) b[i] = Noise(r) * 0.25f * Mathf.Sin(i / (Rate * 0.5f) * Mathf.PI);
+                AddTone(b, 0.4f, 0.6f, 1760f, 0.5f, 6f, 0.2f);
+                AddTone(b, 0.4f, 0.6f, 2637f, 0.2f, 8f, 0f);
+                return Normalize(b, 0.5f);
+            }
+            case "popcorn":
+            {
+                b = Buf(0.7f);
+                for (int k = 0; k < 9; k++) AddClick(b, (float)r.NextDouble() * 0.6f, 700f + r.Next(900), 0.8f, r);
+                return Normalize(b, 0.55f);
+            }
             case "croak":
             {
                 // ضفدع: نقيق خشن مرتين
@@ -1205,6 +1299,7 @@ public class AmbiencePlayer : MonoBehaviour
             case "river": extras = new[] { "chirp", "croak", "croak", "splash" }; minGap = 4f; maxGap = 8f; volume = 0.3f; break;
             case "hive": extras = new[] { "chirp", "bee" }; minGap = 3f; maxGap = 6f; volume = 0.3f; break;
             case "magic": extras = new[] { "owl", "chime", "croak" }; minGap = 5f; maxGap = 9f; volume = 0.3f; break;
+            case "chase": extras = new[] { "mouse" }; minGap = 3f; maxGap = 6f; volume = 0.3f; break;
             case "kitchen": extras = new[] { "clank", "boil", "tick" }; minGap = 4f; maxGap = 8f; volume = 0.25f; break;
             case "candy": extras = new[] { "chime", "pop" }; minGap = 3f; maxGap = 6f; volume = 0.25f; break;
         }

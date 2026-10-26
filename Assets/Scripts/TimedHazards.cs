@@ -161,6 +161,44 @@ public class TimedHazard : MonoBehaviour
                 Part(PrimitiveType.Cube, new Vector3(1.55f, 0.05f, 0f), new Vector3(0.2f, 0.35f, 0.15f), wood);
                 break;
             }
+            case "flour":
+            {
+                // كيس طحين عملاق ورا الطريق: ينهز وينفض غيمة طحين كبيرة
+                Material sack = gm.Mat("Flour Sack", new Color(0.9f, 0.82f, 0.65f), 0.2f);
+                Material printM = gm.Mat("Tower Red", new Color(0.85f, 0.2f, 0.22f), 0.35f);
+                Material flourM = gm.Mat("Flour", new Color(0.98f, 0.97f, 0.94f), 0.15f);
+                var bag = Part(PrimitiveType.Cube, new Vector3(0f, 1.6f, 0f), new Vector3(2.2f, 3.2f, 1.4f), sack);
+                LevelBuilder.Visual("Label", PrimitiveType.Cube, bag, new Vector3(0f, 0.05f, -0.51f), new Vector3(0.6f, 0.25f, 0.02f), printM, false);
+                Part(PrimitiveType.Sphere, new Vector3(0f, 3.25f, 0f), new Vector3(1.6f, 0.6f, 1.2f), flourM);
+                LevelBuilder.Visual("Flour Pile", PrimitiveType.Sphere, transform, new Vector3(spec.x, 0.05f, 0f), new Vector3(spec.width + 0.6f, 0.25f, 1.8f), flourM, false);
+                break;
+            }
+            case "rollingpin":
+            {
+                // نشابة عملاقة تتدحرج على الطريق
+                Material wood = gm.Mat("Tree Wood", new Color(0.62f, 0.45f, 0.28f), 0.25f);
+                Material handle = gm.Mat("Pin Handle", new Color(0.85f, 0.35f, 0.3f), 0.4f);
+                var body = Part(PrimitiveType.Cylinder, Vector3.zero, new Vector3(0.9f, 1f, 0.9f), wood);
+                body.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    var h = Part(PrimitiveType.Cylinder, new Vector3(0f, 0f, s * 1.35f), new Vector3(0.28f, 0.35f, 0.28f), handle);
+                    h.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                }
+                break;
+            }
+            case "mousetrap":
+            {
+                // مصيدة فيران خشب على الطريق بقطعة جبن
+                Material wood = gm.Mat("Trap Wood", new Color(0.85f, 0.68f, 0.45f), 0.3f);
+                Material steel = gm.Mat("Spoon Steel", new Color(0.82f, 0.84f, 0.88f), 0.95f, 0.85f);
+                Material cheese = gm.Mat("Cheese", new Color(1f, 0.82f, 0.25f), 0.4f);
+                LevelBuilder.Visual("Trap Base", PrimitiveType.Cube, transform, new Vector3(spec.x, 0.08f, 0f), new Vector3(spec.width + 0.6f, 0.16f, 1.4f), wood);
+                LevelBuilder.Visual("Cheese", PrimitiveType.Cube, transform, new Vector3(spec.x + 0.3f, 0.3f, 0.3f), new Vector3(0.4f, 0.25f, 0.35f), cheese, false).transform.localRotation = Quaternion.Euler(0f, 30f, 0f);
+                // البار (يتحرك): مفصله بالنص
+                Part(PrimitiveType.Cube, new Vector3(-(spec.width + 0.4f) * 0.25f, 0f, 0f), new Vector3((spec.width + 0.4f) * 0.5f, 0.06f, 1.3f), steel);
+                break;
+            }
             case "pepper":
             {
                 // علبة فلفل فوق الطريق تنهز وتنثر فلفل
@@ -456,6 +494,29 @@ public class TimedHazard : MonoBehaviour
             case "bow":
                 model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 1f, -0.2f);
                 break;
+            case "flour":
+            {
+                model.position = new Vector3(cx + w * 0.5f + 1.4f, 0f, 1.6f);
+                model.localRotation = Quaternion.Euler(0f, 0f, on ? Mathf.Sin(k * Mathf.PI) * 35f : Mathf.Sin(t * 1.5f) * 2f);
+                model.gameObject.SetActive(true);
+                if (on && k < 0.3f && Random.value < 0.6f)
+                    SmokeCloud.Puff(new Vector3(cx + Random.Range(-1.5f, 2f), Random.Range(0.3f, 3f) + spec.y, Random.Range(-2.5f, 0.5f)), Random.Range(2f, 3.5f));
+                break;
+            }
+            case "rollingpin":
+                model.position = new Vector3(cx + w * 0.5f + 3f - k * (w + 6f), 0.45f, 0f);
+                model.localRotation = Quaternion.Euler(0f, 0f, k * (w + 6f) / 0.45f * Mathf.Rad2Deg);
+                if (on && Random.value < 0.3f) SmokeCloud.Puff(model.position + new Vector3(0.4f, -0.3f, Random.Range(-0.8f, 0.8f)), 0.6f);
+                break;
+            case "mousetrap":
+            {
+                // البار مفتوح لورا، وينطبق بقوة وقت العقبة
+                float snapA = on ? (k < 0.08f ? k / 0.08f : k > 0.8f ? 1f - (k - 0.8f) / 0.2f : 1f) : 0f;
+                model.position = new Vector3(cx, 0.2f, 0f);
+                model.localRotation = Quaternion.Euler(0f, 0f, -170f * (1f - snapA));
+                model.gameObject.SetActive(true);
+                break;
+            }
             case "pepper":
             {
                 model.position = new Vector3(cx, 4.4f, 0f);
@@ -685,6 +746,9 @@ public class TimedHazard : MonoBehaviour
             case "pinecone": return "crack";
             case "mole": return "dig";
             case "pepper": return "sneeze";
+            case "flour": return "whoosh";
+            case "rollingpin": return "rumble";
+            case "mousetrap": return "snap";
             case "toast": return "toaster";
             case "flame": return "sizzle";
             case "chocofall": return "slurp";

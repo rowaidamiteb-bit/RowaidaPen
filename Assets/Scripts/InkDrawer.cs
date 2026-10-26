@@ -280,7 +280,8 @@ public class InkDrawer : MonoBehaviour
     void MakeFallingShape()
     {
         stroke.name = "Ink Shape";
-        stroke.AddComponent<InkMark>().closed = true;
+        var shapeMark = stroke.AddComponent<InkMark>();
+        shapeMark.closed = true;
 
         // نخلي مركز الجسم في منتصف الشكل عشان يتدحرج صح
         Vector3 center = Vector3.zero;
@@ -289,6 +290,7 @@ public class InkDrawer : MonoBehaviour
 
         var local = new List<Vector3>(points.Count);
         foreach (Vector3 p in points) local.Add(p - center);
+        shapeMark.outline = local.ToArray();
 
         stroke.transform.position = center;
         TubeMesh.Build(strokeMesh, local, tubeRadius, true);

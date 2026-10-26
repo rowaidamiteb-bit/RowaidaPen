@@ -11,6 +11,7 @@ public static class ForestFeatures2
         foreach (Vector2 s in data.webs) SpiderWeb.Create(root, s, gm);
         foreach (Vector3 s in data.owls) OwlWatch.Create(root, s, gm);
         foreach (Vector3 s in data.vines) VineSwing.Create(root, s, gm);
+        foreach (Vector3 s in data.pastaSwings) VineSwing.Create(root, s, gm, true);
         foreach (Vector3 s in data.hedgehogs) Hedgehog.Create(root, s, gm);
         foreach (Vector3 s in data.turtlePonds) TurtlePond.Create(root, s, gm);
         foreach (Vector3 s in data.stonePonds) SteppingStones.Create(root, s, gm);
@@ -445,7 +446,7 @@ public class VineSwing : MonoBehaviour
 {
     const float ShortLen = 3.2f, LongLen = 4.9f, Amp = 50f, Period = 2.6f;
     float from, to, top, len = ShortLen, start;
-    bool extended, holding, prompted, riding, done;
+    bool extended, holding, prompted, riding, done, pasta;
     Vector3 pivot;
     readonly List<Transform> segs = new List<Transform>();
     readonly List<Transform> leaves = new List<Transform>();
@@ -455,15 +456,15 @@ public class VineSwing : MonoBehaviour
     float Angle => extended ? Amp * Mathf.Sin((Time.time - start) * Mathf.PI * 2f / Period) : Mathf.Sin(Time.time * 1.3f) * 8f;
     Vector3 End(float ang) => pivot + new Vector3(Mathf.Sin(ang * Mathf.Deg2Rad), -Mathf.Cos(ang * Mathf.Deg2Rad), 0f) * len;
 
-    public static void Create(Transform root, Vector3 spec, GameManager gm)
+    public static void Create(Transform root, Vector3 spec, GameManager gm, bool pasta = false)
     {
         var go = new GameObject("Vine Swing");
         go.transform.SetParent(root, false);
         var v = go.AddComponent<VineSwing>();
         v.from = spec.x; v.to = spec.y; v.top = spec.z;
         v.pivot = new Vector3((v.from + v.to) * 0.5f, v.top + 5f, 0f);
-        Material vine = gm.Mat("Vine", new Color(0.35f, 0.55f, 0.25f), 0.3f);
-        Material leaf = gm.Mat("Leaf Light", new Color(0.55f, 0.85f, 0.35f), 0.35f);
+        Material vine = pasta ? gm.Mat("Spaghetti", new Color(1f, 0.88f, 0.55f), 0.5f) : gm.Mat("Vine", new Color(0.35f, 0.55f, 0.25f), 0.3f);
+        Material leaf = pasta ? gm.Mat("Tomato Sauce", new Color(0.9f, 0.25f, 0.15f), 0.7f) : gm.Mat("Leaf Light", new Color(0.55f, 0.85f, 0.35f), 0.35f);
         Material bark = gm.Mat("Tree Bark", new Color(0.5f, 0.33f, 0.2f), 0.2f);
         // غصن فوق
         var br = LevelBuilder.Visual("Vine Branch", PrimitiveType.Cylinder, go.transform, v.pivot + new Vector3(0f, 0.15f, 0.3f), new Vector3(0.35f, (v.to - v.from) * 0.5f + 1f, 0.35f), bark).transform;
@@ -474,6 +475,22 @@ public class VineSwing : MonoBehaviour
         {
             v.segs.Add(LevelBuilder.Visual("Vine Seg", PrimitiveType.Capsule, go.transform, Vector3.zero, new Vector3(0.11f, 0.2f, 0.11f), vine, false).transform);
             if (i % 3 == 1) v.leaves.Add(LevelBuilder.Visual("Vine Leaf", PrimitiveType.Sphere, go.transform, Vector3.zero, new Vector3(0.28f, 0.08f, 0.16f), leaf, false).transform);
+        }
+        if (pasta)
+        {
+            // مصفاة مكرونة معلقة بدال الغصن، وخيوط مكرونة ثانية تتدلى
+            br.gameObject.SetActive(false);
+            Material steel = gm.Mat("Spoon Steel", new Color(0.82f, 0.84f, 0.88f), 0.95f, 0.85f);
+            var col = LevelBuilder.Visual("Colander", PrimitiveType.Sphere, go.transform, v.pivot + new Vector3(0f, 0.6f, 0.2f), new Vector3(2.6f, 1.4f, 2.2f), steel).transform;
+            for (int i = 0; i < 8; i++)
+                LevelBuilder.Visual("Hole", PrimitiveType.Sphere, col, new Vector3(-0.35f + (i % 4) * 0.23f, -0.1f - (i / 4) * 0.15f, -0.48f), new Vector3(0.06f, 0.08f, 0.02f), gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f), false);
+            LevelBuilder.Visual("Handle", PrimitiveType.Cube, go.transform, v.pivot + new Vector3(2f, 0.8f, 0.2f), new Vector3(1.6f, 0.15f, 0.3f), steel);
+            for (int i = 0; i < 5; i++)
+            {
+                var strand = LevelBuilder.Visual("Strand", PrimitiveType.Capsule, go.transform, v.pivot + new Vector3(-0.9f + i * 0.45f, -0.6f - (i % 2) * 0.3f, 0.3f), new Vector3(0.08f, 0.7f + (i % 3) * 0.2f, 0.08f), vine, false).transform;
+                strand.localRotation = Quaternion.Euler(0f, 0f, (i - 2) * 6f);
+            }
+            v.pasta = true;
         }
     }
 
@@ -556,7 +573,7 @@ public class VineSwing : MonoBehaviour
         if (riding) { r.Held = true; return; }
 
         bool wait = HoldHelper.Before(from) && !done && !RowaidaController.BridgeCovers(from, to, top);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, extended ? "استني الكرمة توصل لك!" : "الكرمة قصيرة! ارسمي خط تحتها يطولها"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, pasta ? "المكرونة قصيرة! ارسمي خط تحتها يطولها وتمرجحي" : extended ? "استني الكرمة توصل لك!" : "الكرمة قصيرة! ارسمي خط تحتها يطولها"); }
         HoldHelper.Hold(ref holding, wait);
     }
 

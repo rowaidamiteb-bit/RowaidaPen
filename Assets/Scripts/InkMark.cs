@@ -5,4 +5,5 @@ public class InkMark : MonoBehaviour
 {
     public bool closed;     // شكل مغلق = لعبة تلهي الوحوش
     public bool beingEaten; // وحش قاعد ياكلها
+    public Vector3[] outline; // نقاط الشكل المسكر (محلية حول مركزه) — للكوكيز وغيره
 }
