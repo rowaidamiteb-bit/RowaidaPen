@@ -11,7 +11,6 @@ public static class ForestFeatures2
         foreach (Vector2 s in data.webs) SpiderWeb.Create(root, s, gm);
         foreach (Vector3 s in data.owls) OwlWatch.Create(root, s, gm);
         foreach (Vector3 s in data.vines) VineSwing.Create(root, s, gm);
-        foreach (Vector3 s in data.pastaSwings) VineSwing.Create(root, s, gm, true);
         foreach (Vector3 s in data.hedgehogs) Hedgehog.Create(root, s, gm);
         foreach (Vector3 s in data.turtlePonds) TurtlePond.Create(root, s, gm);
         foreach (Vector3 s in data.stonePonds) SteppingStones.Create(root, s, gm);
