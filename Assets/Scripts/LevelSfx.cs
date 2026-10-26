@@ -617,6 +617,82 @@ public static class LevelSfx
                 for (int k = 0; k < 9; k++) AddClick(b, (float)r.NextDouble() * 0.6f, 700f + r.Next(900), 0.8f, r);
                 return Normalize(b, 0.55f);
             }
+            case "amb_lab":
+            {
+                // مختبر: طنين أجهزة، فقاعات دوارق، وصفارات صغيرة
+                b = Buf(7f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = (Mathf.Sin(2f * Mathf.PI * 100f * t) * 0.4f + Mathf.Sin(2f * Mathf.PI * 300f * t) * 0.1f) * 0.06f * (0.85f + 0.15f * Mathf.Sin(t * 0.6f));
+                }
+                for (int k = 0; k < 140; k++)
+                {
+                    int s = r.Next(b.Length - Rate / 20);
+                    float f0 = 300f + (float)r.NextDouble() * 900f;
+                    for (int i = 0; i < Rate / 45; i++) { float t = i / (float)Rate; b[s + i] += Mathf.Sin(2f * Mathf.PI * f0 * (1f + t * 30f) * t) * Mathf.Exp(-t * 140f) * 0.14f; }
+                }
+                for (int k = 0; k < 6; k++) { float t0 = (float)r.NextDouble() * 6.5f; AddTone(b, t0, 0.08f, 1800f + r.Next(1200), 0.08f, 20f, 0f); AddTone(b, t0 + 0.1f, 0.08f, 2400f, 0.06f, 20f, 0f); }
+                return Normalize(Loop(b, 0.5f), 0.4f);
+            }
+            case "crackle":
+            {
+                // كهربا تمشي بالسلك (تتكرر)
+                b = Buf(1f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = Noise(r) * (r.NextDouble() < 0.04 ? 1f : 0.12f) + Mathf.Sin(2f * Mathf.PI * 120f * t) * 0.15f;
+                }
+                return Normalize(Loop(b, 0.1f), 0.35f);
+            }
+            case "laserhum":
+            {
+                b = Buf(1f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = Mathf.Sin(2f * Mathf.PI * 880f * t + Mathf.Sin(2f * Mathf.PI * 6f * t) * 2f) * 0.5f + Mathf.Sin(2f * Mathf.PI * 440f * t) * 0.2f;
+                }
+                return Normalize(Loop(b, 0.1f), 0.25f);
+            }
+            case "gloop":
+            {
+                // سلايم يبلع: غلوب
+                b = Buf(0.5f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float f = 260f - 180f * t + Mathf.Sin(t * 60f) * 30f;
+                    b[i] = Mathf.Sin(2f * Mathf.PI * f * t) * Mathf.Sin(t / 0.5f * Mathf.PI) + Noise(r) * 0.05f;
+                }
+                return Normalize(b, 0.55f);
+            }
+            case "tesla":
+            {
+                // صاعقة: طقطقة قوية مع طنين
+                b = Buf(0.8f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = Noise(r) * (r.NextDouble() < 0.15 ? 1f : 0.3f) * Mathf.Exp(-t * 3f) + (Mathf.Repeat(t * 120f, 1f) * 2f - 1f) * 0.3f * Mathf.Exp(-t * 4f);
+                }
+                return Normalize(b, 0.6f);
+            }
+            case "pour":
+            {
+                // سائل يصب بالدورق
+                b = Buf(1.5f);
+                float lp = 0f;
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    lp += (Noise(r) - lp) * 0.3f;
+                    b[i] = lp * (0.6f + 0.4f * Mathf.Sin(t * 30f)) * Mathf.Clamp01(t * 5f) * Mathf.Clamp01((1.5f - t) * 3f);
+                }
+                for (int k = 0; k < 12; k++) AddTone(b, (float)r.NextDouble() * 1.3f, 0.1f, 500f + r.Next(700), 0.2f, 40f, 0f);
+                return Normalize(b, 0.5f);
+            }
             case "croak":
             {
                 // ضفدع: نقيق خشن مرتين
@@ -1299,6 +1375,7 @@ public class AmbiencePlayer : MonoBehaviour
             case "river": extras = new[] { "chirp", "croak", "croak", "splash" }; minGap = 4f; maxGap = 8f; volume = 0.3f; break;
             case "hive": extras = new[] { "chirp", "bee" }; minGap = 3f; maxGap = 6f; volume = 0.3f; break;
             case "magic": extras = new[] { "owl", "chime", "croak" }; minGap = 5f; maxGap = 9f; volume = 0.3f; break;
+            case "lab": extras = new[] { "beep", "bubble", "zap" }; minGap = 3f; maxGap = 6f; volume = 0.25f; break;
             case "chase": extras = new[] { "mouse" }; minGap = 3f; maxGap = 6f; volume = 0.3f; break;
             case "kitchen": extras = new[] { "clank", "boil", "tick" }; minGap = 4f; maxGap = 8f; volume = 0.25f; break;
             case "candy": extras = new[] { "chime", "pop" }; minGap = 3f; maxGap = 6f; volume = 0.25f; break;

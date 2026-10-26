@@ -433,6 +433,38 @@ public class LevelTheme
         ringColor = new Color(0.65f, 0.4f, 0.75f),
     };
 
+    // ===== الجزء الثالث: المختبر =====
+
+    // المختبر: ورق مربعات أزرق فاتح، ضو أبيض بارد، وفقاعات تطلع
+    public static LevelTheme Lab() => new LevelTheme
+    {
+        name = "Lab",
+        paper = new Color(0.95f, 0.98f, 1f), pattern = PaperPattern.Grid, patternColor = new Color(0.55f, 0.75f, 0.95f), colorfulDoodles = true,
+        pageEdge = new Color(0.82f, 0.9f, 0.97f), pencil = new Color(0.25f, 0.35f, 0.55f), doodleColor = new Color(0.3f, 0.5f, 0.8f),
+        skyTop = new Color(0.55f, 0.75f, 0.95f), skyMid = new Color(0.8f, 0.92f, 1f), skyBottom = new Color(0.93f, 0.98f, 1f),
+        sun = true, moonColor = new Color(2.6f, 2.8f, 3f), stars = 0f, cloudTint = new Color(1.1f, 1.12f, 1.15f), cloudAlpha = 0.6f,
+        sunLight = new Color(0.95f, 0.98f, 1f), sunIntensity = 1.45f, sunAngles = new Vector3(50f, -30f, 0f),
+        ambientSky = new Color(0.8f, 0.9f, 1f), ambientEquator = new Color(0.65f, 0.72f, 0.8f), ambientGround = new Color(0.3f, 0.35f, 0.42f),
+        fog = new Color(0.85f, 0.93f, 1f), props = PropSet.Crayons, floating = FloatKind.Bubbles,
+        floatColors = new[] { new Color(0.7f, 0.95f, 1f), new Color(0.8f, 1f, 0.8f), new Color(1f, 0.85f, 1f) },
+        ringColor = new Color(0.4f, 0.5f, 0.65f),
+    };
+
+    // المختبر المجنون: ليل وضو نيون أخضر وبنفسجي
+    public static LevelTheme LabNight() => new LevelTheme
+    {
+        name = "LabNight",
+        paper = new Color(0.88f, 0.92f, 0.98f), pattern = PaperPattern.Grid, patternColor = new Color(0.5f, 0.85f, 0.6f), colorfulDoodles = true,
+        pageEdge = new Color(0.7f, 0.78f, 0.88f), pencil = new Color(0.3f, 0.3f, 0.5f), doodleColor = new Color(0.5f, 0.85f, 0.55f),
+        skyTop = new Color(0.08f, 0.05f, 0.18f), skyMid = new Color(0.2f, 0.12f, 0.35f), skyBottom = new Color(0.25f, 0.45f, 0.35f),
+        moonColor = new Color(2f, 2.6f, 2f), stars = 0.8f, cloudTint = new Color(0.4f, 0.8f, 0.5f), cloudAlpha = 0.45f,
+        sunLight = new Color(0.75f, 1f, 0.85f), sunIntensity = 0.8f, sunAngles = new Vector3(30f, -40f, 0f),
+        ambientSky = new Color(0.4f, 0.5f, 0.6f), ambientEquator = new Color(0.3f, 0.38f, 0.42f), ambientGround = new Color(0.12f, 0.15f, 0.18f),
+        fog = new Color(0.15f, 0.25f, 0.22f), props = PropSet.Crayons, floating = FloatKind.Bubbles,
+        floatColors = new[] { new Color(0.5f, 1.4f, 0.6f), new Color(1.2f, 0.5f, 1.4f) },
+        ringColor = new Color(0.35f, 0.35f, 0.5f),
+    };
+
     // البحر: ورق أزرق فاتح، سما صيف صافية، وشمس
     public static LevelTheme Ocean() => new LevelTheme
     {

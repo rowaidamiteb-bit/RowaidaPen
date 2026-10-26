@@ -267,7 +267,9 @@ public class InkDrawer : MonoBehaviour
     void MakePlatform()
     {
         stroke.name = "Ink Platform";
-        stroke.AddComponent<InkMark>().closed = false;
+        var lineMark = stroke.AddComponent<InkMark>();
+        lineMark.closed = false;
+        lineMark.path = points.ToArray();
         TubeMesh.Build(strokeMesh, points, tubeRadius, false);
         AddColliders(stroke.transform, points, false);
         AddRainErosion(points, false);

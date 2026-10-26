@@ -208,6 +208,16 @@ public class LevelData
     public List<Vector4> jellyBears = new List<Vector4>();  // دببة جيلي حول حفرة (من x، لـ x، سطحها، مسافة)
     public List<Vector3> cakes = new List<Vector3>();       // كيكة بشموع (من x، لـ x، ارتفاعها)
     public int kitchenScenery;                              // 1 مطبخ، 2 أرض حلويات
+    // الجزء الثالث: المختبر
+    public List<Vector4> labTaps = new List<Vector4>();     // خزانات ألوان (x، y، لون: 1 أحمر 2 أزرق 4 أصفر)
+    public List<Vector4> labFlasks = new List<Vector4>();   // دوارق (x، سطح الأرض، اللون المطلوب، x البوابة)
+    public List<Vector4> slimeFriends = new List<Vector4>(); // سلايم صديق (من x، لـ x، سطح الحفرة، x بيته)
+    public List<Vector4> circuitLifts = new List<Vector4>(); // بطارية ومصعد (x البطارية، سطح الأرض، x المصعد، الارتفاع)
+    public List<Vector3> acidPools = new List<Vector3>();   // بركة حمض (من x، لـ x، سطحها)
+    public List<LaserSpec> lasers = new List<LaserSpec>();  // ليزر ومرايا
+    public List<Vector4> foamTowers = new List<Vector4>();  // برج رغوة (x، سطح الأرض، ارتفاع الدرجة، الدرجة المطلوبة)
+    public Vector2 slimeChase;                              // سلايم عملاق يلحق (من x، لـ x)
+    public int lab;                                         // منظر المختبر: 1 نهار، 2 ليل
     public List<Vector3> deadTrees = new List<Vector3>();   // شجرة يابسة تنطاح جسر (من x، لـ x، سطحها)
     public List<Vector2> webs = new List<Vector2>();        // شبكة عنكبوت تسد الطريق (x، سطح الأرض)
     public List<Vector3> owls = new List<Vector3>();        // بومة تراقب (x، سطح الأرض، مسافة المراقبة)
@@ -283,6 +293,10 @@ public static class Levels
         ChocolateRiverLevel(),
         OvenLevel(),
         CandyCastleLevel(),
+        LabPipesLevel(),
+        LabAcidLevel(),
+        LabReactionLevel(),
+        LabMadLevel(),
         LastPage(),
     };
 
@@ -1456,6 +1470,120 @@ public static class Levels
             candyGates = { new Vector2(44.5f, 0f) },
             pancakePans = { new Vector3(47f, 53f, 0f) },
             sticker = new Vector3(29f, 6.2f, 0f),
+        };
+    }
+
+    // ===== الجزء الثالث: المختبر =====
+
+    // أنابيب الألوان: دورق يغلي، أنابيب ترسمينها من خزانات الألوان (أحمر+أزرق = بنفسجي يفتح البوابة)، سلايم صديق ياكل ويصير جسر، وسلك كهربا يشغل المصعد
+    static LevelData LabPipesLevel()
+    {
+        var level = new LevelData
+        {
+            ambience = "lab",
+            lab = 1,
+            hazards = { new HazardSpec("bubbleflask", 6f, 1.6f, 4f) },
+            title = "أنابيب الألوان",
+            theme = LevelTheme.Lab(),
+            subtitle = "ارسمي أنابيب من الخزانات للدورق وخلطي الألوان... وأكلي السلايم ووصلي الكهربا!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(38f, 3.5f, 0f),
+            ink = 26f,
+            blocks =
+            {
+                Page(-7f, 16f),
+                Page(21f, 30.3f),
+                Wall(30.3f, 42f, 3.5f),
+            },
+            labTaps = { new Vector4(2.5f, 6.4f, 1f, 0f), new Vector4(6.5f, 6.4f, 2f, 0f) },
+            labFlasks = { new Vector4(10.5f, 0f, 3f, 12.6f) },
+            slimeFriends = { new Vector4(16f, 21f, 0f, 14.4f) },
+            circuitLifts = { new Vector4(24.5f, 0f, 29.5f, 3.5f) },
+            sticker = new Vector3(18.5f, 5.4f, 0f),
+        };
+        return level;
+    }
+
+    // الحمض: قطارة حمض، بركة حمض (دواير صودا تفور رغوة تتمدد)، ليزر ومرايا ترسمينها توصل الشعاع للحساس، وكويلات صواعق
+    static LevelData LabAcidLevel()
+    {
+        return new LevelData
+        {
+            ambience = "lab",
+            lab = 1,
+            hazards = { new HazardSpec("drip", 2.5f, 1.4f, 3.6f), new HazardSpec("tesla", 31f, 1.8f, 3.6f, 1f) },
+            title = "الحمض والليزر",
+            theme = LevelTheme.Lab(),
+            subtitle = "ارسمي دواير صودا بالحمض، ومرايا ترد الليزر للحساس... وانتبهي من الصواعق!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(34f, 0f, 0f),
+            ink = 20f,
+            blocks =
+            {
+                Page(-7f, 6f),
+                Page(13f, 37f),
+            },
+            acidPools = { new Vector3(6f, 13f, 0f) },
+            lasers = { new LaserSpec(new Vector3(15f, 1.2f, 90f), new Vector2(27f, 4.3f), 27f) },
+            sticker = new Vector3(21f, 5.2f, 0f),
+        };
+    }
+
+    // التفاعل: دورق يغلي، برج رغوة (قطرات بالعدد الصح عشان تدخل من الشباك)، سلايم فوق الجدار، كويلات صواعق، وأنابيب (أحمر+أصفر = برتقالي)
+    static LevelData LabReactionLevel()
+    {
+        return new LevelData
+        {
+            ambience = "lab",
+            lab = 1,
+            hazards = { new HazardSpec("bubbleflask", 2.5f, 1.6f, 4f), new HazardSpec("tesla", 24.5f, 1.8f, 3.4f, 1f) { y = 4f } },
+            title = "التفاعل",
+            theme = LevelTheme.Lab(),
+            subtitle = "عدي القطرات صح عشان الرغوة توصلك للشباك... وخلطي البرتقالي!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(43f, 0f, 0f),
+            ink = 32f,
+            blocks =
+            {
+                Page(-7f, 6.8f),
+                Wall(6.8f, 14f, 4f),
+                Wall(6.8f, 14f, 10f, 5.9f),
+                Wall(19f, 30f, 4f),
+                Page(30f, 46f),
+            },
+            foamTowers = { new Vector4(6f, 0f, 1.33f, 3f) },
+            slimeFriends = { new Vector4(14f, 19f, 4f, 12.6f) },
+            labTaps = { new Vector4(32f, 6.4f, 1f, 0f), new Vector4(36f, 6.4f, 4f, 0f) },
+            labFlasks = { new Vector4(39.5f, 0f, 5f, 41.5f) },
+            sticker = new Vector3(10f, 8.5f, 0f),
+        };
+    }
+
+    // المختبر المجنون (نهاية فصل المختبر): سلايم عملاق يلحقك! بركة حمض، ليزر ومرايا، سلك ومصعد، وقطارة فوق
+    static LevelData LabMadLevel()
+    {
+        return new LevelData
+        {
+            ambience = "lab",
+            lab = 2,
+            slimeChase = new Vector2(-17f, 50f),
+            hazards = { new HazardSpec("drip", 41f, 1.4f, 3.4f) { y = 3.5f } },
+            title = "المختبر المجنون",
+            theme = LevelTheme.LabNight(),
+            subtitle = "التجربة خربت! سلايم عملاق يلحقك... بسرعة!",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(47f, 3.5f, 0f),
+            ink = 30f,
+            blocks =
+            {
+                Page(-7f, 10f),
+                Page(15f, 33.3f),
+                Wall(33.3f, 50f, 3.5f),
+            },
+            acidPools = { new Vector3(10f, 15f, 0f) },
+            lasers = { new LaserSpec(new Vector3(17f, 1.2f, 90f), new Vector2(26f, 4.3f), 26f) },
+            circuitLifts = { new Vector4(28f, 0f, 32.5f, 3.5f) },
+            sticker = new Vector3(21f, 6.8f, 0f),
         };
     }
 

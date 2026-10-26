@@ -161,6 +161,49 @@ public class TimedHazard : MonoBehaviour
                 Part(PrimitiveType.Cube, new Vector3(1.55f, 0.05f, 0f), new Vector3(0.2f, 0.35f, 0.15f), wood);
                 break;
             }
+            case "tesla":
+            {
+                // كويلين على جنبين الطريق، وصاعقة بينهم
+                Material copper = gm.Mat("Battery Copper", new Color(0.95f, 0.6f, 0.25f), 0.8f, 0.6f);
+                Material steel = gm.Mat("Spoon Steel", new Color(0.82f, 0.84f, 0.88f), 0.95f, 0.85f);
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    Vector3 cp = new Vector3(spec.x + s * (spec.width * 0.5f + 0.6f), 0f, 0.6f);
+                    LevelBuilder.Visual("Coil Base", PrimitiveType.Cylinder, transform, cp + Vector3.up * 0.2f, new Vector3(0.8f, 0.2f, 0.8f), steel);
+                    for (int r = 0; r < 6; r++) LevelBuilder.Visual("Coil Ring", PrimitiveType.Cylinder, transform, cp + Vector3.up * (0.5f + r * 0.28f), new Vector3(0.55f, 0.06f, 0.55f), copper, false);
+                    LevelBuilder.Visual("Coil Core", PrimitiveType.Cylinder, transform, cp + Vector3.up * 1.2f, new Vector3(0.3f, 0.9f, 0.3f), steel);
+                    LevelBuilder.Visual("Coil Ball", PrimitiveType.Sphere, transform, cp + Vector3.up * 2.4f, Vector3.one * 0.6f, steel);
+                }
+                Material bolt = gm.Mat("Bolt", new Color(1.8f, 2f, 3f), 0.5f);
+                for (int i = 0; i < 8; i++) Part(PrimitiveType.Cube, Vector3.zero, new Vector3(0.1f, 0.1f, 0.1f), bolt);
+                break;
+            }
+            case "drip":
+            {
+                // قطارة زجاج كبيرة معلقة فوق الطريق تنقط حمض أخضر
+                Material glass = LabFeatures.Glass(0.35f);
+                Material acidM = gm.Mat("Acid Glow", new Color(0.6f, 1.6f, 0.4f), 0.6f);
+                Material bulb = gm.Mat("Pipette Bulb", new Color(0.95f, 0.35f, 0.4f), 0.5f);
+                LevelBuilder.Visual("Pipette Tube", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 5.2f, 0f), new Vector3(0.35f, 1.4f, 0.35f), glass, false);
+                LevelBuilder.Visual("Pipette Acid", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 4.7f, 0f), new Vector3(0.25f, 0.8f, 0.25f), acidM, false);
+                LevelBuilder.Visual("Pipette Bulb", PrimitiveType.Sphere, transform, new Vector3(spec.x, 6.9f, 0f), new Vector3(0.7f, 0.9f, 0.7f), bulb);
+                LevelBuilder.Visual("Puddle", PrimitiveType.Cylinder, transform, new Vector3(spec.x, 0.02f, 0f), new Vector3(spec.width + 0.4f, 0.02f, 1.4f), acidM, false);
+                Part(PrimitiveType.Sphere, Vector3.zero, new Vector3(0.35f, 0.5f, 0.35f), acidM);
+                break;
+            }
+            case "bubbleflask":
+            {
+                // دورق كبير يغلي جنب الطريق: فقاعة تكبر فوق الطريق وتنفجر
+                Material glass = LabFeatures.Glass(0.3f);
+                Material potion = gm.Mat("Potion Pink", new Color(1.3f, 0.45f, 0.9f), 0.7f);
+                Vector3 fp = new Vector3(spec.x, 0f, 1.4f);
+                LevelBuilder.Visual("Big Flask Liquid", PrimitiveType.Sphere, transform, fp + Vector3.up * 0.8f, new Vector3(1.8f, 1.3f, 1.8f), potion, false);
+                LevelBuilder.Visual("Big Flask", PrimitiveType.Sphere, transform, fp + Vector3.up * 1f, Vector3.one * 2.2f, glass, false);
+                LevelBuilder.Visual("Big Neck", PrimitiveType.Cylinder, transform, fp + Vector3.up * 2.5f, new Vector3(0.7f, 0.6f, 0.7f), glass, false);
+                var bub = LevelBuilder.Visual("Bubble", PrimitiveType.Sphere, model, Vector3.zero, Vector3.one, LabFeatures.Glass(0.45f), false).transform;
+                parts.Add(bub);
+                break;
+            }
             case "flour":
             {
                 // كيس طحين عملاق ورا الطريق: ينهز وينفض غيمة طحين كبيرة
@@ -494,6 +537,62 @@ public class TimedHazard : MonoBehaviour
             case "bow":
                 model.position = new Vector3(cx + w * 0.5f + 2f - k * (w + 4f), 1f, -0.2f);
                 break;
+            case "tesla":
+            {
+                // صاعقة متعرجة بين الكويلين
+                model.position = Vector3.zero;
+                model.gameObject.SetActive(on);
+                Vector3 a = new Vector3(cx - w * 0.5f - 0.6f, 2.4f, 0.6f), b = new Vector3(cx + w * 0.5f + 0.6f, 2.4f, 0.6f);
+                Vector3 prev = a;
+                for (int i = 0; i < parts.Count; i++)
+                {
+                    float u = (i + 1f) / parts.Count;
+                    Vector3 next = Vector3.Lerp(a, b, u) + (i < parts.Count - 1 ? new Vector3(0f, Random.Range(-1.6f, 0.4f), Random.Range(-0.6f, 0.2f)) : Vector3.zero);
+                    parts[i].localPosition = (prev + next) * 0.5f;
+                    parts[i].localScale = new Vector3((next - prev).magnitude, 0.09f, 0.09f);
+                    parts[i].localRotation = Quaternion.FromToRotation(Vector3.right, next - prev);
+                    prev = next;
+                }
+                if (on && Random.value < 0.3f) Fx.Sparkle(new Vector3(cx + Random.Range(-w * 0.5f, w * 0.5f), 1.5f + spec.y, 0f), new Color(0.6f, 0.8f, 1f), 3);
+                break;
+            }
+            case "drip":
+            {
+                // قطرة كبيرة تطيح وتحرق الخطوط
+                model.gameObject.SetActive(on);
+                model.position = new Vector3(cx, 4f - k * k * 3.9f, 0f);
+                if (on && k > 0.9f && Random.value < 0.5f)
+                {
+                    Bounds burn = new Bounds(new Vector3(cx, 1f + spec.y, 0f), new Vector3(w + 0.4f, 2f, 4f));
+                    foreach (InkMark m in Object.FindObjectsByType<InkMark>(FindObjectsSortMode.None))
+                    {
+                        var mr = m.GetComponent<MeshRenderer>();
+                        if (mr == null || !mr.bounds.Intersects(burn)) continue;
+                        SmokeCloud.Puff(mr.bounds.center, 0.8f);
+                        Object.Destroy(m.gameObject);
+                    }
+                    SmokeCloud.Puff(new Vector3(cx, 0.4f + spec.y, 0f), 0.9f);
+                }
+                break;
+            }
+            case "bubbleflask":
+            {
+                // فقاعة تطلع من الدورق وتكبر فوق الطريق وتنفجر
+                model.position = new Vector3(cx, 0f, 0f);
+                model.gameObject.SetActive(on);
+                float grow = Mathf.Clamp01(k / 0.75f);
+                parts[0].localPosition = Vector3.Lerp(new Vector3(0f, 3f, 1.4f), new Vector3(0f, 1.3f, 0f), grow);
+                parts[0].localScale = Vector3.one * (0.4f + grow * 2.2f);
+                if (on && k > 0.75f && k < 0.8f)
+                    for (int i = 0; i < 10; i++)
+                    {
+                        var d = LevelBuilder.Visual("Splash", PrimitiveType.Sphere, null, new Vector3(cx, 1.3f + spec.y, 0f) + Random.insideUnitSphere * 0.8f, Vector3.one * 0.18f, GameManager.Instance.Mat("Potion Pink", new Color(1.3f, 0.45f, 0.9f), 0.7f), false);
+                        var fx = d.AddComponent<FxParticle>();
+                        fx.velocity = Random.insideUnitSphere * 4f + Vector3.up * 2f; fx.gravity = 10f; fx.life = 0.7f;
+                    }
+                if (k >= 0.8f) parts[0].localScale = Vector3.zero;
+                break;
+            }
             case "flour":
             {
                 model.position = new Vector3(cx + w * 0.5f + 1.4f, 0f, 1.6f);
@@ -747,6 +846,9 @@ public class TimedHazard : MonoBehaviour
             case "mole": return "dig";
             case "pepper": return "sneeze";
             case "flour": return "whoosh";
+            case "tesla": return "tesla";
+            case "drip": return "sizzle";
+            case "bubbleflask": return "pop";
             case "rollingpin": return "rumble";
             case "mousetrap": return "snap";
             case "toast": return "toaster";
