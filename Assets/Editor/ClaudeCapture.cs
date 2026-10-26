@@ -364,6 +364,36 @@ public static class ClaudeCapture
         cam.Render();
         cam.targetTexture = prevTarget;
 
+        // القوائم (فوق الشاشة) ما تنرسم مع الكاميرا: نرسمها فوق الصورة بكاميرا ثانية بدون مؤثرات
+        if (kind == "main")
+        {
+            var overlays = new List<Canvas>();
+            foreach (Canvas c in Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+                if (c.isRootCanvas && c.renderMode == RenderMode.ScreenSpaceOverlay && c.gameObject.activeInHierarchy) overlays.Add(c);
+            if (overlays.Count > 0)
+            {
+                var uiGo = new GameObject("Claude UI Camera");
+                var uiCam = uiGo.AddComponent<Camera>();
+                uiCam.clearFlags = CameraClearFlags.Nothing;
+                uiCam.cullingMask = 1 << 5;
+                uiCam.orthographic = true;
+                uiCam.targetTexture = rt;
+                var data = uiGo.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                data.renderPostProcessing = false;
+                foreach (Canvas c in overlays)
+                {
+                    c.renderMode = RenderMode.ScreenSpaceCamera;
+                    c.worldCamera = uiCam;
+                    c.planeDistance = 1f;
+                }
+                Canvas.ForceUpdateCanvases();
+                uiCam.Render();
+                foreach (Canvas c in overlays) c.renderMode = RenderMode.ScreenSpaceOverlay;
+                uiCam.targetTexture = null;
+                Object.DestroyImmediate(uiGo);
+            }
+        }
+
         RenderTexture prevActive = RenderTexture.active;
         RenderTexture.active = rt;
         var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);

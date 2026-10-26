@@ -28,6 +28,11 @@ public class MenuUI : MonoBehaviour
     static readonly Color Gold = new Color(1f, 0.78f, 0.22f);
     static readonly Color StarOff = new Color(0.82f, 0.8f, 0.78f);
     static readonly Color Dots = new Color(1f, 0.55f, 0.45f);
+    static readonly Color PaperWhite = new Color(1f, 0.995f, 0.97f);
+    static readonly Color SkyBlue = new Color(0.35f, 0.68f, 1f);
+    static readonly Color MintC = new Color(0.3f, 0.8f, 0.62f);
+    static readonly Color Lilac = new Color(0.66f, 0.52f, 0.95f);
+    static readonly Color Orange = new Color(1f, 0.6f, 0.28f);
 
     GameManager gm;
     Font font;
@@ -60,7 +65,7 @@ public class MenuUI : MonoBehaviour
 
         var canvasGo = new GameObject("Menus", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         var canvas = canvasGo.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceCamera;
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;   // فوق كل شي وبألوانها الحقيقية (بدون مؤثرات الكاميرا)
         canvas.worldCamera = Camera.main;
         canvas.planeDistance = 0.4f;
         canvas.sortingOrder = 50;
@@ -68,6 +73,7 @@ public class MenuUI : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = 0.5f;
+        canvasGo.layer = 5;   // طبقة الواجهة
         canvasRect = canvasGo.GetComponent<RectTransform>();
 
         dim = Panel(canvasRect, "Dim", new Color(0.12f, 0.08f, 0.05f, 0.42f)).rectTransform;
@@ -209,44 +215,125 @@ public class MenuUI : MonoBehaviour
         return page;
     }
 
-    // خلفية القوائم: ورق كريمي بخطوط خفيفة، شمس بالزاوية، ونجوم صغيرة مرسومة
+    // خلفية القوائم: سما فاتحة بتدرج، غيوم تمشي، شمس بأشعة تلف، شريط أعلام ملونة يتمايل، وقصاصات ملونة تطيح
     readonly List<RectTransform> doodles = new List<RectTransform>();
-    RectTransform sun;
+    readonly List<RectTransform> flags = new List<RectTransform>();
+    readonly List<RectTransform> clouds = new List<RectTransform>();
+    readonly List<RectTransform> confetti = new List<RectTransform>();
+    readonly List<Vector3> confettiVel = new List<Vector3>();
+    RectTransform sun, sunRays;
 
     RectTransform BuildDesk()
     {
-        var d = Panel(canvasRect, "Desk", Cream);
+        var d = new GameObject("Desk", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
+        d.transform.SetParent(canvasRect, false);
         Stretch(d.rectTransform);
+        var grad = new Texture2D(1, 4, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        grad.SetPixels(new[] { new Color(0.86f, 0.97f, 0.9f), new Color(0.8f, 0.94f, 1f), new Color(0.66f, 0.87f, 1f), new Color(0.55f, 0.8f, 1f) });
+        grad.Apply();
+        d.texture = grad;
         d.raycastTarget = true;
-        var lines = new GameObject("Lines", typeof(RectTransform)).GetComponent<RectTransform>();
-        lines.SetParent(d.rectTransform, false);
-        Place(lines, Vector2.zero, new Vector2(2600f, 1400f));
-        Lines(lines, new Vector2(2600f, 1400f), 46f);
-        var s = Panel(d.rectTransform, "Sun", Yellow);
+        RectTransform root = d.rectTransform;
+
+        // الشمس وأشعتها
+        sunRays = new GameObject("Sun Rays", typeof(RectTransform)).GetComponent<RectTransform>();
+        sunRays.SetParent(root, false);
+        sunRays.anchorMin = sunRays.anchorMax = new Vector2(0f, 1f);
+        sunRays.anchoredPosition = new Vector2(150f, -150f);
+        for (int i = 0; i < 12; i++)
+        {
+            var ray = Panel(sunRays, "Ray", new Color(1f, 0.85f, 0.35f, 0.55f));
+            ray.sprite = rounded;
+            ray.type = Image.Type.Sliced;
+            ray.pixelsPerUnitMultiplier = 6f;
+            ray.rectTransform.pivot = new Vector2(0.5f, 0f);
+            ray.rectTransform.anchoredPosition = Vector2.zero;
+            ray.rectTransform.sizeDelta = new Vector2(16f, 150f);
+            ray.rectTransform.localRotation = Quaternion.Euler(0f, 0f, i * 30f);
+        }
+        var s = Panel(root, "Sun", Yellow);
         s.sprite = circle;
         s.rectTransform.anchorMin = s.rectTransform.anchorMax = new Vector2(0f, 1f);
-        s.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        s.rectTransform.anchoredPosition = new Vector2(110f, -100f);
-        s.rectTransform.sizeDelta = new Vector2(120f, 120f);
+        s.rectTransform.anchoredPosition = new Vector2(150f, -150f);
+        s.rectTransform.sizeDelta = new Vector2(150f, 150f);
         sun = s.rectTransform;
-        // نجوم ودوائر صغيرة متفرقة
+
+        // غيوم
         var rng = new System.Random(3);
-        Color[] cols = { Yellow, PinkSoft, Teal };
-        for (int i = 0; i < 14; i++)
+        for (int i = 0; i < 5; i++)
         {
-            var g = Panel(d.rectTransform, "Doodle", cols[i % 3] * new Color(1f, 1f, 1f, 0.6f));
+            var c = new GameObject("Cloud", typeof(RectTransform)).GetComponent<RectTransform>();
+            c.SetParent(root, false);
+            c.anchorMin = c.anchorMax = new Vector2((float)rng.NextDouble(), 0.62f + (float)rng.NextDouble() * 0.25f);
+            float k = 0.7f + (float)rng.NextDouble() * 0.6f;
+            float[,] puffs = { { -70f, 0f, 110f }, { 0f, 25f, 140f }, { 75f, 0f, 105f }, { 0f, -20f, 120f } };
+            for (int p = 0; p < 4; p++)
+            {
+                var puff = Panel(c, "Puff", new Color(1f, 1f, 1f, 0.85f));
+                puff.sprite = circle;
+                Place(puff.rectTransform, new Vector2(puffs[p, 0], puffs[p, 1]) * k, Vector2.one * puffs[p, 2] * k);
+            }
+            clouds.Add(c);
+        }
+
+        // شريط أعلام ملونة فوق (قوس)
+        Color[] flagColors = { Pink, Yellow, MintC, SkyBlue, Lilac, Orange };
+        int nFlags = 22;
+        for (int i = 0; i < nFlags; i++)
+        {
+            float u = i / (float)(nFlags - 1);
+            float x = Mathf.Lerp(-1100f, 1100f, u);
+            float y = -30f - Mathf.Sin(u * Mathf.PI) * 70f;
+            var f = Panel(root, "Flag", flagColors[i % flagColors.Length]);
+            f.sprite = triangle;
+            f.rectTransform.anchorMin = f.rectTransform.anchorMax = new Vector2(0.5f, 1f);
+            f.rectTransform.pivot = new Vector2(0.5f, 1f);
+            f.rectTransform.anchoredPosition = new Vector2(x, y);
+            f.rectTransform.sizeDelta = new Vector2(64f, 76f);
+            f.rectTransform.localScale = new Vector3(1f, -1f, 1f);   // رأس المثلث تحت
+            flags.Add(f.rectTransform);
+            if (i < nFlags - 1)
+            {
+                float u2 = (i + 1) / (float)(nFlags - 1);
+                Vector2 a = new Vector2(x, y), b = new Vector2(Mathf.Lerp(-1100f, 1100f, u2), -30f - Mathf.Sin(u2 * Mathf.PI) * 70f);
+                var str = Panel(root, "String", new Color(0.45f, 0.4f, 0.5f));
+                str.rectTransform.anchorMin = str.rectTransform.anchorMax = new Vector2(0.5f, 1f);
+                str.rectTransform.anchoredPosition = (a + b) * 0.5f;
+                str.rectTransform.sizeDelta = new Vector2(Vector2.Distance(a, b) + 2f, 3f);
+                str.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg);
+                str.transform.SetSiblingIndex(f.transform.GetSiblingIndex());
+            }
+        }
+
+        // نجوم ودوائر صغيرة على الأطراف
+        Color[] cols = { Yellow, PinkSoft, MintC, SkyBlue };
+        for (int i = 0; i < 12; i++)
+        {
+            var g = Panel(root, "Doodle", cols[i % cols.Length] * new Color(1f, 1f, 1f, 0.8f));
             g.sprite = i % 2 == 0 ? star : circle;
-            float size = i % 2 == 0 ? 40f + rng.Next(30) : 16f + rng.Next(14);
+            float size = i % 2 == 0 ? 44f + rng.Next(30) : 18f + rng.Next(14);
             var rt = g.rectTransform;
-            float x = (float)rng.NextDouble(), y = (float)rng.NextDouble();
-            // بس على الأطراف (ما تغطي البطاقة)
-            if (x > 0.25f && x < 0.75f) x = x < 0.5f ? x * 0.4f : 1f - (1f - x) * 0.4f;
+            float x = (float)rng.NextDouble(), y = 0.1f + (float)rng.NextDouble() * 0.7f;
+            if (x > 0.22f && x < 0.78f) x = x < 0.5f ? x * 0.35f : 1f - (1f - x) * 0.35f;
             rt.anchorMin = rt.anchorMax = new Vector2(x, y);
             rt.anchoredPosition = Vector2.zero;
             rt.sizeDelta = new Vector2(size, size);
             doodles.Add(rt);
         }
-        return d.rectTransform;
+
+        // قصاصات ملونة تطيح
+        for (int i = 0; i < 40; i++)
+        {
+            var c = Panel(root, "Confetti", flagColors[i % flagColors.Length]);
+            var rt = c.rectTransform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = i % 3 == 0 ? new Vector2(14f, 14f) : new Vector2(10f, 22f);
+            if (i % 3 == 0) c.sprite = circle;
+            rt.anchoredPosition = new Vector2(rng.Next(-1100, 1100), rng.Next(-600, 600));
+            confetti.Add(rt);
+            confettiVel.Add(new Vector3(rng.Next(-30, 30), -60f - rng.Next(80), rng.Next(-200, 200)));
+        }
+        return root;
     }
 
     // ---------- القائمة الرئيسية ----------
@@ -256,15 +343,25 @@ public class MenuUI : MonoBehaviour
 
     void BuildMain()
     {
-        mainPanel = PhoneCard(canvasRect, "Main Menu", new Vector2(860f, 960f));
-        titleRect = Label(mainPanel, ArabicText.Fix("قلم رويدا"), 130, new Vector2(0f, 300f), new Vector2(780f, 170f)).rectTransform;
-        Label(mainPanel, ArabicText.Fix("ارسمي طريق رويدا لين ترجع لغرفتها"), 34, new Vector2(0f, 195f), new Vector2(760f, 56f)).color = Grey;
+        mainPanel = NotebookCard(canvasRect, "Main Menu", new Vector2(860f, 960f), -1.2f);
+        var title = Label(mainPanel, ArabicText.Fix("قلم رويدا"), 120, new Vector2(0f, 305f), new Vector2(780f, 160f));
+        title.color = Pink;
+        var ol = title.gameObject.AddComponent<Outline>();
+        ol.effectColor = Color.white;
+        ol.effectDistance = new Vector2(5f, -5f);
+        var tsh = title.gameObject.AddComponent<Shadow>();
+        tsh.effectColor = new Color(0.86f, 0.33f, 0.45f, 0.6f);
+        tsh.effectDistance = new Vector2(4f, -9f);
+        titleRect = title.rectTransform;
+        var pen = MiniPencil(mainPanel, new Vector2(-290f, 340f));
+        pen.localScale = Vector3.one * 2.6f;
+        Label(mainPanel, ArabicText.Fix("ارسمي طريق رويدا لين ترجع لغرفتها"), 32, new Vector2(0f, 190f), new Vector2(760f, 50f)).color = Grey;
 
         playLabel = PrimaryButton(mainPanel, "", new Vector2(0f, 75f), new Vector2(560f, 120f), () => gm.PlayFromMenu(), 50);
-        SecondaryButton(mainPanel, "خريطة المراحل", new Vector2(0f, -55f), new Vector2(560f, 100f), () => ShowLevels(false), 42);
-        SecondaryButton(mainPanel, "صندوق الأقلام", new Vector2(140f, -170f), new Vector2(280f, 96f), ShowPencil, 36);
-        SecondaryButton(mainPanel, "من جديد", new Vector2(-150f, -170f), new Vector2(260f, 96f), ShowConfirm, 36);
-        SecondaryButton(mainPanel, "اطلعي من اللعبة", new Vector2(0f, -285f), new Vector2(560f, 90f), Application.Quit, 34);
+        SecondaryButton(mainPanel, "خريطة المراحل", new Vector2(0f, -55f), new Vector2(560f, 100f), () => ShowLevels(false), 42, SkyBlue);
+        SecondaryButton(mainPanel, "صندوق الأقلام", new Vector2(140f, -170f), new Vector2(280f, 96f), ShowPencil, 36, Lilac);
+        SecondaryButton(mainPanel, "من جديد", new Vector2(-150f, -170f), new Vector2(260f, 96f), ShowConfirm, 36, Orange);
+        SecondaryButton(mainPanel, "اطلعي من اللعبة", new Vector2(0f, -285f), new Vector2(560f, 90f), Application.Quit, 34, MintC);
 
         // عداد النجوم بشريط أصفر صغير
         var pill = Framed(mainPanel, "Stars Pill", new Vector2(0f, -385f), new Vector2(300f, 70f), new Color(1f, 0.93f, 0.7f), YellowDark, 4f, 1.6f);
@@ -330,7 +427,7 @@ public class MenuUI : MonoBehaviour
 
     void BuildLevels()
     {
-        levelsPanel = PhoneCard(canvasRect, "Levels", new Vector2(1640f, 1000f));
+        levelsPanel = NotebookCard(canvasRect, "Levels", new Vector2(1640f, 1000f), 0.4f);
         levelsTitle = Label(levelsPanel, "", 58, new Vector2(240f, 405f), new Vector2(1000f, 90f));
         Label(levelsPanel, ArabicText.Fix("اختاري الصفحة الجاية!"), 30, new Vector2(240f, 345f), new Vector2(800f, 44f)).color = Grey;
 
@@ -482,7 +579,7 @@ public class MenuUI : MonoBehaviour
 
     void BuildConfirm()
     {
-        confirmPanel = PhoneCard(canvasRect, "Confirm Restart", new Vector2(820f, 600f));
+        confirmPanel = NotebookCard(canvasRect, "Confirm Restart", new Vector2(820f, 600f), 1f);
         Label(confirmPanel, ArabicText.Fix("تبين تبدين من جديد؟"), 60, new Vector2(0f, 160f), new Vector2(760f, 90f));
         var warn = Label(confirmPanel, ArabicText.Fix("بتنمسح كل المراحل اللي فتحتيها والنجوم"), 32, new Vector2(0f, 75f), new Vector2(760f, 50f));
         warn.color = PinkDark;
@@ -493,7 +590,7 @@ public class MenuUI : MonoBehaviour
             DrawingMemory.Clear();
             gm.PlayFromMenu();
         }, 36);
-        SecondaryButton(confirmPanel, "لا", new Vector2(-170f, -90f), new Vector2(240f, 100f), ShowMain, 40);
+        SecondaryButton(confirmPanel, "لا", new Vector2(-170f, -90f), new Vector2(240f, 100f), ShowMain, 40, MintC);
     }
 
     // ---------- صندوق الأقلام: لون وشكل خط القلم ----------
@@ -508,7 +605,7 @@ public class MenuUI : MonoBehaviour
 
     void BuildPencil()
     {
-        pencilPanel = PhoneCard(canvasRect, "Pencil", new Vector2(1160f, 960f));
+        pencilPanel = NotebookCard(canvasRect, "Pencil", new Vector2(1160f, 960f), -0.8f);
         Label(pencilPanel, ArabicText.Fix("صندوق الأقلام"), 80, new Vector2(0f, 360f), new Vector2(800f, 110f));
         Label(pencilPanel, ArabicText.Fix("كل قلم له لمسته السحرية"), 30, new Vector2(0f, 290f), new Vector2(800f, 46f)).color = Grey;
 
@@ -546,7 +643,7 @@ public class MenuUI : MonoBehaviour
         {
             int index = i;
             SecondaryButton(pencilPanel, PencilStyle.StyleNames[i], new Vector2(400f - i * 200f, -195f), new Vector2(184f, 76f),
-                () => { PencilStyle.Current = (PencilStyle.Style)index; RefreshPencil(); }, 30);
+                () => { PencilStyle.Current = (PencilStyle.Style)index; RefreshPencil(); }, 30, Color.white);
             styleButtons.Add(pencilPanel.GetChild(pencilPanel.childCount - 1).GetChild(0).GetComponent<Image>());
         }
 
@@ -624,7 +721,7 @@ public class MenuUI : MonoBehaviour
 
     void BuildPause()
     {
-        pausePanel = PhoneCard(canvasRect, "Pause", new Vector2(720f, 900f));
+        pausePanel = NotebookCard(canvasRect, "Pause", new Vector2(720f, 900f), 1.2f);
         Label(pausePanel, ArabicText.Fix("نأخذ استراحة؟"), 72, new Vector2(0f, 320f), new Vector2(640f, 100f));
         var icon = Panel(pausePanel, "Pause Icon", Yellow);
         icon.sprite = circle;
@@ -639,15 +736,15 @@ public class MenuUI : MonoBehaviour
         }
         pauseIcon = icon.rectTransform;
         PrimaryButton(pausePanel, "كمّلي اللعب", new Vector2(0f, 20f), new Vector2(460f, 104f), () => gm.Resume(), 44);
-        SecondaryButton(pausePanel, "أعيدي المرحلة", new Vector2(0f, -100f), new Vector2(460f, 92f), () => gm.RestartLevel(), 36);
-        SecondaryButton(pausePanel, "خريطة المراحل", new Vector2(0f, -205f), new Vector2(460f, 92f), () => ShowLevels(true), 36);
-        SecondaryButton(pausePanel, "القائمة الرئيسية", new Vector2(0f, -310f), new Vector2(460f, 92f), () => gm.GoToMainMenu(), 36);
+        SecondaryButton(pausePanel, "أعيدي المرحلة", new Vector2(0f, -100f), new Vector2(460f, 92f), () => gm.RestartLevel(), 36, MintC);
+        SecondaryButton(pausePanel, "خريطة المراحل", new Vector2(0f, -205f), new Vector2(460f, 92f), () => ShowLevels(true), 36, SkyBlue);
+        SecondaryButton(pausePanel, "القائمة الرئيسية", new Vector2(0f, -310f), new Vector2(460f, 92f), () => gm.GoToMainMenu(), 36, Lilac);
         Label(pausePanel, ArabicText.Fix("دفترك ينتظرك"), 28, new Vector2(-10f, -395f), new Vector2(400f, 44f)).color = Grey;
         MiniPencil(pausePanel, new Vector2(120f, -395f));
     }
 
     // قلم صغير مرسوم (بدل الإيموجي)
-    void MiniPencil(RectTransform parent, Vector2 pos)
+    RectTransform MiniPencil(RectTransform parent, Vector2 pos)
     {
         var root = new GameObject("Mini Pencil", typeof(RectTransform)).GetComponent<RectTransform>();
         root.SetParent(parent, false);
@@ -661,6 +758,7 @@ public class MenuUI : MonoBehaviour
         tip.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 90f);
         var er = Panel(root, "Eraser", PinkSoft);
         Place(er.rectTransform, new Vector2(26f, 0f), new Vector2(8f, 12f));
+        return root;
     }
 
     // ---------- شاشة الفوز ----------
@@ -674,7 +772,7 @@ public class MenuUI : MonoBehaviour
 
     void BuildComplete()
     {
-        completePanel = PhoneCard(canvasRect, "Complete", new Vector2(1000f, 980f));
+        completePanel = NotebookCard(canvasRect, "Complete", new Vector2(1000f, 980f), -1f);
         var a = Panel(completePanel, "Deco Star", Yellow);
         a.sprite = star;
         Place(a.rectTransform, new Vector2(-385f, 360f), new Vector2(150f, 150f));
@@ -709,8 +807,8 @@ public class MenuUI : MonoBehaviour
             reasons[i].alignment = TextAnchor.MiddleRight;
         }
         nextLabel = PrimaryButton(completePanel, "", new Vector2(0f, -330f), new Vector2(520f, 104f), () => nextAction?.Invoke(), 42);
-        SecondaryButton(completePanel, "أعيدي", new Vector2(130f, -428f), new Vector2(230f, 72f), () => gm.RestartLevel(), 32);
-        SecondaryButton(completePanel, "خريطة المراحل", new Vector2(-130f, -428f), new Vector2(250f, 72f), () => ShowLevels(false), 30);
+        SecondaryButton(completePanel, "أعيدي", new Vector2(130f, -428f), new Vector2(230f, 72f), () => gm.RestartLevel(), 32, MintC);
+        SecondaryButton(completePanel, "خريطة المراحل", new Vector2(-130f, -428f), new Vector2(250f, 72f), () => ShowLevels(false), 30, SkyBlue);
     }
 
     public void ShowComplete(int index, bool[] earned, bool last, Action next)
@@ -769,8 +867,31 @@ public class MenuUI : MonoBehaviour
         // الشمس والنجوم الصغيرة بالخلفية
         if (desk.gameObject.activeSelf)
         {
+            float dt = Time.unscaledDeltaTime;
             sun.localScale = Vector3.one * (1f + Mathf.Sin(t * 1.5f) * 0.05f);
+            sunRays.localRotation = Quaternion.Euler(0f, 0f, t * 12f);
+            sunRays.localScale = Vector3.one * (1f + Mathf.Sin(t * 2f) * 0.08f);
             for (int i = 0; i < doodles.Count; i++) doodles[i].localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 0.8f + i) * 12f);
+            for (int i = 0; i < flags.Count; i++) flags[i].localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 2.2f + i * 0.7f) * 8f);
+            float halfW = canvasRect.rect.width * 0.5f + 200f;
+            for (int i = 0; i < clouds.Count; i++)
+            {
+                Vector2 p = clouds[i].anchoredPosition;
+                p.x += (12f + i * 4f) * dt;
+                float ax = clouds[i].anchorMin.x * canvasRect.rect.width;
+                if (ax + p.x > canvasRect.rect.width + 200f) p.x -= canvasRect.rect.width + 400f;
+                clouds[i].anchoredPosition = p;
+            }
+            float halfH = canvasRect.rect.height * 0.5f + 40f;
+            for (int i = 0; i < confetti.Count; i++)
+            {
+                Vector3 v = confettiVel[i];
+                Vector2 p = confetti[i].anchoredPosition;
+                p += new Vector2(v.x + Mathf.Sin(t * 2f + i) * 30f, v.y) * dt;
+                if (p.y < -halfH) p = new Vector2(UnityEngine.Random.Range(-halfW, halfW), halfH);
+                confetti[i].anchoredPosition = p;
+                confetti[i].localRotation = Quaternion.Euler(0f, 0f, t * v.z);
+            }
         }
         // المرحلة الحالية بالخريطة تنبض
         if (levelsPanel.gameObject.activeSelf && SaveData.Unlocked < nodeRings.Count)
@@ -792,35 +913,43 @@ public class MenuUI : MonoBehaviour
 
     // ---------- أدوات البناء ----------
 
-    // بطاقة مثل شاشة جوال: حافة كحلية عريضة، ورق كريمي بخطوط خفيفة، وشق صغير فوق
-    RectTransform PhoneCard(Transform parent, string name, Vector2 size)
+    // صفحة دفتر: ورق أبيض بخطوط زرقا وهامش أحمر، سلك حلزوني فوق، وظل ناعم، ومايلة شوي كأنها على مكتب
+    RectTransform NotebookCard(Transform parent, string name, Vector2 size, float tilt = 0f)
     {
-        var frame = Panel(parent, name, Navy);
-        frame.sprite = rounded;
-        frame.type = Image.Type.Sliced;
-        frame.pixelsPerUnitMultiplier = 0.9f;
-        frame.raycastTarget = true;
-        RectTransform rt = frame.rectTransform;
+        var root = Panel(parent, name, Color.clear);
+        root.raycastTarget = true;
+        RectTransform rt = root.rectTransform;
         Place(rt, Vector2.zero, size);
-        frame.gameObject.AddComponent<CanvasGroup>();
-        var shadow = frame.gameObject.AddComponent<Shadow>();
-        shadow.effectColor = new Color(0.2f, 0.15f, 0.05f, 0.25f);
-        shadow.effectDistance = new Vector2(8f, -12f);
+        rt.localRotation = Quaternion.Euler(0f, 0f, tilt);
+        root.gameObject.AddComponent<CanvasGroup>();
 
-        var paper = Panel(rt, "Paper", Card);
+        var shadow = Panel(rt, "Shadow", new Color(0.1f, 0.2f, 0.35f, 0.18f));
+        shadow.sprite = rounded;
+        shadow.type = Image.Type.Sliced;
+        shadow.pixelsPerUnitMultiplier = 2.5f;
+        Place(shadow.rectTransform, new Vector2(12f, -16f), size);
+
+        var paper = Panel(rt, "Paper", PaperWhite);
         paper.sprite = rounded;
         paper.type = Image.Type.Sliced;
-        paper.pixelsPerUnitMultiplier = 1.15f;
+        paper.pixelsPerUnitMultiplier = 2.5f;
         Stretch(paper.rectTransform);
-        paper.rectTransform.offsetMin = new Vector2(16f, 16f);
-        paper.rectTransform.offsetMax = new Vector2(-16f, -16f);
-        Lines(paper.rectTransform, size - new Vector2(60f, 60f), 46f);
+        Lines(paper.rectTransform, size - new Vector2(30f, 140f), 46f);
+        var margin = Panel(paper.rectTransform, "Margin", new Color(1f, 0.45f, 0.5f, 0.5f));
+        Place(margin.rectTransform, new Vector2(size.x * 0.5f - 90f, -20f), new Vector2(4f, size.y - 90f));
 
-        var notch = Panel(rt, "Notch", Navy);
-        notch.sprite = rounded;
-        notch.type = Image.Type.Sliced;
-        notch.pixelsPerUnitMultiplier = 6f;
-        Place(notch.rectTransform, new Vector2(0f, size.y * 0.5f - 38f), new Vector2(200f, 20f));
+        // السلك الحلزوني
+        for (float x = -size.x * 0.5f + 60f; x < size.x * 0.5f - 40f; x += 54f)
+        {
+            var hole = Panel(rt, "Hole", new Color(0.82f, 0.86f, 0.92f));
+            hole.sprite = circle;
+            Place(hole.rectTransform, new Vector2(x, size.y * 0.5f - 30f), new Vector2(20f, 20f));
+            var ring = Panel(rt, "Ring", new Color(0.55f, 0.6f, 0.68f));
+            ring.sprite = rounded;
+            ring.type = Image.Type.Sliced;
+            ring.pixelsPerUnitMultiplier = 8f;
+            Place(ring.rectTransform, new Vector2(x + 3f, size.y * 0.5f - 6f), new Vector2(12f, 54f));
+        }
         return rt;
     }
 
@@ -830,7 +959,7 @@ public class MenuUI : MonoBehaviour
         for (float y = size.y * 0.5f - gap; y > -size.y * 0.5f; y -= gap)
         {
             var line = Panel(parent, "Line", LineBlue);
-            Place(line.rectTransform, new Vector2(0f, y), new Vector2(size.x, 3f));
+            Place(line.rectTransform, new Vector2(0f, y - 40f), new Vector2(size.x, 3f));
         }
     }
 
@@ -854,41 +983,53 @@ public class MenuUI : MonoBehaviour
 
     Text PrimaryButton(RectTransform parent, string label, Vector2 pos, Vector2 size, Action onClick, int fontSize)
     {
-        Text t = MakeButton(parent, label, pos, size, Pink, PinkDark, onClick, fontSize);
-        t.color = Color.white;
-        var sh = t.gameObject.AddComponent<Shadow>();
-        sh.effectColor = new Color(0.6f, 0.2f, 0.3f, 0.5f);
-        sh.effectDistance = new Vector2(2f, -2f);
-        return t;
+        return MakeButton(parent, label, pos, size, Pink, onClick, fontSize);
     }
 
-    Text SecondaryButton(RectTransform parent, string label, Vector2 pos, Vector2 size, Action onClick, int fontSize)
+    // زر ملون (كل زر لونه): أزرق سما إذا ما انعطى لون
+    Text SecondaryButton(RectTransform parent, string label, Vector2 pos, Vector2 size, Action onClick, int fontSize, Color? color = null)
     {
-        Text t = MakeButton(parent, label, pos, size, Color.white, Teal, onClick, fontSize);
-        t.color = Navy;
-        return t;
+        return MakeButton(parent, label, pos, size, color ?? SkyBlue, onClick, fontSize);
     }
 
-    Text MakeButton(RectTransform parent, string label, Vector2 pos, Vector2 size, Color fill, Color border, Action onClick, int fontSize)
+    // زر مثل حبة حلاوة: لون فاتح، حافة أغمق تحت (كأنه منفوخ)، ولمعة فوق
+    Text MakeButton(RectTransform parent, string label, Vector2 pos, Vector2 size, Color fill, Action onClick, int fontSize)
     {
-        var outer = Panel(parent, "Button " + label, border);
+        bool white = fill.r > 0.95f && fill.g > 0.95f && fill.b > 0.95f;
+        Color under = white ? new Color(0.78f, 0.82f, 0.88f) : Color.Lerp(fill, Color.black, 0.22f);
+        var outer = Panel(parent, "Button " + label, under);
         outer.sprite = rounded;
         outer.type = Image.Type.Sliced;
-        outer.pixelsPerUnitMultiplier = 0.5f;   // زوايا مدورة كثير (مثل حبة)
+        outer.pixelsPerUnitMultiplier = 0.5f;   // زوايا مدورة كثير
         outer.raycastTarget = true;
         Place(outer.rectTransform, pos, size);
         var inner = Panel(outer.rectTransform, "Fill", fill);
         inner.sprite = rounded;
         inner.type = Image.Type.Sliced;
-        inner.pixelsPerUnitMultiplier = 0.55f;
+        inner.pixelsPerUnitMultiplier = 0.5f;
         Stretch(inner.rectTransform);
-        inner.rectTransform.offsetMin = new Vector2(5f, 5f);
-        inner.rectTransform.offsetMax = new Vector2(-5f, -5f);
+        inner.rectTransform.offsetMin = new Vector2(0f, 9f);
+        var shine = Panel(inner.rectTransform, "Shine", new Color(1f, 1f, 1f, 0.28f));
+        shine.sprite = rounded;
+        shine.type = Image.Type.Sliced;
+        shine.pixelsPerUnitMultiplier = 1.2f;
+        shine.rectTransform.anchorMin = new Vector2(0f, 0.8f);
+        shine.rectTransform.anchorMax = new Vector2(1f, 1f);
+        shine.rectTransform.offsetMin = new Vector2(size.y * 0.35f, 0f);
+        shine.rectTransform.offsetMax = new Vector2(-size.y * 0.35f, -5f);
         var button = outer.gameObject.AddComponent<Button>();
         button.transition = Selectable.Transition.None;
         button.onClick.AddListener(() => onClick());
         outer.gameObject.AddComponent<ButtonJuice>().Init(gm, clickClip);
-        return Label(outer.rectTransform, ArabicText.Fix(label), fontSize, new Vector2(0f, 2f), size);
+        Text t = Label(outer.rectTransform, ArabicText.Fix(label), fontSize, new Vector2(0f, 3f), size);
+        t.color = white ? Navy : Color.white;
+        if (!white)
+        {
+            var sh = t.gameObject.AddComponent<Shadow>();
+            sh.effectColor = new Color(under.r * 0.7f, under.g * 0.7f, under.b * 0.7f, 0.8f);
+            sh.effectDistance = new Vector2(0f, -3f);
+        }
+        return t;
     }
 
     GameObject RoundArrow(RectTransform parent, string label, Vector2 pos, Action onClick)
