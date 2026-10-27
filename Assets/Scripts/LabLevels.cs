@@ -97,6 +97,17 @@ public static class LabFeatures
         return null;
     }
 
+
+    // لما رويدا تقرب من عقبة، الكاميرا ترجع وتبين العقبة كلها معها (وكل مكان لازم ترسمين فيه)
+    public static void Show(float x0, float x1, params Vector3[] pts)
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null || gm.Rowaida == null || !gm.IsPlaying) return;
+        Vector3 r = gm.Rowaida.transform.position;
+        if (r.x < x0 || r.x > x1) return;
+        CameraFollow.Frame(r + Vector3.down * 0.7f, r + Vector3.up * 1.6f);
+        CameraFollow.Frame(pts);
+    }
     public static InkMark ClosedIn(float x0, float x1, float y0, float y1)
     {
         foreach (InkMark m in Object.FindObjectsByType<InkMark>(FindObjectsSortMode.None))
@@ -287,9 +298,13 @@ public class LiquidNetwork : MonoBehaviour
             bool wait = f.openT < 0f && HoldHelper.Before(f.gateX - 0.3f);
             if (wait && !f.prompted) { f.prompted = true; gm.UI.ShowMessage("", 3.6f, "البوابة تبي لون " + LabFeatures.ColorName(f.need) + "! ارسمي أنابيب من الخزانات للدورق وخلطي الألوان"); }
             HoldHelper.Hold(ref f.holding, wait);
-            // الكاميرا ترجع شوي قرب الدورق عشان الخزانات اللي فوقه تبان
-            if (r != null && f.openT < 0f && r.transform.position.x > f.mouth.x - 7f && r.transform.position.x < f.gateX + 0.5f)
-                CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f);
+            if (f.openT < 0f)
+            {
+                float x0 = f.mouth.x;
+                foreach (Tap tp in taps) x0 = Mathf.Min(x0, tp.nozzle.x);
+                LabFeatures.Show(x0 - 5f, f.gateX + 0.5f, new Vector3(x0 - 1f, f.mouth.y - 2.3f, 0f), new Vector3(f.gateX + 0.5f, f.mouth.y + 1.4f, 0f));
+                foreach (Tap tp in taps) LabFeatures.Show(x0 - 5f, f.gateX + 0.5f, tp.nozzle + new Vector3(0f, 2.2f, 0f));
+            }
         }
         if (drops.Count > 0 && t > nextPourSound && r != null && Mathf.Abs(r.transform.position.x - drops[0].t.position.x) < 14f) { nextPourSound = t + 1.4f; LevelSfx.Play("pour", 0.35f, Random.Range(0.9f, 1.1f)); }
     }
@@ -430,6 +445,7 @@ public class SlimeFriend : MonoBehaviour
         bool wait = HoldHelper.Before(from) && !bridge.enabled && !RowaidaController.BridgeCovers(from, to, top);
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "سلايم جوعان! ارسمي له دواير ياكلها... يكبر ويساعدك"); }
         HoldHelper.Hold(ref holding, wait);
+        if (!bridge.enabled) LabFeatures.Show(from - 6f, to, new Vector3(from - 1f, top - 1f, 0f), new Vector3(to + 1f, top + 4.5f, 0f), new Vector3(homeX - 1.5f, top, 0f));
     }
 }
 
@@ -553,6 +569,7 @@ public class CircuitLift : MonoBehaviour
         bool wait = r != null && gm.IsPlaying && !delivered && r.transform.position.x > liftX - 0.7f && r.transform.position.x < liftX + 0.3f && r.transform.position.y - top < height + 1.5f;
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "المصعد طافي! ارسمي سلك من طرف البطارية للمحرك فوق"); }
         HoldHelper.Hold(ref holding, wait);
+        if (!delivered) LabFeatures.Show(bx - 5f, liftX + 0.5f, new Vector3(bx - 2f, top, 0f), termA, termB + Vector3.up * 1.2f, new Vector3(liftX + 1.2f, top + height + 2.2f, 0f));
     }
 }
 
@@ -637,10 +654,16 @@ public class AcidPool : MonoBehaviour
             if (!prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "الحمض ذوب الخط! ارسمي دواير صودا... تفور وتصير رغوة"); }
         }
         // دايرة: صودا تطيح وتفور جزيرة رغوة
-        InkMark c = LabFeatures.ClosedIn(from - 0.3f, to + 0.3f, top - 3f, top + 7f);
-        if (c != null && c.GetComponent<MeshRenderer>().bounds.min.y < top + 0.45f)   // لمست الحمض أو الرغوة
+        // كل دايرة لمست الحمض أو الرغوة (نشيك عليهم كلهم، عشان ولا وحدة تطيح وتضيع)
+        foreach (InkMark c in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
         {
-            float x = Mathf.Clamp(c.GetComponent<MeshRenderer>().bounds.center.x, from + 0.3f, to - 0.3f);
+            if (!c.closed || c.beingEaten) continue;
+            var cr = c.GetComponent<MeshRenderer>();
+            if (cr == null) continue;
+            Vector3 cc = cr.bounds.center;
+            if (cc.x < from - 0.3f || cc.x > to + 0.3f || cc.y > top + 7f || cr.bounds.min.y > top + 0.45f) continue;
+            c.beingEaten = true;
+            float x = Mathf.Clamp(cc.x, from + 0.3f, to - 0.3f);
             Destroy(c.gameObject);
             islands.Add(MakeIsland(x));
             LevelSfx.Play("fizz", 0.8f);
@@ -667,6 +690,7 @@ public class AcidPool : MonoBehaviour
         bool wait = HoldHelper.Before(from) && !Covered();
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "بركة حمض! الخطوط تذوب... ارسمي دواير صودا تفور وتصير رغوة"); }
         HoldHelper.Hold(ref holding, wait);
+        if (!Covered()) LabFeatures.Show(from - 6f, to, new Vector3(from - 1f, top - 1f, 0f), new Vector3(to + 1f, top + 3.5f, 0f));
     }
 
     Island MakeIsland(float x)
@@ -823,6 +847,7 @@ public class LaserMirror : MonoBehaviour
         bool wait = openT < 0f && HoldHelper.Before(spec.gateX - 0.3f);
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "ليزر! ارسمي خطوط مستقيمة تصير مرايا... وصلي الشعاع للحساس من فوق"); }
         HoldHelper.Hold(ref holding, wait);
+        if (openT < 0f) { float mh = Mathf.Max(spec.sensor.y, spec.emitter.y) + 3.8f; LabFeatures.Show(spec.emitter.x - 6f, spec.gateX, new Vector3(spec.emitter.x - 1f, spec.emitter.y - 1.2f, 0f), new Vector3(spec.sensor.x + 1f, mh, 0f), new Vector3(spec.gateX + 0.8f, spec.gateY + 3.5f, 0f)); }
     }
 
     // شعاع يصطدم بقطعة؟ (المسافة d)
@@ -931,5 +956,6 @@ public class FoamTower : MonoBehaviour
         bool wait = r != null && gm.IsPlaying && !done && r.transform.position.x > x - 0.05f && r.transform.position.x < x + 0.6f && r.transform.position.y - top < 8f;
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "برج الرغوة! كل قطرة (دايرة) فوقه ترفعه درجة... وقفي عند العلامة الصفرا بالضبط"); }
         HoldHelper.Hold(ref holding, wait);
+        if (!done) LabFeatures.Show(x - 6f, x + 1f, new Vector3(x - 1.5f, top - 0.5f, 0f), new Vector3(x + 2.5f, top + target * step + 3f, 0f));
     }
 }
