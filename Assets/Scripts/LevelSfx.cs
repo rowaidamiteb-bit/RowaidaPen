@@ -1482,6 +1482,77 @@ public static class LevelSfx
                 for (int k = 0; k < 10; k++) { int s = r.Next(b.Length - Rate / 10); for (int i = 0; i < Rate / 30; i++) b[s + i] += Noise(r) * 0.15f; }
                 return Normalize(Loop(b, 0.05f), 0.38f);
             }
+            // ---------- فصل الأحلام ----------
+            case "twinkle":
+            {
+                // لمعة نجمة: نغمات عالية ناعمة
+                b = Buf(0.8f);
+                float[] notes = { 1568f, 2093f, 2637f, 3136f };
+                for (int k = 0; k < notes.Length; k++) AddTone(b, k * 0.06f, 0.6f, notes[k], 0.25f, 7f, 0.05f);
+                return Normalize(b, 0.35f);
+            }
+            case "baa":
+            {
+                // خروف: باااع
+                b = Buf(0.7f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float f = 330f + Mathf.Sin(t * 2f * Mathf.PI * 9f) * 25f - t * 60f;
+                    float env = Mathf.Clamp01(t / 0.04f) * Mathf.Clamp01((0.7f - t) / 0.2f);
+                    float ph = f * t;
+                    b[i] = (Mathf.Sin(2f * Mathf.PI * ph) * 0.6f + Mathf.Sin(4f * Mathf.PI * ph) * 0.3f + Mathf.Sin(6f * Mathf.PI * ph) * 0.2f) * env * (0.7f + 0.3f * Mathf.Sin(t * 60f));
+                }
+                return Normalize(b, 0.45f);
+            }
+            case "heartbeat":
+            {
+                b = Buf(0.9f);
+                AddTone(b, 0f, 0.25f, 55f, 0.9f, 14f, 0.2f);
+                AddTone(b, 0.22f, 0.3f, 50f, 0.7f, 12f, 0.2f);
+                return Normalize(b, 0.6f);
+            }
+            case "amb_dream":
+            {
+                // حلم: نغمات ناعمة طايرة وأجراس
+                b = Buf(9f);
+                float[] chord = { 262f, 330f, 392f, 494f };
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float v = 0f;
+                    foreach (float f in chord) v += Mathf.Sin(2f * Mathf.PI * f * t + Mathf.Sin(t * 0.7f + f) * 0.5f);
+                    b[i] = v * 0.04f * (0.6f + 0.4f * Mathf.Sin(t * 0.7f));
+                }
+                float[] bells = { 784f, 988f, 1175f, 1319f, 1568f };
+                for (int k = 0; k < 14; k++) AddTone(b, k * 0.62f, 1.2f, bells[r.Next(bells.Length)], 0.1f, 3f, 0.05f);
+                return Normalize(Loop(b, 0.6f), 0.32f);
+            }
+            case "amb_stars":
+            {
+                // ليل نجوم: همهمة وصفير صراصير بعيد ولمعات
+                b = Buf(8f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = Mathf.Sin(2f * Mathf.PI * 196f * t) * 0.05f * (0.6f + 0.4f * Mathf.Sin(t * 0.5f)) + Mathf.Sin(2f * Mathf.PI * 294f * t) * 0.03f;
+                    if (Mathf.Repeat(t * 3f, 1f) < 0.08f) b[i] += Mathf.Sin(2f * Mathf.PI * 4200f * t) * 0.02f;
+                }
+                for (int k = 0; k < 10; k++) AddTone(b, (float)r.NextDouble() * 7.5f, 0.5f, 1800f + r.Next(1400), 0.07f, 8f, 0f);
+                return Normalize(Loop(b, 0.5f), 0.3f);
+            }
+            case "amb_nightmare":
+            {
+                // كابوس: طنين واطي وقلب يدق وريح
+                b = Buf(6f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = (Mathf.Sin(2f * Mathf.PI * 46f * t) * 0.3f + Mathf.Sin(2f * Mathf.PI * 69f * t) * 0.15f) * (0.7f + 0.3f * Mathf.Sin(t * 1.3f)) + Noise(r) * 0.04f * (0.5f + 0.5f * Mathf.Sin(t * 0.9f));
+                }
+                for (int k = 0; k < 6; k++) { AddTone(b, k * 1f, 0.25f, 55f, 0.5f, 14f, 0.2f); AddTone(b, k * 1f + 0.22f, 0.3f, 50f, 0.4f, 12f, 0.2f); }
+                return Normalize(Loop(b, 0.4f), 0.4f);
+            }
             case "shark":
             {
                 // دن... دن (موسيقى القرش)
@@ -1524,6 +1595,9 @@ public class AmbiencePlayer : MonoBehaviour
             case "code": extras = new[] { "type", "count" }; minGap = 3f; maxGap = 6f; volume = 0.2f; break;
             case "numbers": extras = new[] { "chime" }; minGap = 5f; maxGap = 9f; volume = 0.2f; break;
             case "boss": extras = new[] { "glitch" }; minGap = 4f; maxGap = 7f; volume = 0.25f; break;
+            case "dream": extras = new[] { "chime", "twinkle", "baa" }; minGap = 4f; maxGap = 8f; volume = 0.2f; break;
+            case "stars": extras = new[] { "twinkle", "owl" }; minGap = 4f; maxGap = 8f; volume = 0.22f; break;
+            case "nightmare": extras = new[] { "owl", "swirl" }; minGap = 5f; maxGap = 9f; volume = 0.25f; break;
         }
         nextAt = Time.time + Random.Range(2f, 5f);
     }

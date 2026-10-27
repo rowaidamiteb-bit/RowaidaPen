@@ -242,6 +242,16 @@ public class LevelData
     public Vector4 virusBoss;                                // فيروس يلحق (من x، لـ x، السرعة)
     public List<Vector2> popups = new List<Vector2>();       // إعلان يسد الطريق (x، سطح)
     public List<Vector2> saveButtons = new List<Vector2>();  // زر الحفظ (x، سطح)
+    public int dreamStyle;                                   // منظر الأحلام: 1 غيوم، 2 نجوم، 3 كابوس
+    public List<Vector4> cloudBounces = new List<Vector4>(); // خط يصير غيمة تنطط (من x، لـ x، سطح، x الجدار)
+    public List<Vector4> sleepyWinds = new List<Vector4>();  // ريح نعسانة (من x، لـ x، سطح، x راسها)
+    public List<Vector3> sheepBridges = new List<Vector3>(); // خرفان تصير جسر (بداية الحفرة، نهايتها، سطح)
+    public List<Vector4> constellations = new List<Vector4>(); // نجوم توصلينها وتصير جسر (بداية الحفرة، نهايتها، سطح، ارتفاع النجوم)
+    public List<Vector4> moonFogs = new List<Vector4>();     // ظلام وقمر نايم (من x، لـ x، سطح، x القمر)
+    public List<Vector3> lanternLifts = new List<Vector3>(); // فانوس طاير يرفع (x السلة، سطح، كم يرفع)
+    public Vector4 shadowChase;                              // ظل الكابوس يلحق (من x، لـ x، السرعة)
+    public List<Vector2> scaryEyes = new List<Vector2>();    // وحش بالظلام تبي له ابتسامة (x، سطح)
+    public List<Vector2> alarmWakes = new List<Vector2>();   // منبه يصحي رويدا (x، سطح)
     public List<Vector3> deadTrees = new List<Vector3>();   // شجرة يابسة تنطاح جسر (من x، لـ x، سطحها)
     public List<Vector2> webs = new List<Vector2>();        // شبكة عنكبوت تسد الطريق (x، سطح الأرض)
     public List<Vector3> owls = new List<Vector3>();        // بومة تراقب (x، سطح الأرض، مسافة المراقبة)
@@ -325,6 +335,9 @@ public static class Levels
         CodeLevel(),
         NumbersLevel(),
         BossLevel(),
+        CloudsLevel(),
+        StarsLevel(),
+        NightmareLevel(),
         LastPage(),
     };
 
@@ -1715,6 +1728,85 @@ public static class Levels
             popups = { new Vector2(8f, 0f), new Vector2(25f, 0f) },
             saveButtons = { new Vector2(35f, 0f) },
             sticker = new Vector3(15.5f, 4f, 0f),
+        };
+    }
+
+    // ===== الجزء الثالث: الأحلام =====
+
+    // بين الغيوم: خط على الأرض يصير غيمة تنططك فوق الجدار، ريح نعسانة تبي مخدة، وخرفان تعدينها وتصير جسر
+    static LevelData CloudsLevel()
+    {
+        return new LevelData
+        {
+            ambience = "dream",
+            dreamStyle = 1,
+            title = "بين الغيوم",
+            theme = LevelTheme.Dream(),
+            subtitle = "رويدا نامت وبدا الحلم... كل شي هنا ناعم زي القطن",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(36f, 4.2f, 0f),
+            ink = 30f,
+            blocks =
+            {
+                Page(-7f, 8.5f),
+                Wall(8.5f, 22f, 4.2f),
+                Wall(26f, 40f, 4.2f),
+            },
+            cloudBounces = { new Vector4(5.5f, 8.2f, 0f, 8.5f) },
+            sleepyWinds = { new Vector4(11f, 18f, 4.2f, 19f) },
+            sheepBridges = { new Vector3(22f, 26f, 4.2f) },
+            sticker = new Vector3(31f, 6.6f, 0f),
+        };
+    }
+
+    // سماء النجوم: توصلين النجوم وتصير جسر من نور، قمر نايم تصحينه يشيل الظلام، وفانوس طاير يرفعك
+    static LevelData StarsLevel()
+    {
+        return new LevelData
+        {
+            ambience = "stars",
+            dreamStyle = 2,
+            title = "سماء النجوم",
+            theme = LevelTheme.StarNight(),
+            subtitle = "الحلم صار ليل... وصلي النجوم وصحي القمر",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(35f, 3.5f, 0f),
+            ink = 30f,
+            blocks =
+            {
+                Page(-7f, 6f),
+                Page(10.5f, 24.8f),
+                Wall(24.8f, 40f, 3.5f),
+            },
+            constellations = { new Vector4(6f, 10.5f, 0f, 3f) },
+            moonFogs = { new Vector4(14f, 20f, 0f, 17f) },
+            lanternLifts = { new Vector3(24f, 0f, 3.5f) },
+            sticker = new Vector3(30f, 6f, 0f),
+        };
+    }
+
+    // الكابوس والنور (نهاية فصل الأحلام): ظل يلحقك ويخاف من اللمبات، وحش بالظلام تبي له ابتسامة، ومنبه يصحي رويدا
+    static LevelData NightmareLevel()
+    {
+        return new LevelData
+        {
+            ambience = "nightmare",
+            dreamStyle = 3,
+            title = "الكابوس والنور",
+            theme = LevelTheme.Nightmare(),
+            subtitle = "الحلم صار كابوس! ارسمي لمبات تطرد الظل، وصحي رويدا قبل ما يوصلها",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(36f, 0f, 0f),
+            ink = 35f,
+            blocks =
+            {
+                Page(-7f, 17f),
+                Page(20f, 40f),
+            },
+            shadowChase = new Vector4(-14f, 40f, 2.6f, 0f),
+            scaryEyes = { new Vector2(10f, 0f) },
+            alarmWakes = { new Vector2(30f, 0f) },
+            sticker = new Vector3(18.5f, 3.5f, 0f),
         };
     }
 

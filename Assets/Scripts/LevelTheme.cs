@@ -525,6 +525,51 @@ public class LevelTheme
         ringColor = new Color(0.4f, 0.2f, 0.25f),
     };
 
+    // الحلم: سما وردية وبنفسجية ناعمة وغيوم قطن
+    public static LevelTheme Dream() => new LevelTheme
+    {
+        name = "Dream",
+        paper = new Color(1f, 0.96f, 0.98f), pattern = PaperPattern.Dots, patternColor = new Color(0.85f, 0.6f, 0.9f), colorfulDoodles = true,
+        pageEdge = new Color(0.9f, 0.75f, 0.92f), pencil = new Color(0.45f, 0.35f, 0.6f), doodleColor = new Color(0.8f, 0.5f, 0.85f),
+        skyTop = new Color(0.55f, 0.55f, 0.95f), skyMid = new Color(0.95f, 0.7f, 0.9f), skyBottom = new Color(1f, 0.88f, 0.8f),
+        sun = true, moonColor = new Color(2.6f, 2.3f, 2.4f), stars = 0.2f, cloudTint = new Color(1.2f, 1.1f, 1.2f), cloudAlpha = 0.9f,
+        sunLight = new Color(1f, 0.9f, 0.95f), sunIntensity = 1.3f, sunAngles = new Vector3(40f, -30f, 0f),
+        ambientSky = new Color(0.95f, 0.85f, 1f), ambientEquator = new Color(0.8f, 0.7f, 0.8f), ambientGround = new Color(0.4f, 0.32f, 0.42f),
+        fog = new Color(1f, 0.85f, 0.95f), props = PropSet.Origami, floating = FloatKind.Sparkles,
+        floatColors = new[] { new Color(1f, 0.85f, 1f), new Color(0.8f, 0.9f, 1f), new Color(1f, 1f, 0.8f) },
+        ringColor = new Color(0.55f, 0.45f, 0.65f),
+    };
+
+    // سماء النجوم: كحلي غامق ونجوم كثيرة
+    public static LevelTheme StarNight() => new LevelTheme
+    {
+        name = "StarNight",
+        paper = new Color(0.85f, 0.88f, 1f), pattern = PaperPattern.Dots, patternColor = new Color(0.55f, 0.6f, 0.95f), colorfulDoodles = true,
+        pageEdge = new Color(0.6f, 0.62f, 0.85f), pencil = new Color(0.2f, 0.22f, 0.45f), doodleColor = new Color(0.6f, 0.65f, 1f),
+        skyTop = new Color(0.02f, 0.02f, 0.1f), skyMid = new Color(0.08f, 0.08f, 0.28f), skyBottom = new Color(0.25f, 0.18f, 0.45f),
+        moonColor = new Color(2.6f, 2.5f, 2f), stars = 1f, cloudTint = new Color(0.4f, 0.4f, 0.7f), cloudAlpha = 0.35f,
+        sunLight = new Color(0.7f, 0.75f, 1f), sunIntensity = 0.85f, sunAngles = new Vector3(40f, -35f, 0f),
+        ambientSky = new Color(0.4f, 0.42f, 0.7f), ambientEquator = new Color(0.3f, 0.3f, 0.5f), ambientGround = new Color(0.1f, 0.1f, 0.2f),
+        fog = new Color(0.1f, 0.1f, 0.25f), props = PropSet.Space, floating = FloatKind.Fireflies,
+        floatColors = new[] { new Color(1.6f, 1.5f, 0.8f), new Color(1f, 1.3f, 1.8f) },
+        ringColor = new Color(0.35f, 0.35f, 0.6f),
+    };
+
+    // الكابوس: بنفسجي غامق وأسود وضباب
+    public static LevelTheme Nightmare() => new LevelTheme
+    {
+        name = "Nightmare",
+        paper = new Color(0.8f, 0.78f, 0.85f), pattern = PaperPattern.Blank, patternColor = new Color(0.4f, 0.35f, 0.5f), colorfulDoodles = false,
+        pageEdge = new Color(0.45f, 0.4f, 0.5f), pencil = new Color(0.15f, 0.12f, 0.2f), doodleColor = new Color(0.35f, 0.3f, 0.45f),
+        skyTop = new Color(0.02f, 0.01f, 0.04f), skyMid = new Color(0.12f, 0.05f, 0.18f), skyBottom = new Color(0.3f, 0.12f, 0.3f),
+        moonColor = new Color(2f, 1.6f, 2.2f), stars = 0.3f, cloudTint = new Color(0.3f, 0.2f, 0.35f), cloudAlpha = 0.6f,
+        sunLight = new Color(0.7f, 0.6f, 0.85f), sunIntensity = 0.6f, sunAngles = new Vector3(35f, -40f, 0f),
+        ambientSky = new Color(0.32f, 0.25f, 0.42f), ambientEquator = new Color(0.22f, 0.18f, 0.28f), ambientGround = new Color(0.06f, 0.05f, 0.08f),
+        fog = new Color(0.12f, 0.06f, 0.16f), props = PropSet.Ink, floating = FloatKind.Fireflies,
+        floatColors = new[] { new Color(1.2f, 0.6f, 1.6f), new Color(0.6f, 1f, 1.4f) },
+        ringColor = new Color(0.3f, 0.25f, 0.35f),
+    };
+
     // البحر: ورق أزرق فاتح، سما صيف صافية، وشمس
     public static LevelTheme Ocean() => new LevelTheme
     {

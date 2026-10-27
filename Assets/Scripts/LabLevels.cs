@@ -16,6 +16,7 @@ public static class LabFeatures
         if (data.slimeChase.y > data.slimeChase.x) SlimeChase.Create(root, data.slimeChase.x, data.slimeChase.y, gm);
         LabFeatures2.Build(root, data, gm);
         GameFeatures.Build(root, data, gm, rng);
+        DreamFeatures.Build(root, data, gm, rng);
         if (data.lab > 0) LabScenery.Create(root, data, gm, rng);
     }
 
