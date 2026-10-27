@@ -613,9 +613,9 @@ public class GameManager : MonoBehaviour
         volume.profile = profile;
 
         var bloom = profile.Add<Bloom>(true);
-        bloom.intensity.Override(0.6f);
-        bloom.threshold.Override(0.9f);
-        bloom.scatter.Override(0.72f);
+        bloom.intensity.Override(0.4f);
+        bloom.threshold.Override(1f);
+        bloom.scatter.Override(0.65f);
         bloom.highQualityFiltering.Override(true);
 
         var vignette = profile.Add<Vignette>(true);
@@ -635,14 +635,5 @@ public class GameManager : MonoBehaviour
         var smh = profile.Add<ShadowsMidtonesHighlights>(true);
         smh.shadows.Override(new Vector4(0.96f, 0.95f, 1.06f, 0f));
         smh.highlights.Override(new Vector4(1.04f, 1.02f, 0.97f, 0f));
-
-        // الخلفية البعيدة تغبش شوي عشان رويدا والعقبات يبانون (يتعدل كل فريم حسب بعد الكاميرا)
-        var dof = profile.Add<DepthOfField>(true);
-        dof.mode.Override(DepthOfFieldMode.Gaussian);
-        dof.gaussianStart.Override(14f);
-        dof.gaussianEnd.Override(34f);
-        dof.gaussianMaxRadius.Override(1.1f);
-        dof.highQualitySampling.Override(true);
-        cam.gameObject.AddComponent<DofFocus>().dof = dof;
     }
 }
