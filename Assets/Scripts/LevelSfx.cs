@@ -126,6 +126,18 @@ public static class LevelSfx
         }
     }
 
+    // نغمة مربعة (صوت ألعاب الفيديو القديمة)
+    static void AddSquare(float[] b, float start, float dur, float freq, float vol, float decay = 4f)
+    {
+        int s = Mathf.RoundToInt(start * Rate), n = Mathf.RoundToInt(dur * Rate);
+        for (int i = 0; i < n && s + i < b.Length; i++)
+        {
+            float t = i / (float)Rate;
+            float env = Mathf.Clamp01(t / 0.003f) * Mathf.Exp(-t * decay) * Mathf.Clamp01((dur - t) / 0.01f);
+            b[s + i] += (Mathf.Repeat(freq * t, 1f) < 0.5f ? 1f : -1f) * vol * env;
+        }
+    }
+
     static void AddClick(float[] b, float start, float freq, float vol, System.Random r)
     {
         int s = Mathf.RoundToInt(start * Rate);
@@ -1340,6 +1352,136 @@ public static class LevelSfx
                 }
                 return Normalize(b, 0.55f);
             }
+            // ---------- فصل الألعاب والبرمجة ----------
+            case "coin":
+            {
+                // عملة لعبة قديمة: دينق-دييينق
+                b = Buf(0.45f);
+                AddSquare(b, 0f, 0.07f, 988f, 0.5f);
+                AddSquare(b, 0.07f, 0.35f, 1319f, 0.5f, 9f);
+                return Normalize(b, 0.45f);
+            }
+            case "blip":
+            {
+                // نطة 8 بت (تطلع)
+                b = Buf(0.18f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate, f = Mathf.Lerp(300f, 950f, t / 0.18f);
+                    b[i] = (Mathf.Repeat(f * t, 1f) < 0.5f ? 1f : -1f) * 0.4f * (1f - t / 0.18f);
+                }
+                return Normalize(b, 0.4f);
+            }
+            case "powerup":
+            {
+                b = Buf(0.6f);
+                float[] notes = { 523f, 659f, 784f, 1047f, 1319f, 1568f };
+                for (int k = 0; k < notes.Length; k++) AddSquare(b, k * 0.07f, 0.12f, notes[k], 0.4f, 10f);
+                return Normalize(b, 0.45f);
+            }
+            case "pxbuzz":
+            {
+                // خطأ: بززز
+                b = Buf(0.45f);
+                AddSquare(b, 0f, 0.18f, 150f, 0.5f, 2f);
+                AddSquare(b, 0.22f, 0.2f, 120f, 0.5f, 2f);
+                return Normalize(b, 0.45f);
+            }
+            case "type":
+            {
+                // كيبورد يطقطق
+                b = Buf(0.5f);
+                for (int k = 0; k < 5; k++) AddClick(b, k * 0.08f + (float)r.NextDouble() * 0.03f, 2500f + r.Next(1500), 0.7f, r);
+                return Normalize(b, 0.4f);
+            }
+            case "count":
+            {
+                b = Buf(0.15f);
+                AddSquare(b, 0f, 0.12f, 1175f, 0.5f, 18f);
+                return Normalize(b, 0.4f);
+            }
+            case "save":
+            {
+                // حفظ: لحن فوز صغير
+                b = Buf(1.3f);
+                float[] notes = { 523f, 659f, 784f, 1047f };
+                for (int k = 0; k < notes.Length; k++) AddSquare(b, k * 0.12f, 0.16f, notes[k], 0.4f, 6f);
+                AddSquare(b, 0.5f, 0.7f, 1047f, 0.35f, 3f);
+                AddSquare(b, 0.5f, 0.7f, 1319f, 0.25f, 3f);
+                return Normalize(b, 0.5f);
+            }
+            case "glitch":
+            {
+                // تشويش فيروس: ضوضاء متقطعة
+                b = Buf(0.6f);
+                float hold = 0f;
+                for (int i = 0; i < b.Length; i++)
+                {
+                    if (i % (Rate / 400 + r.Next(40)) == 0) hold = Noise(r);
+                    b[i] = hold * (r.NextDouble() < 0.0005 ? 0f : 0.6f) * (Mathf.Repeat(i / (float)Rate * 9f, 1f) < 0.6f ? 1f : 0.1f);
+                }
+                return Normalize(b, 0.4f);
+            }
+            case "popup":
+            {
+                b = Buf(0.4f);
+                AddTone(b, 0f, 0.3f, 880f, 0.5f, 10f, 0.1f);
+                AddTone(b, 0.08f, 0.3f, 1320f, 0.5f, 10f, 0.1f);
+                return Normalize(b, 0.4f);
+            }
+            case "bugzap":
+            {
+                b = Buf(0.35f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate, f = Mathf.Lerp(1400f, 180f, t / 0.35f);
+                    b[i] = (Mathf.Repeat(f * t, 1f) < 0.5f ? 1f : -1f) * 0.4f * (1f - t / 0.35f);
+                }
+                return Normalize(b, 0.4f);
+            }
+            case "amb_pixel":
+            {
+                // موسيقى لعبة قديمة: باص مربع ولحن نطاط
+                b = Buf(6.4f);
+                float[] bass = { 131f, 131f, 175f, 196f };
+                float[] mel = { 523f, 659f, 784f, 659f, 698f, 880f, 784f, 659f, 587f, 698f, 880f, 698f, 784f, 659f, 523f, 587f };
+                for (int bar = 0; bar < 4; bar++)
+                    for (int k = 0; k < 4; k++) AddSquare(b, bar * 1.6f + k * 0.4f, 0.3f, bass[bar], 0.25f, 4f);
+                for (int k = 0; k < 32; k++) AddSquare(b, k * 0.2f, 0.16f, mel[k % mel.Length] * (k >= 16 ? 1f : 1f), 0.16f, 8f);
+                return Normalize(Loop(b, 0.05f), 0.32f);
+            }
+            case "amb_code":
+            {
+                // جو برمجة: نغمة هادية وطقطقة كيبورد
+                b = Buf(8f);
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    b[i] = (Mathf.Sin(2f * Mathf.PI * 110f * t) * 0.5f + Mathf.Sin(2f * Mathf.PI * 165f * t) * 0.3f) * 0.08f * (0.7f + 0.3f * Mathf.Sin(t * 0.8f));
+                }
+                float[] arp = { 440f, 523f, 659f, 784f };
+                for (int k = 0; k < 32; k++) AddTone(b, k * 0.25f, 0.2f, arp[k % 4] * (k % 8 < 4 ? 1f : 0.75f), 0.05f, 12f, 0.1f);
+                for (int k = 0; k < 40; k++) AddClick(b, (float)r.NextDouble() * 7.8f, 2500f + r.Next(1500), 0.25f, r);
+                return Normalize(Loop(b, 0.4f), 0.35f);
+            }
+            case "amb_numbers":
+            {
+                // صندوق موسيقى ناعم
+                b = Buf(8f);
+                float[] scale = { 523f, 587f, 659f, 784f, 880f, 1047f };
+                for (int k = 0; k < 24; k++) AddTone(b, k * 0.33f, 0.9f, scale[r.Next(scale.Length)], 0.12f, 5f, 0.05f);
+                return Normalize(Loop(b, 0.4f), 0.3f);
+            }
+            case "amb_boss":
+            {
+                // معركة الزعيم: باص يدق ونبض وتشويش
+                b = Buf(4.8f);
+                for (int k = 0; k < 24; k++) AddSquare(b, k * 0.2f, 0.15f, k % 8 == 6 ? 82f : 55f, 0.35f, 6f);
+                float[] mel = { 220f, 233f, 220f, 196f, 220f, 262f, 247f, 233f };
+                for (int k = 0; k < 8; k++) AddSquare(b, k * 0.6f, 0.4f, mel[k] * 2f, 0.12f, 3f);
+                for (int k = 0; k < 10; k++) { int s = r.Next(b.Length - Rate / 10); for (int i = 0; i < Rate / 30; i++) b[s + i] += Noise(r) * 0.15f; }
+                return Normalize(Loop(b, 0.05f), 0.38f);
+            }
             case "shark":
             {
                 // دن... دن (موسيقى القرش)
@@ -1379,6 +1521,9 @@ public class AmbiencePlayer : MonoBehaviour
             case "chase": extras = new[] { "mouse" }; minGap = 3f; maxGap = 6f; volume = 0.3f; break;
             case "kitchen": extras = new[] { "clank", "boil", "tick" }; minGap = 4f; maxGap = 8f; volume = 0.25f; break;
             case "candy": extras = new[] { "chime", "pop" }; minGap = 3f; maxGap = 6f; volume = 0.25f; break;
+            case "code": extras = new[] { "type", "count" }; minGap = 3f; maxGap = 6f; volume = 0.2f; break;
+            case "numbers": extras = new[] { "chime" }; minGap = 5f; maxGap = 9f; volume = 0.2f; break;
+            case "boss": extras = new[] { "glitch" }; minGap = 4f; maxGap = 7f; volume = 0.25f; break;
         }
         nextAt = Time.time + Random.Range(2f, 5f);
     }

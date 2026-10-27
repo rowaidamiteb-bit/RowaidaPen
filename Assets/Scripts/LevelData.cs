@@ -228,6 +228,20 @@ public class LevelData
     public Vector4 volcano;                                  // رغوة البركان (من x، لـ x، بداية الارتفاع، السرعة)
     public List<Vector4> robotHelpers = new List<Vector4>(); // روبوت يقلد الخطوط (من x، لـ x، إزاحة x، إزاحة y)
     public List<Vector3> blastFlasks = new List<Vector3>();  // دورق ينفجر (x، سطح، كل كم ثانية)
+    public int gameStyle;                                    // منظر فصل الألعاب: 1 بكسل، 2 كود، 3 أرقام، 4 الزعيم
+    public bool pixelInk;                                    // الخطوط تصير مكعبات بكسل
+    public List<Vector4> coinGates = new List<Vector4>();    // عملات وجدار طوب (من x، لـ x، سطح، x الجدار)
+    public List<Vector4> pixelCreatures = new List<Vector4>(); // وحش بكسل يمشي (من x، لـ x، سطح)
+    public List<Vector4> breakouts = new List<Vector4>();    // تكسير الطوب (بداية الحفرة، نهايتها، سطح، x الطوب)
+    public List<Vector4> commandLifts = new List<Vector4>(); // منصة تبرمجينها بالأسهم (x، سطح، كم تطلع، كم تمشي يمين)
+    public List<Vector4> bugCatches = new List<Vector4>();   // حشرة باق (x، سطح، x جدار الخطأ)
+    public List<Vector4> loopDoors = new List<Vector4>();    // باب حلقة تكرار (x الباب، سطح)
+    public List<Vector4> tallyGates = new List<Vector4>();   // بوابة رقم (x، سطح، الرقم، x المربع)
+    public List<Vector4> numberScales = new List<Vector4>(); // ميزان أرقام وجسر (x الميزان، سطح، الرقم، بداية الحفرة)
+    public List<Vector4> calculators = new List<Vector4>();  // آلة حاسبة تطبع درج (x الجدار، سطح، الرقم الأول، الثاني)
+    public Vector4 virusBoss;                                // فيروس يلحق (من x، لـ x، السرعة)
+    public List<Vector2> popups = new List<Vector2>();       // إعلان يسد الطريق (x، سطح)
+    public List<Vector2> saveButtons = new List<Vector2>();  // زر الحفظ (x، سطح)
     public List<Vector3> deadTrees = new List<Vector3>();   // شجرة يابسة تنطاح جسر (من x، لـ x، سطحها)
     public List<Vector2> webs = new List<Vector2>();        // شبكة عنكبوت تسد الطريق (x، سطح الأرض)
     public List<Vector3> owls = new List<Vector3>();        // بومة تراقب (x، سطح الأرض، مسافة المراقبة)
@@ -307,6 +321,10 @@ public static class Levels
         LabAcidLevel(),
         LabReactionLevel(),
         LabMadLevel(),
+        PixelLevel(),
+        CodeLevel(),
+        NumbersLevel(),
+        BossLevel(),
         LastPage(),
     };
 
@@ -1593,6 +1611,110 @@ public static class Levels
             robotHelpers = { new Vector4(4.5f, 24f, 6f, 2.4f) },
             blastFlasks = { new Vector3(11.6f, 2.4f, 3.6f), new Vector3(38f, 12f, 3.6f) },
             sticker = new Vector3(40f, 14.4f, 0f),
+        };
+    }
+
+    // ===== الجزء الثالث: الألعاب والبرمجة =====
+
+    // عالم البكسل: خطوطك تصير مكعبات، عملات تجمعينها بخط وتكسر جدار الطوب، وحش بكسل تحبسينه بصندوق، ولعبة تكسير الطوب
+    static LevelData PixelLevel()
+    {
+        return new LevelData
+        {
+            ambience = "pixel",
+            gameStyle = 1,
+            pixelInk = true,
+            title = "عالم البكسل",
+            theme = LevelTheme.Pixel(),
+            subtitle = "رويدا دخلت لعبة فيديو قديمة! كل خط ترسمينه يصير بكسل",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(34f, 0f, 0f),
+            ink = 30f,
+            blocks =
+            {
+                Page(-7f, 18.5f),
+                Page(22.5f, 40f),
+            },
+            coinGates = { new Vector4(1.5f, 6.5f, 0f, 8f) },
+            pixelCreatures = { new Vector4(11f, 16f, 0f, 0f) },
+            breakouts = { new Vector4(18.5f, 22.5f, 0f, 23.3f) },
+            sticker = new Vector3(29f, 2.6f, 0f),
+        };
+    }
+
+    // الكود: ارسمي أسهم على الشاشة تبرمج المنصة، حوطي حشرة الباق، واقطعي حلقة التكرار
+    static LevelData CodeLevel()
+    {
+        return new LevelData
+        {
+            ambience = "code",
+            gameStyle = 2,
+            title = "الكود",
+            theme = LevelTheme.Code(),
+            subtitle = "برمجي المنصة بالأسهم، امسكي الباق، واقطعي الحلقة اللي ما توقف",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(34f, 3f, 0f),
+            ink = 25f,
+            blocks =
+            {
+                Page(-7f, 6.8f),
+                Wall(10.8f, 40f, 3f),
+            },
+            commandLifts = { new Vector4(6f, 0f, 3f, 4f) },
+            bugCatches = { new Vector4(15f, 3f, 18.5f, 0f) },
+            loopDoors = { new Vector4(25f, 3f, 0f, 0f) },
+            sticker = new Vector3(30f, 5.4f, 0f),
+        };
+    }
+
+    // لعبة الأرقام: بوابة تبي عدد خطوط بالضبط، ميزان تتوازنينه بالدواير، وآلة حاسبة تطبع درج
+    static LevelData NumbersLevel()
+    {
+        return new LevelData
+        {
+            ambience = "numbers",
+            gameStyle = 3,
+            title = "لعبة الأرقام",
+            theme = LevelTheme.Numbers(),
+            subtitle = "عدي صح! كل بوابة وميزان وآلة حاسبة تبي الرقم الصح بالضبط",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(37f, 3f, 0f),
+            ink = 30f,
+            blocks =
+            {
+                Page(-7f, 16f),
+                Page(20f, 31f),
+                Wall(31f, 40f, 3f),
+            },
+            tallyGates = { new Vector4(7f, 0f, 3f, 3.5f) },
+            numberScales = { new Vector4(13f, 0f, 3f, 16f) },
+            calculators = { new Vector4(31f, 0f, 2f, 3f) },
+            sticker = new Vector3(18f, 2.8f, 0f),
+        };
+    }
+
+    // الزعيم الأخير (نهاية فصل الألعاب): فيروس عملاق يلحقك ويخرب الخطوط، جدران حماية توقفه، إعلانات تسد الطريق، وزر الحفظ بالآخر
+    static LevelData BossLevel()
+    {
+        return new LevelData
+        {
+            ambience = "boss",
+            gameStyle = 4,
+            title = "الزعيم الأخير",
+            theme = LevelTheme.Boss(),
+            subtitle = "فيروس عملاق يلحقك! ارسمي جدران حماية، سكري الإعلانات، واحفظي اللعبة",
+            spawn = new Vector3(-5f, 1f, 0f),
+            door = new Vector3(40f, 0f, 0f),
+            ink = 35f,
+            blocks =
+            {
+                Page(-7f, 14f),
+                Page(17f, 46f),
+            },
+            virusBoss = new Vector4(-18f, 46f, 2.3f, 0f),
+            popups = { new Vector2(8f, 0f), new Vector2(25f, 0f) },
+            saveButtons = { new Vector2(35f, 0f) },
+            sticker = new Vector3(15.5f, 4f, 0f),
         };
     }
 
