@@ -110,12 +110,6 @@ public class FreezePool : MonoBehaviour
         body.localRotation = Quaternion.Euler(0f, 0f, 75f);
         for (int k = 0; k < 3; k++) LevelBuilder.Visual("Gun Coil", PrimitiveType.Cylinder, body, new Vector3(0f, -0.5f + k * 0.45f, 0f), new Vector3(1.12f, 0.08f, 1.12f), coldGlow, false);
         LevelBuilder.Visual("Gun Tank", PrimitiveType.Sphere, go.transform, g + new Vector3(-0.1f, 2.55f, -0.3f), Vector3.one * 0.55f, LabFeatures2.Tint("Gun Tank", new Color(0.5f, 0.85f, 1f, 0.7f)), false);
-        // نقاط ثلج حول البوز: من هنا ابدئي الرسم
-        for (int k = 0; k < 8; k++)
-        {
-            float a = k / 8f * Mathf.PI * 2f;
-            LevelBuilder.Visual("Start Dot", PrimitiveType.Sphere, go.transform, f.nozzle + new Vector3(Mathf.Cos(a) * 0.4f, Mathf.Sin(a) * 0.4f, -0.3f), Vector3.one * 0.09f, coldGlow, false);
-        }
         // الدفاية الحارة جنب المويه
         Vector3 hp = new Vector3(f.to + 0.2f, f.top - 0.5f, 1.9f);
         for (int k = 0; k < 5; k++) LevelBuilder.Visual("Heater Fin", PrimitiveType.Cube, go.transform, hp + new Vector3(-0.8f + k * 0.4f, 1f, 0f), new Vector3(0.22f, 1.6f, 0.3f), gm.Mat("Heater", new Color(0.85f, 0.85f, 0.88f), 0.6f, 0.3f));
@@ -230,11 +224,6 @@ public class IceWall : MonoBehaviour
         LevelBuilder.Visual("Burner Hose", PrimitiveType.Cylinder, go.transform, b + new Vector3(-0.5f, 0.15f, 0.3f), new Vector3(0.1f, 0.4f, 0.1f), gm.Mat("Hose Orange", new Color(1f, 0.5f, 0.2f), 0.4f)).transform.localRotation = Quaternion.Euler(0f, 0f, 80f);
         w.flameOuter = LevelBuilder.Visual("Flame", PrimitiveType.Sphere, go.transform, b + new Vector3(0f, 1.35f, 0f), new Vector3(0.35f, 0.7f, 0.35f), gm.Mat("Flame Orange", new Color(2.4f, 0.9f, 0.2f), 0.5f), false).transform;
         w.flameInner = LevelBuilder.Visual("Flame Core", PrimitiveType.Sphere, go.transform, b + new Vector3(0f, 1.25f, -0.05f), new Vector3(0.2f, 0.45f, 0.2f), gm.Mat("Flame Blue", new Color(0.4f, 0.8f, 2.4f), 0.5f), false).transform;
-        for (int k = 0; k < 8; k++)
-        {
-            float a = k / 8f * Mathf.PI * 2f;
-            LevelBuilder.Visual("Start Dot", PrimitiveType.Sphere, go.transform, w.flame + new Vector3(Mathf.Cos(a) * 0.45f, Mathf.Sin(a) * 0.45f, -0.3f), Vector3.one * 0.09f, gm.Mat("Flame Orange", new Color(2.4f, 0.9f, 0.2f), 0.5f), false);
-        }
     }
 
     void Update()
@@ -698,12 +687,6 @@ public class PulleyLift : MonoBehaviour
         p.bucketRb.isKinematic = true;
         p.bucketRb.interpolation = RigidbodyInterpolation.Interpolate;
         p.bucket = bk.transform;
-        // نقاط حول السطل: هنا تطيح الدايرة
-        for (int k = 0; k < 10; k++)
-        {
-            float a = k / 10f * Mathf.PI * 2f;
-            LevelBuilder.Visual("Drop Dot", PrimitiveType.Sphere, bk.transform, new Vector3(Mathf.Cos(a) * 0.55f, 2f + Mathf.Sin(a) * 0.55f, -0.5f), Vector3.one * 0.09f, gm.Mat("Hazard Yellow", new Color(1f, 0.82f, 0.15f), 0.4f), false);
-        }
     }
 
     void Update()

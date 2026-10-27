@@ -161,12 +161,6 @@ public class LiquidNetwork : MonoBehaviour
             t.valve.SetParent(go.transform, false);
             t.valve.position = new Vector3(s.x, s.y - 0.55f, -0.05f);
             for (int k = 0; k < 2; k++) LevelBuilder.Visual("Valve Bar", PrimitiveType.Cube, t.valve, Vector3.zero, new Vector3(0.5f, 0.06f, 0.06f), LabFeatures.Glow(gm, c, 1f), false).transform.localRotation = Quaternion.Euler(0f, 0f, k * 90f);
-            // نقطة منقطة تحت البوز: من هنا ابدئي الرسم
-            for (int k = 0; k < 8; k++)
-            {
-                float a = k / 8f * Mathf.PI * 2f;
-                LevelBuilder.Visual("Start Dot", PrimitiveType.Sphere, go.transform, t.nozzle + new Vector3(Mathf.Cos(a) * 0.35f, Mathf.Sin(a) * 0.35f, 0f), Vector3.one * 0.07f, LabFeatures.Glow(gm, c, 1f), false);
-            }
             n.taps.Add(t);
         }
         foreach (Vector4 s in data.labFlasks)
@@ -184,11 +178,6 @@ public class LiquidNetwork : MonoBehaviour
             // شارة اللون المطلوب قدام الدورق
             LevelBuilder.Visual("Need Badge", PrimitiveType.Cylinder, go.transform, b + new Vector3(0f, 0.7f, -0.9f), new Vector3(0.55f, 0.03f, 0.55f), gm.Mat("Badge White", Color.white, 0.4f), false).transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             LevelBuilder.Visual("Need Color", PrimitiveType.Cylinder, go.transform, b + new Vector3(0f, 0.7f, -0.93f), new Vector3(0.42f, 0.03f, 0.42f), LabFeatures.Glow(gm, need, 1.2f), false).transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            for (int k = 0; k < 10; k++)
-            {
-                float a = k / 10f * Mathf.PI * 2f;
-                LevelBuilder.Visual("End Dot", PrimitiveType.Sphere, go.transform, f.mouth + new Vector3(Mathf.Cos(a) * 0.5f, 0.15f + Mathf.Sin(a) * 0.3f, -0.5f), Vector3.one * 0.07f, LabFeatures.Glow(gm, need, 1f), false);
-            }
             // البوابة الزجاج
             f.gate = new GameObject("Glass Gate").transform;
             f.gate.SetParent(go.transform, false);
