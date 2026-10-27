@@ -118,7 +118,7 @@ public static class LabFeatures
 public class LiquidNetwork : MonoBehaviour
 {
     class Tap { public Vector3 nozzle; public int bit; public Transform valve; public float nextDrop; public InkMark mark; public Vector3[] path; public float[] cum; }
-    class Flask { public Vector3 mouth; public int need, bits; public float level, mudT = -1f; public Transform liquid, gate; public float gateX, openT = -1f; public BoxCollider gateCol; public Renderer liquidR, lamp; public bool prompted, holding; public float lastPour; public HintGhost hint; public float hintT; }
+    class Flask { public Vector3 mouth; public int need, bits; public float level, mudT = -1f; public Transform liquid, gate; public float gateX, openT = -1f; public BoxCollider gateCol; public Renderer liquidR, lamp; public bool prompted, holding; public float lastPour; }
     class Drop { public Transform t; public Tap tap; public float d; public Vector3[] path; public float[] cum; }
 
     readonly List<Tap> taps = new List<Tap>();
@@ -126,21 +126,6 @@ public class LiquidNetwork : MonoBehaviour
     readonly List<Drop> drops = new List<Drop>();
     GameManager gm;
     float nextPourSound;
-
-    // التلميح: أنبوب من كل خزان لونه بالخلطة وما انوصل للحين، لين فم الدورق
-    List<Vector3[]> PipeHint(Flask f)
-    {
-        var list = new List<Vector3[]>();
-        foreach (Tap tap in taps)
-        {
-            if ((tap.bit & f.need) == 0) continue;
-            if (tap.mark != null && tap.path != null && Vector2.Distance(tap.path[tap.path.Length - 1], f.mouth) < 1.6f) continue;
-            Vector3 end = f.mouth + new Vector3(0f, 0.4f, 0f);
-            Vector3 mid = Vector3.Lerp(tap.nozzle, end, 0.5f) + new Vector3(0f, 0.3f, 0f);
-            list.Add(new[] { tap.nozzle, mid, end });
-        }
-        return list;
-    }
 
     public static void Create(Transform root, LevelData data, GameManager gm)
     {
@@ -302,8 +287,6 @@ public class LiquidNetwork : MonoBehaviour
             bool wait = f.openT < 0f && HoldHelper.Before(f.gateX - 0.3f);
             if (wait && !f.prompted) { f.prompted = true; gm.UI.ShowMessage("", 3.6f, "البوابة تبي لون " + LabFeatures.ColorName(f.need) + "! ارسمي أنابيب من الخزانات للدورق وخلطي الألوان"); }
             HoldHelper.Hold(ref f.holding, wait);
-            Flask ff = f;
-            HintGhost.Tick(ref f.hint, ref f.hintT, wait, () => PipeHint(ff));
         }
         if (drops.Count > 0 && t > nextPourSound && r != null && Mathf.Abs(r.transform.position.x - drops[0].t.position.x) < 14f) { nextPourSound = t + 1.4f; LevelSfx.Play("pour", 0.35f, Random.Range(0.9f, 1.1f)); }
     }
@@ -331,7 +314,6 @@ public class LiquidNetwork : MonoBehaviour
 // سلايم أخضر صغير جنب حفرة: ارسمي دواير قريب منه، ياكلها ويكبر. لما يكبر ثلاث مرات ينط بالحفرة ويتمدد جسر جيلي
 public class SlimeFriend : MonoBehaviour
 {
-    HintGhost hint; float hintT;   // قلم التلميح
     float from, to, top, homeX, jumpT = -1f, chewT;
     int size;
     bool holding, prompted;
@@ -444,7 +426,6 @@ public class SlimeFriend : MonoBehaviour
 
         bool wait = HoldHelper.Before(from) && !bridge.enabled && !RowaidaController.BridgeCovers(from, to, top);
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "سلايم جوعان! ارسمي له دواير ياكلها... يكبر ويساعدك"); }
-        HintGhost.Tick(ref hint, ref hintT, wait && jumpT < 0f, () => new List<Vector3[]> { HintGhost.Circle(new Vector3(homeX + 2.2f, top + 3f, 0f)) }, () => "x" + (3 - size));
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -454,7 +435,6 @@ public class SlimeFriend : MonoBehaviour
 // بطارية عملاقة ومصعد: ارسمي سلك من طرف البطارية (+) لمحرك المصعد فوق. الكهربا تمشي بالسلك (شرار)، والمصعد يرفع رويدا
 public class CircuitLift : MonoBehaviour
 {
-    HintGhost hint; float hintT;   // قلم التلميح
     float bx, top, liftX, height, riseT = -1f;
     bool holding, prompted, delivered;
     Vector3 termA, termB;
@@ -569,7 +549,6 @@ public class CircuitLift : MonoBehaviour
         // رويدا توقف على المصعد لين يوصل فوق
         bool wait = r != null && gm.IsPlaying && !delivered && r.transform.position.x > liftX - 0.7f && r.transform.position.x < liftX + 0.3f && r.transform.position.y - top < height + 1.5f;
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "المصعد طافي! ارسمي سلك من طرف البطارية للمحرك فوق"); }
-        HintGhost.Tick(ref hint, ref hintT, wait && wire == null, () => new List<Vector3[]> { new[] { termA, Vector3.Lerp(termA, termB, 0.5f) + new Vector3(-0.3f, 0.3f, 0f), termB } });
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -579,7 +558,6 @@ public class CircuitLift : MonoBehaviour
 // بركة حمض أخضر يضوي: الخطوط تذوب فيه. ارسمي دواير صودا: تطيح وتفور رغوة بيضا تتمدد لين تلمس اللي جنبها... وتصير أرض
 public class AcidPool : MonoBehaviour
 {
-    HintGhost hint; float hintT;   // قلم التلميح
     class Island { public Transform t; public BoxCollider col; public float left, right, center; public float born; }
     float from, to, top;
     bool holding, prompted;
@@ -685,23 +663,7 @@ public class AcidPool : MonoBehaviour
         }
         bool wait = HoldHelper.Before(from) && !Covered();
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "بركة حمض! الخطوط تذوب... ارسمي دواير صودا تفور وتصير رغوة"); }
-        HintGhost.Tick(ref hint, ref hintT, wait, AcidHint);
         HoldHelper.Hold(ref holding, wait);
-    }
-
-    // التلميح: دواير صودا موزعة على البركة (اللي مكانها للحين ما فيه رغوة)
-    List<Vector3[]> AcidHint()
-    {
-        var list = new List<Vector3[]>();
-        int n = Mathf.Max(1, Mathf.CeilToInt((to - from) / 3.6f));
-        for (int k = 0; k < n; k++)
-        {
-            float cx = from + (k + 0.5f) * (to - from) / n;
-            bool foamed = false;
-            foreach (Island i in islands) if (cx > i.left - 0.2f && cx < i.right + 0.2f) foamed = true;
-            if (!foamed) list.Add(HintGhost.Circle(new Vector3(cx, top + 2f, 0f)));
-        }
-        return list;
     }
 
     Island MakeIsland(float x)
@@ -732,7 +694,6 @@ public class LaserSpec
 // جهاز ليزر يطلق شعاع أحمر. ارسمي خطوط مستقيمة: تصير مرايا يرتد عليها الشعاع. وصلي الشعاع للحساس (من فوق) ينفتح الباب
 public class LaserMirror : MonoBehaviour
 {
-    HintGhost hint; float hintT;   // قلم التلميح
     LaserSpec spec;
     readonly List<Transform> beams = new List<Transform>();
     Transform hitGlow, sensorCup, gate;
@@ -858,20 +819,7 @@ public class LaserMirror : MonoBehaviour
         }
         bool wait = openT < 0f && HoldHelper.Before(spec.gateX - 0.3f);
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "ليزر! ارسمي خطوط مستقيمة تصير مرايا... وصلي الشعاع للحساس من فوق"); }
-        HintGhost.Tick(ref hint, ref hintT, wait, LaserHint);
         HoldHelper.Hold(ref holding, wait);
-    }
-
-    // التلميح: مراية فوق الجهاز ترد الشعاع يمين، ومراية فوق الحساس تنزله عليه
-    List<Vector3[]> LaserHint()
-    {
-        float h = Mathf.Max(spec.sensor.y, spec.emitter.y) + 2.7f;
-        float ex = spec.emitter.x, sx = spec.sensor.x;
-        return new List<Vector3[]>
-        {
-            new[] { new Vector3(ex - 0.7f, h - 0.7f, 0f), new Vector3(ex + 0.7f, h + 0.7f, 0f) },
-            new[] { new Vector3(sx - 0.7f, h + 0.7f, 0f), new Vector3(sx + 0.7f, h - 0.7f, 0f) },
-        };
     }
 
     // شعاع يصطدم بقطعة؟ (المسافة d)
@@ -896,7 +844,6 @@ public class LaserMirror : MonoBehaviour
 // ترفع الرغوة درجة. لازم توقف عند الدرجة الصح (مقابل الشباك)... لو زادت، تصدم رويدا السقف وتستنى الرغوة تنزل
 public class FoamTower : MonoBehaviour
 {
-    HintGhost hint; float hintT;   // قلم التلميح
     float x, top, step, target;
     int level;
     float shown, nextSettle;
@@ -980,7 +927,6 @@ public class FoamTower : MonoBehaviour
         if (level > target && onPlate && !warnedHigh) { warnedHigh = true; gm.UI.ShowMessage("", 2.8f, "عالي زيادة! استني الرغوة تنزل درجة..."); }
         bool wait = r != null && gm.IsPlaying && !done && r.transform.position.x > x - 0.05f && r.transform.position.x < x + 0.6f && r.transform.position.y - top < 8f;
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "برج الرغوة! كل قطرة (دايرة) فوقه ترفعه درجة... وقفي عند العلامة الصفرا بالضبط"); }
-        HintGhost.Tick(ref hint, ref hintT, wait && level < (int)target, () => new List<Vector3[]> { HintGhost.Circle(new Vector3(x, top + 4.2f, 0f)) }, () => "x" + ((int)target - level));
         HoldHelper.Hold(ref holding, wait);
     }
 }

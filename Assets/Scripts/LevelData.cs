@@ -1488,7 +1488,7 @@ public static class Levels
             subtitle = "ارسمي أنابيب من الخزانات للدورق وخلطي الألوان... وأكلي السلايم ووصلي الكهربا!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(38f, 3.5f, 0f),
-            ink = 26f,
+            ink = 45f,
             blocks =
             {
                 Page(-7f, 16f),
@@ -1517,7 +1517,7 @@ public static class Levels
             subtitle = "ارسمي دواير صودا بالحمض، ومرايا ترد الليزر للحساس... وانتبهي من الصواعق!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(34f, 0f, 0f),
-            ink = 20f,
+            ink = 38f,
             blocks =
             {
                 Page(-7f, 6f),
@@ -1542,7 +1542,7 @@ public static class Levels
             subtitle = "عدي القطرات صح عشان الرغوة توصلك للشباك... وخلطي البرتقالي!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(43f, 0f, 0f),
-            ink = 32f,
+            ink = 50f,
             blocks =
             {
                 Page(-7f, 6.8f),
@@ -1573,7 +1573,7 @@ public static class Levels
             subtitle = "التجربة خربت! سلايم عملاق يلحقك... بسرعة!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(47f, 3.5f, 0f),
-            ink = 30f,
+            ink = 50f,
             blocks =
             {
                 Page(-7f, 10f),
