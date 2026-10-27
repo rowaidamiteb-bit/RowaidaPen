@@ -701,7 +701,7 @@ public class BugCatch : MonoBehaviour
         go.transform.SetParent(root, false);
         var b = go.AddComponent<BugCatch>();
         b.bx = s.x; b.top = s.y; b.wallX = s.z;
-        b.bug = b.goal = new Vector3(b.bx, b.top + 2f, 0f);
+        b.bug = b.goal = new Vector3(b.bx, b.top + 3.1f, 0f);
         // جدار الخطأ
         var w = new GameObject("Error Wall");
         w.transform.SetParent(go.transform, false);
@@ -737,7 +737,7 @@ public class BugCatch : MonoBehaviour
             if (caughtT < 0f && Random.value < 0.03f) glitch[i].localScale = Random.value < 0.5f ? new Vector3(0.2f, 0.2f, 1.8f) : new Vector3(0.24f, 0.12f, 1.8f);
         if (caughtT < 0f)
         {
-            if (t > nextGoal) { nextGoal = t + Random.Range(0.8f, 1.6f); goal = new Vector3(bx + Random.Range(-1.6f, 1.6f), top + Random.Range(1.3f, 3.2f), 0f); }
+            if (t > nextGoal) { nextGoal = t + Random.Range(0.8f, 1.6f); goal = new Vector3(bx + Random.Range(-1.6f, 1.6f), top + Random.Range(2.5f, 3.8f), 0f); }
             bug = Vector3.MoveTowards(bug, goal, dt * 1.4f);
             bugT.position = bug + new Vector3(0f, Mathf.Sin(t * 9f) * 0.05f, 0f);
             bugT.localRotation = Quaternion.Euler(0f, goal.x < bug.x ? 180f : 0f, 0f);

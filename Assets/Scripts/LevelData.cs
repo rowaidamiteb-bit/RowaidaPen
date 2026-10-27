@@ -1687,7 +1687,7 @@ public static class Levels
                 Wall(31f, 40f, 3f),
             },
             tallyGates = { new Vector4(7f, 0f, 3f, 3.5f) },
-            numberScales = { new Vector4(13f, 0f, 3f, 16f) },
+            numberScales = { new Vector4(13f, 0f, 2f, 16f) },
             calculators = { new Vector4(31f, 0f, 2f, 3f) },
             sticker = new Vector3(18f, 2.8f, 0f),
         };

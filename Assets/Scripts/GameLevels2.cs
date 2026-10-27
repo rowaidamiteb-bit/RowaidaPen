@@ -125,7 +125,7 @@ public class NumberScale : MonoBehaviour
         // الكفة اليمين: سطل تطيح فيه الدواير
         var pr = new GameObject("Pan Right");
         pr.transform.SetParent(go.transform, false);
-        var parts = new[] { (new Vector3(0f, 0f, 0f), new Vector3(1.9f, 0.12f, 1.4f)), (new Vector3(-0.92f, 0.35f, 0f), new Vector3(0.08f, 0.7f, 1.4f)), (new Vector3(0.92f, 0.35f, 0f), new Vector3(0.08f, 0.7f, 1.4f)) };
+        var parts = new[] { (new Vector3(0f, 0f, 0f), new Vector3(1.9f, 0.12f, 1.4f)), (new Vector3(-0.92f, 0.6f, 0f), new Vector3(0.08f, 1.2f, 1.4f)), (new Vector3(0.92f, 0.6f, 0f), new Vector3(0.08f, 1.2f, 1.4f)) };
         foreach (var p in parts) GameFeatures.Px("Pan Part", pr.transform, p.Item1, p.Item2, brass, true).AddComponent<BoxCollider>();
         n.panRb = pr.AddComponent<Rigidbody>();
         n.panRb.isKinematic = true;
@@ -441,7 +441,7 @@ public class VirusBoss : MonoBehaviour
         else
         {
             float s = speed;
-            if (r != null && r.Held) s = gap < 2.6f ? 0f : 1.2f;
+            if (r != null && r.Held) s = gap < 2.6f ? 0f : gap < 6f ? 1.2f : 3.5f;
             else if (gap > 10f) s = 4.5f;
             if (Front < endX) transform.position += new Vector3(s * dt, 0f, 0f);
         }
