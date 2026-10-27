@@ -141,9 +141,9 @@ public class LiquidNetwork : MonoBehaviour
             Color c = LabFeatures.MixColor(t.bit);
             // خزان زجاج كروي فيه سائل يضوي، ومعلق بأنبوب من فوق
             LevelBuilder.Visual("Tank Pipe", PrimitiveType.Cylinder, go.transform, new Vector3(s.x, s.y + 3f, 0.3f), new Vector3(0.18f, 2.4f, 0.18f), steel, false);
-            LevelBuilder.Visual("Tank Liquid", PrimitiveType.Sphere, go.transform, new Vector3(s.x, s.y + 0.1f, 0.3f), new Vector3(1.05f, 0.9f, 1.05f), LabFeatures.Glow(gm, c, 1.3f), false);
-            LevelBuilder.Visual("Tank Glass", PrimitiveType.Sphere, go.transform, new Vector3(s.x, s.y + 0.25f, 0.3f), Vector3.one * 1.35f, glass, false);
-            LevelBuilder.Visual("Tank Cap", PrimitiveType.Cylinder, go.transform, new Vector3(s.x, s.y + 0.95f, 0.3f), new Vector3(0.5f, 0.1f, 0.5f), steel, false);
+            LevelBuilder.Visual("Tank Liquid", PrimitiveType.Sphere, go.transform, new Vector3(s.x, s.y + 0.2f, 0.3f), new Vector3(1.45f, 1.25f, 1.45f), LabFeatures.Glow(gm, c, 1.3f), false);
+            LevelBuilder.Visual("Tank Glass", PrimitiveType.Sphere, go.transform, new Vector3(s.x, s.y + 0.3f, 0.3f), Vector3.one * 1.8f, glass, false);
+            LevelBuilder.Visual("Tank Cap", PrimitiveType.Cylinder, go.transform, new Vector3(s.x, s.y + 1.2f, 0.3f), new Vector3(0.6f, 0.1f, 0.6f), steel, false);
             LevelBuilder.Visual("Nozzle", PrimitiveType.Cylinder, go.transform, new Vector3(s.x, s.y - 0.7f, 0.3f), new Vector3(0.22f, 0.3f, 0.22f), steel, false);
             t.valve = new GameObject("Valve").transform;
             t.valve.SetParent(go.transform, false);
