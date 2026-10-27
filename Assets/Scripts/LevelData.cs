@@ -218,6 +218,16 @@ public class LevelData
     public List<Vector4> foamTowers = new List<Vector4>();  // برج رغوة (x، سطح الأرض، ارتفاع الدرجة، الدرجة المطلوبة)
     public Vector2 slimeChase;                              // سلايم عملاق يلحق (من x، لـ x)
     public int lab;                                         // منظر المختبر: 1 نهار، 2 ليل
+    public List<Vector4> freezePools = new List<Vector4>();  // مويه ومسدس تجميد (من x، لـ x، سطح، x المسدس)
+    public List<Vector4> iceWalls = new List<Vector4>();     // جدار ثلج (x، سطح، ارتفاع، x الموقد)
+    public List<Vector3> icicles = new List<Vector3>();      // سقف يطيح ثلج (من x، لـ x، ارتفاع السقف)
+    public List<Vector4> sizeRays = new List<Vector4>();     // شعاع حجم (x الزر أو -999 بدون زر، x الشعاع، سطح، الحجم)
+    public List<Vector3> mouseHoles = new List<Vector3>();   // بيت فار (من x، لـ x، ارتفاع الفتحة)
+    public List<Vector4> growBeams = new List<Vector4>();    // شعاع تكبير فوق حفرة (x، سطح، ارتفاع الشعاع، كم يكبر)
+    public List<Vector4> pulleyLifts = new List<Vector4>();  // مصعد بحبل وسطل (x المنصة، سطح، كم يرفع، x السطل)
+    public Vector4 volcano;                                  // رغوة البركان (من x، لـ x، بداية الارتفاع، السرعة)
+    public List<Vector4> robotHelpers = new List<Vector4>(); // روبوت يقلد الخطوط (من x، لـ x، إزاحة x، إزاحة y)
+    public List<Vector3> blastFlasks = new List<Vector3>();  // دورق ينفجر (x، سطح، كل كم ثانية)
     public List<Vector3> deadTrees = new List<Vector3>();   // شجرة يابسة تنطاح جسر (من x، لـ x، سطحها)
     public List<Vector2> webs = new List<Vector2>();        // شبكة عنكبوت تسد الطريق (x، سطح الأرض)
     public List<Vector3> owls = new List<Vector3>();        // بومة تراقب (x، سطح الأرض، مسافة المراقبة)
@@ -1504,86 +1514,85 @@ public static class Levels
         return level;
     }
 
-    // الحمض: قطارة حمض، بركة حمض (دواير صودا تفور رغوة تتمدد)، ليزر ومرايا ترسمينها توصل الشعاع للحساس، وكويلات صواعق
+    // التجميد والذوبان: مسدس تجميد يخلي المويه جسر ثلج (والدفاية تذوبه)، جدار ثلج يذوب بخط من نار الموقد، وسقف يطيح ثلج تحميها منه مظلة
     static LevelData LabAcidLevel()
     {
         return new LevelData
         {
             ambience = "lab",
             lab = 1,
-            hazards = { new HazardSpec("drip", 2.5f, 1.4f, 3.6f), new HazardSpec("tesla", 31f, 1.8f, 3.6f, 1f) },
-            title = "الحمض والليزر",
+            title = "التجميد والذوبان",
             theme = LevelTheme.Lab(),
-            subtitle = "ارسمي دواير صودا بالحمض، ومرايا ترد الليزر للحساس... وانتبهي من الصواعق!",
+            subtitle = "جمدي المويه، ذوبي الثلج بالنار، وارسمي مظلة من الثلج اللي يطيح!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(34f, 0f, 0f),
-            ink = 38f,
+            door = new Vector3(37f, 0f, 0f),
+            ink = 30f,
             blocks =
             {
                 Page(-7f, 6f),
-                Page(13f, 37f),
+                Page(11f, 40f),
             },
-            acidPools = { new Vector3(6f, 13f, 0f) },
-            lasers = { new LaserSpec(new Vector3(15f, 1.2f, 90f), new Vector2(27f, 4.3f), 27f) },
-            sticker = new Vector3(21f, 5.2f, 0f),
+            freezePools = { new Vector4(6f, 11f, 0f, 3.2f) },
+            iceWalls = { new Vector4(17f, 0f, 3.4f, 14.3f) },
+            icicles = { new Vector3(22f, 31f, 4.4f) },
+            sticker = new Vector3(34f, 2.4f, 0f),
         };
     }
 
-    // التفاعل: دورق يغلي، برج رغوة (قطرات بالعدد الصح عشان تدخل من الشباك)، سلايم فوق الجدار، كويلات صواعق، وأنابيب (أحمر+أصفر = برتقالي)
+    // التكبير والتصغير: دايرة على الزر تشغل شعاع التصغير، رويدا تصغر وتدخل بيت الفار، شعاع يكبر خطك الصغير ويصير جسر، ومصعد بحبل وسطل
     static LevelData LabReactionLevel()
     {
         return new LevelData
         {
             ambience = "lab",
             lab = 1,
-            hazards = { new HazardSpec("bubbleflask", 2.5f, 1.6f, 4f), new HazardSpec("tesla", 24.5f, 1.8f, 3.4f, 1f) { y = 4f } },
-            title = "التفاعل",
+            title = "التكبير والتصغير",
             theme = LevelTheme.Lab(),
-            subtitle = "عدي القطرات صح عشان الرغوة توصلك للشباك... وخلطي البرتقالي!",
+            subtitle = "صغري رويدا عشان تدخل بيت الفار، وكبري رسمتك عشان تصير جسر!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(43f, 0f, 0f),
-            ink = 50f,
+            door = new Vector3(37f, 3f, 0f),
+            ink = 30f,
             blocks =
             {
-                Page(-7f, 6.8f),
-                Wall(6.8f, 14f, 4f),
-                Wall(6.8f, 14f, 10f, 5.9f),
-                Wall(19f, 30f, 4f),
-                Page(30f, 46f),
+                Page(-7f, 16f),
+                Wall(9f, 12f, 7f, 1f),
+                Page(20f, 24.3f),
+                Wall(24.3f, 40f, 3f),
             },
-            foamTowers = { new Vector4(6f, 0f, 1.33f, 3f) },
-            slimeFriends = { new Vector4(14f, 19f, 4f, 12.6f) },
-            labTaps = { new Vector4(38.75f, 4f, 1f, 0f), new Vector4(40.25f, 4f, 4f, 0f) },
-            labFlasks = { new Vector4(39.5f, 0f, 5f, 41.5f) },
-            sticker = new Vector3(10f, 8.5f, 0f),
+            sizeRays = { new Vector4(1.5f, 5.5f, 0f, 0.45f), new Vector4(-999f, 30f, 3f, 1f) },
+            mouseHoles = { new Vector3(9f, 12f, 1f) },
+            growBeams = { new Vector4(18f, 0f, 4.2f, 3.2f) },
+            pulleyLifts = { new Vector4(23.5f, 0f, 3f, 21f) },
+            sticker = new Vector3(10.5f, 0.45f, 0f),
         };
     }
 
-    // المختبر المجنون (نهاية فصل المختبر): سلايم عملاق يلحقك! بركة حمض، ليزر ومرايا، سلك ومصعد، وقطارة فوق
+    // البركان المجنون (نهاية فصل المختبر): رغوة البركان طالعة من تحت، ترسمين درج لكل درجة، الروبوت يقلد رسمتك للدرجة اللي بعدها، ودوارق تنفجر
     static LevelData LabMadLevel()
     {
         return new LevelData
         {
             ambience = "lab",
             lab = 2,
-            slimeChase = new Vector2(-17f, 50f),
-            hazards = { new HazardSpec("drip", 41f, 1.4f, 3.4f) { y = 3.5f } },
-            title = "المختبر المجنون",
+            title = "البركان المجنون",
             theme = LevelTheme.LabNight(),
-            subtitle = "التجربة خربت! سلايم عملاق يلحقك... بسرعة!",
+            subtitle = "تجربة البركان خربت! اطلعي فوق قبل ما توصلك الرغوة... والروبوت بيساعدك",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(47f, 3.5f, 0f),
-            ink = 50f,
+            door = new Vector3(43f, 12f, 0f),
+            ink = 30f,
             blocks =
             {
-                Page(-7f, 10f),
-                Page(15f, 33.3f),
-                Wall(33.3f, 50f, 3.5f),
+                Page(-7f, 8f),
+                Wall(8f, 14f, 2.4f),
+                Wall(14f, 20f, 4.8f),
+                Wall(20f, 26f, 7.2f),
+                Wall(26f, 32f, 9.6f),
+                Wall(32f, 46f, 12f),
             },
-            acidPools = { new Vector3(10f, 15f, 0f) },
-            lasers = { new LaserSpec(new Vector3(17f, 1.2f, 90f), new Vector2(26f, 4.3f), 26f) },
-            circuitLifts = { new Vector4(28f, 0f, 32.5f, 3.5f) },
-            sticker = new Vector3(21f, 6.8f, 0f),
+            volcano = new Vector4(-7f, 46f, -3f, 0.25f),
+            robotHelpers = { new Vector4(4.5f, 24f, 6f, 2.4f) },
+            blastFlasks = { new Vector3(11.6f, 2.4f, 3.6f), new Vector3(38f, 12f, 3.6f) },
+            sticker = new Vector3(40f, 14.4f, 0f),
         };
     }
 

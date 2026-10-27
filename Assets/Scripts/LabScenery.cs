@@ -168,7 +168,8 @@ public class LabScenery : MonoBehaviour
             {
                 LevelBuilder.Visual("Chalkboard", PrimitiveType.Cube, p, new Vector3(x, 4.6f, 9.85f), new Vector3(5f, 2.8f, 0.1f), chalk, false);
                 LevelBuilder.Visual("Board Frame", PrimitiveType.Cube, p, new Vector3(x, 4.6f, 9.9f), new Vector3(5.3f, 3.1f, 0.08f), woodF, false);
-                for (int f = 0; f < 3; f++)
+                // (بمرحلة البركان الدرجات العالية تغطي السبورة، والكتابة تطلع فوقها، فنخليها بدون كتابة)
+                for (int f = 0; f < (data.volcano.w > 0f ? 0 : 3); f++)
                 {
                     var tm = new GameObject("Formula").AddComponent<TextMesh>();
                     tm.transform.SetParent(p, false);

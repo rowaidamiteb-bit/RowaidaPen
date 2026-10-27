@@ -14,6 +14,7 @@ public static class LabFeatures
         foreach (LaserSpec s in data.lasers) LaserMirror.Create(root, s, gm);
         foreach (Vector4 s in data.foamTowers) FoamTower.Create(root, s, gm);
         if (data.slimeChase.y > data.slimeChase.x) SlimeChase.Create(root, data.slimeChase.x, data.slimeChase.y, gm);
+        LabFeatures2.Build(root, data, gm);
         if (data.lab > 0) LabScenery.Create(root, data, gm, rng);
     }
 
