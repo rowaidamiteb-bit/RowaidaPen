@@ -141,9 +141,9 @@ public class LiquidNetwork : MonoBehaviour
             Color c = LabFeatures.MixColor(t.bit);
             // خزان زجاج كروي فيه سائل يضوي، ومعلق بأنبوب من فوق
             LevelBuilder.Visual("Tank Pipe", PrimitiveType.Cylinder, go.transform, new Vector3(s.x, s.y + 3f, 0.3f), new Vector3(0.18f, 2.4f, 0.18f), steel, false);
-            LevelBuilder.Visual("Tank Liquid", PrimitiveType.Sphere, go.transform, new Vector3(s.x, s.y + 0.2f, 0.3f), new Vector3(1.45f, 1.25f, 1.45f), LabFeatures.Glow(gm, c, 1.3f), false);
-            LevelBuilder.Visual("Tank Glass", PrimitiveType.Sphere, go.transform, new Vector3(s.x, s.y + 0.3f, 0.3f), Vector3.one * 1.8f, glass, false);
-            LevelBuilder.Visual("Tank Cap", PrimitiveType.Cylinder, go.transform, new Vector3(s.x, s.y + 1.2f, 0.3f), new Vector3(0.6f, 0.1f, 0.6f), steel, false);
+            LevelBuilder.Visual("Tank Liquid", PrimitiveType.Sphere, go.transform, new Vector3(s.x, s.y + 0.2f, 0.3f), new Vector3(1.05f, 0.9f, 1.05f), LabFeatures.Glow(gm, c, 1.3f), false);
+            LevelBuilder.Visual("Tank Glass", PrimitiveType.Sphere, go.transform, new Vector3(s.x, s.y + 0.3f, 0.3f), Vector3.one * 1.35f, glass, false);
+            LevelBuilder.Visual("Tank Cap", PrimitiveType.Cylinder, go.transform, new Vector3(s.x, s.y + 0.98f, 0.3f), new Vector3(0.5f, 0.1f, 0.5f), steel, false);
             LevelBuilder.Visual("Nozzle", PrimitiveType.Cylinder, go.transform, new Vector3(s.x, s.y - 0.7f, 0.3f), new Vector3(0.22f, 0.3f, 0.22f), steel, false);
             t.valve = new GameObject("Valve").transform;
             t.valve.SetParent(go.transform, false);
@@ -160,13 +160,13 @@ public class LiquidNetwork : MonoBehaviour
         foreach (Vector4 s in data.labFlasks)
         {
             var f = new Flask { need = (int)s.z, gateX = s.w };
-            Vector3 b = new Vector3(s.x, s.y, 0.9f);
+            Vector3 b = new Vector3(s.x, s.y, 0.25f);
             f.mouth = new Vector3(s.x, s.y + 2.3f, 0f);
             Color need = LabFeatures.MixColor(f.need);
             // دورق مخروطي: قاع عريض ورقبة
             LevelBuilder.Visual("Flask Body", PrimitiveType.Sphere, go.transform, b + new Vector3(0f, 0.75f, 0f), new Vector3(1.7f, 1.5f, 1.7f), glass, false);
-            LevelBuilder.Visual("Flask Neck", PrimitiveType.Cylinder, go.transform, b + new Vector3(0f, 1.8f, 0f), new Vector3(0.55f, 0.45f, 0.55f), glass, false);
-            LevelBuilder.Visual("Flask Rim", PrimitiveType.Cylinder, go.transform, b + new Vector3(0f, 2.27f, 0f), new Vector3(0.7f, 0.04f, 0.7f), glass, false);
+            LevelBuilder.Visual("Flask Neck", PrimitiveType.Cylinder, go.transform, b + new Vector3(0f, 1.8f, 0f), new Vector3(0.6f, 0.47f, 0.6f), LabFeatures.Glass(0.75f), false);
+            LevelBuilder.Visual("Flask Rim", PrimitiveType.Cylinder, go.transform, b + new Vector3(0f, 2.27f, 0f), new Vector3(0.75f, 0.07f, 0.75f), LabFeatures.Glow(gm, need, 1.1f), false);
             f.liquid = LevelBuilder.Visual("Flask Liquid", PrimitiveType.Sphere, go.transform, b + new Vector3(0f, 0.4f, 0f), new Vector3(1.4f, 0.01f, 1.4f), LabFeatures.Glow(gm, Color.white, 1f), false).transform;
             f.liquidR = f.liquid.GetComponent<Renderer>();
             // شارة اللون المطلوب قدام الدورق
@@ -175,7 +175,7 @@ public class LiquidNetwork : MonoBehaviour
             for (int k = 0; k < 10; k++)
             {
                 float a = k / 10f * Mathf.PI * 2f;
-                LevelBuilder.Visual("End Dot", PrimitiveType.Sphere, go.transform, f.mouth + new Vector3(Mathf.Cos(a) * 0.5f, 0.35f + Mathf.Sin(a) * 0.3f, -0.9f), Vector3.one * 0.07f, LabFeatures.Glow(gm, need, 1f), false);
+                LevelBuilder.Visual("End Dot", PrimitiveType.Sphere, go.transform, f.mouth + new Vector3(Mathf.Cos(a) * 0.5f, 0.15f + Mathf.Sin(a) * 0.3f, -0.5f), Vector3.one * 0.07f, LabFeatures.Glow(gm, need, 1f), false);
             }
             // البوابة الزجاج
             f.gate = new GameObject("Glass Gate").transform;
@@ -270,7 +270,7 @@ public class LiquidNetwork : MonoBehaviour
             if (t - f.lastPour > 0.3f && f.level > 0f && f.level < 1f && f.bits != f.need) { }
             float lv = Mathf.Clamp01(f.level);
             f.liquid.localScale = new Vector3(1.4f, Mathf.Max(0.01f, lv * 1.1f), 1.4f);
-            f.liquid.position = new Vector3(f.mouth.x, f.mouth.y - 2.3f + 0.15f + lv * 0.55f, 0.9f);
+            f.liquid.position = new Vector3(f.mouth.x, f.mouth.y - 2.3f + 0.15f + lv * 0.55f, 0.25f);
             f.liquidR.sharedMaterial = f.mudT >= 0f ? gm.Mat("Mud", new Color(0.4f, 0.3f, 0.2f), 0.3f) : LabFeatures.Glow(gm, LabFeatures.MixColor(f.bits), 1.3f);
             if (f.level > 0.3f && Random.value < 0.15f)
             {
@@ -287,6 +287,9 @@ public class LiquidNetwork : MonoBehaviour
             bool wait = f.openT < 0f && HoldHelper.Before(f.gateX - 0.3f);
             if (wait && !f.prompted) { f.prompted = true; gm.UI.ShowMessage("", 3.6f, "البوابة تبي لون " + LabFeatures.ColorName(f.need) + "! ارسمي أنابيب من الخزانات للدورق وخلطي الألوان"); }
             HoldHelper.Hold(ref f.holding, wait);
+            // الكاميرا ترجع شوي قرب الدورق عشان الخزانات اللي فوقه تبان
+            if (r != null && f.openT < 0f && r.transform.position.x > f.mouth.x - 7f && r.transform.position.x < f.gateX + 0.5f)
+                CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f);
         }
         if (drops.Count > 0 && t > nextPourSound && r != null && Mathf.Abs(r.transform.position.x - drops[0].t.position.x) < 14f) { nextPourSound = t + 1.4f; LevelSfx.Play("pour", 0.35f, Random.Range(0.9f, 1.1f)); }
     }

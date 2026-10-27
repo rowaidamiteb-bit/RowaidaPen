@@ -1495,7 +1495,7 @@ public static class Levels
                 Page(21f, 30.3f),
                 Wall(30.3f, 42f, 3.5f),
             },
-            labTaps = { new Vector4(5.6f, 3.6f, 1f, 0f), new Vector4(8f, 3.6f, 2f, 0f) },
+            labTaps = { new Vector4(9.75f, 4f, 1f, 0f), new Vector4(11.25f, 4f, 2f, 0f) },
             labFlasks = { new Vector4(10.5f, 0f, 3f, 12.6f) },
             slimeFriends = { new Vector4(16f, 21f, 0f, 14.4f) },
             circuitLifts = { new Vector4(24.5f, 0f, 29.5f, 3.5f) },
@@ -1553,7 +1553,7 @@ public static class Levels
             },
             foamTowers = { new Vector4(6f, 0f, 1.33f, 3f) },
             slimeFriends = { new Vector4(14f, 19f, 4f, 12.6f) },
-            labTaps = { new Vector4(34.6f, 3.6f, 1f, 0f), new Vector4(37f, 3.6f, 4f, 0f) },
+            labTaps = { new Vector4(38.75f, 4f, 1f, 0f), new Vector4(40.25f, 4f, 4f, 0f) },
             labFlasks = { new Vector4(39.5f, 0f, 5f, 41.5f) },
             sticker = new Vector3(10f, 8.5f, 0f),
         };
