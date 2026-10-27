@@ -443,8 +443,8 @@ public class VirusBoss : MonoBehaviour
         {
             float s = speed;
             // لو رويدا واقفة تستنى، الفيروس يقرب منها شوي شوي... ولو تأخرتي يبلعها
-            if (r != null && r.Held) s = gap < 6f ? 1.1f : 3.5f;
-            else if (gap > 10f) s = 4.5f;
+            if (r != null && r.Held) s = gap < 6f ? 2f : 4.5f;
+            else if (gap > 8f) s = 4.5f;
             if (Front < endX) transform.position += new Vector3(s * dt, 0f, 0f);
         }
         // يخرب الخطوط اللي يلمسها

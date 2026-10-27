@@ -1711,7 +1711,7 @@ public static class Levels
                 Page(-7f, 14f),
                 Page(17f, 46f),
             },
-            virusBoss = new Vector4(-18f, 46f, 2.3f, 0f),
+            virusBoss = new Vector4(-14f, 46f, 2.7f, 0f),
             popups = { new Vector2(8f, 0f), new Vector2(25f, 0f) },
             saveButtons = { new Vector2(35f, 0f) },
             sticker = new Vector3(15.5f, 4f, 0f),
