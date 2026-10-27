@@ -315,7 +315,7 @@ public class CalcRamp : MonoBehaviour
 public class VirusBoss : MonoBehaviour
 {
     const float Radius = 2.2f;
-    float endX, speed, delay = 3f, stuckT, nextGlitch, deadT = -1f;
+    float endX, speed, delay = 3f, stuckT, nextGlitch, deadT = -1f, gulpT;
     bool told;
     InkMark blocking;
     Transform body, eyeL, eyeR;
@@ -382,7 +382,8 @@ public class VirusBoss : MonoBehaviour
         if (gm == null) return;
         float t = Time.time, dt = Time.deltaTime;
         // يتنفس ويلف
-        body.localScale = Vector3.one * Radius * 2f * (1f + Mathf.Sin(t * 5f) * 0.04f);
+        gulpT = Mathf.Max(0f, gulpT - dt);
+        body.localScale = Vector3.one * Radius * 2f * (1f + Mathf.Sin(t * 5f) * 0.04f + Mathf.Sin(gulpT * Mathf.PI * 2f) * 0.15f);
         for (int i = 0; i < spikes.Count; i++) spikes[i].localScale = Vector3.one * (1f + Mathf.Sin(t * 6f + i) * 0.15f);
         for (int i = 0; i < orbit.Count; i++)
         {
@@ -441,7 +442,8 @@ public class VirusBoss : MonoBehaviour
         else
         {
             float s = speed;
-            if (r != null && r.Held) s = gap < 2.6f ? 0f : gap < 6f ? 1.2f : 3.5f;
+            // لو رويدا واقفة تستنى، الفيروس يقرب منها شوي شوي... ولو تأخرتي يبلعها
+            if (r != null && r.Held) s = gap < 6f ? 1.1f : 3.5f;
             else if (gap > 10f) s = 4.5f;
             if (Front < endX) transform.position += new Vector3(s * dt, 0f, 0f);
         }
@@ -457,7 +459,10 @@ public class VirusBoss : MonoBehaviour
         if (t > nextGlitch && gap < 10f) { nextGlitch = t + 1.4f; LevelSfx.Play("glitch", Mathf.Lerp(0.6f, 0.15f, gap / 10f)); }
         if (gap < 0.2f && r.transform.position.y > -3f)
         {
+            // يبلعها: ينتفخ ويسوي قلب
             GameFeatures.Burst(r.transform.position, new Color(1f, 0.2f, 0.5f), 12);
+            LevelSfx.Play("gloop", 1f, 0.6f);
+            gulpT = 0.5f;
             gm.KillRowaida();
         }
     }
