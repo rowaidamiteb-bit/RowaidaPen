@@ -243,6 +243,13 @@ public class LevelData
     public List<Vector2> popups = new List<Vector2>();       // إعلان يسد الطريق (x، سطح)
     public List<Vector2> saveButtons = new List<Vector2>();  // زر الحفظ (x، سطح)
     public int dreamStyle;                                   // منظر الأحلام: 1 غيوم، 2 نجوم، 3 كابوس
+    public float startInk;                                   // تبدأ المرحلة بحبر قليل (الباقي تجمعينه)
+    public bool finale;                                      // الصفحة الأخيرة: معرض الذكريات، الأصحاب، وبيت رويدا
+    public Vector3 inkDrops;                                 // قطرات حبر تعبي القلم (من x، لـ x، ارتفاع)
+    public Vector3 photoBridge;                              // صور ذكريات تصير شريط فيلم جسر (بداية الحفرة، نهايتها، سطح)
+    public Vector3 turningPage;                              // صفحة تنقلب فوق حفرة، علامة كتاب تثبتها (بداية الحفرة، نهايتها، سطح)
+    public Vector4 paperPlane;                               // طيارة ورق تشيل رويدا (x المنصة، x النزول، سطح المنصة، سطح النزول)
+    public Vector3 friendsParade;                            // أصحاب الرحلة يشجعون (من x، لـ x، سطح)
     public List<Vector4> cloudBounces = new List<Vector4>(); // خط يصير غيمة تنطط (من x، لـ x، سطح، x الجدار)
     public List<Vector4> sleepyWinds = new List<Vector4>();  // ريح نعسانة (من x، لـ x، سطح، x راسها)
     public List<Vector3> sheepBridges = new List<Vector3>(); // خرفان تصير جسر (بداية الحفرة، نهايتها، سطح)
@@ -561,34 +568,35 @@ public static class Levels
         };
     }
 
-    // الصفحة الأخيرة: وردية وتلمع بقليتر، وفوقها غيوم فيها ذكريات رويدا (صور المراحل ورسوماتك).
-    // فيها شوي من كل شي: حفرة، أرض تختفي، صفحات طايرة تتحرك، طلعة، وفي الآخر ترسمين باب البيت
+    // الصفحة الأخيرة (المرحلة 60): القلم قرب يخلص حبره وتعبينه من قطرات الحبر، صور الذكريات تصير شريط فيلم جسر،
+    // صفحة عملاقة تنقلب وتثبتينها بعلامة كتاب، طيارة ورق تشيل رويدا فوق الوادي، أصحاب الرحلة كلهم يشجعونها،
+    // وبالآخر ترسمين باب بيت رويدا. وفوق بالسما حبال فيها صور كل المراحل
     static LevelData LastPage()
     {
         return new LevelData
         {
             title = "الصفحة الأخيرة",
             theme = LevelTheme.LastPage(),
-            subtitle = "آخر صفحة في الدفتر... عدّي كل شي وارسمي باب البيت!",
+            ambience = "dream",
+            subtitle = "آخر صفحة في الدفتر... كل ذكرياتك هنا، ارجعي لبيتك!",
             spawn = new Vector3(-5f, 1f, 0f),
-            door = new Vector3(48f, 0f, 0f),
-            ink = 34f,
+            door = new Vector3(70f, 1.5f, 0f),
+            ink = 40f,
+            startInk = 3f,
             drawDoor = true,
-            memoryClouds = true,
-            bridgeHint = true,
+            finale = true,
             blocks =
             {
-                Page(-7f, 6f),              // حفرة 3
-                Page(9f, 16f),              // فيها قطعة تختفي، وبعدها صفحات طايرة
-                Page(30f, 36f, 0.8f),       // طلعة (ارسمي منحدر)، وبعدها حفرة 3
-                Page(39f, 53f),
+                Page(-7f, 14f),
+                Page(18f, 24f),
+                Page(29f, 36f),
+                Wall(46f, 80f, 1.5f),
             },
-            vanishTiles = { new Vector3(12f, 14.5f, 4f) },
-            floaters =
-            {
-                new FloaterSpec(19.5f, 3f, 1.2f, 4f, 0f),
-                new FloaterSpec(25.5f, 3f, 1.3f, 4.4f, 1.5f),
-            },
+            inkDrops = new Vector3(1f, 10f, 2.7f),
+            photoBridge = new Vector3(14f, 18f, 0f),
+            turningPage = new Vector3(24f, 29f, 0f),
+            paperPlane = new Vector4(35.4f, 47.5f, 0f, 1.5f),
+            friendsParade = new Vector3(50f, 65f, 1.5f),
         };
     }
 

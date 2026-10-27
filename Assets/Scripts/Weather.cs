@@ -21,7 +21,7 @@ public class Weather : MonoBehaviour
     {
         gm = manager;
         foreach (Light l in FindObjectsByType<Light>(FindObjectsSortMode.None))
-            if (l.type == LightType.Directional) { sun = l; break; }
+            if (l.type == LightType.Directional && l.name != "Rim Light") { sun = l; break; }
 
         clearSunIntensity = sun.intensity;
         clearSunColor = sun.color;

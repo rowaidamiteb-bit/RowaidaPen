@@ -17,6 +17,7 @@ public static class LabFeatures
         LabFeatures2.Build(root, data, gm);
         GameFeatures.Build(root, data, gm, rng);
         DreamFeatures.Build(root, data, gm, rng);
+        FinaleFeatures.Build(root, data, gm, rng);
         if (data.lab > 0) LabScenery.Create(root, data, gm, rng);
     }
 

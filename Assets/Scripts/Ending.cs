@@ -519,7 +519,7 @@ public class EndingCutscene : MonoBehaviour
     void SetupLighting()
     {
         foreach (Light l in FindObjectsByType<Light>(FindObjectsSortMode.None))
-            if (l.type == LightType.Directional) { sun = l; break; }
+            if (l.type == LightType.Directional && l.name != "Rim Light") { sun = l; break; }
         if (sun != null)
         {
             sunIntensity = sun.intensity;

@@ -175,7 +175,7 @@ public class LabScenery : MonoBehaviour
                     tm.transform.SetParent(p, false);
                     tm.transform.position = new Vector3(x - 2.1f, 5.6f - f * 0.8f, 9.78f);
                     tm.font = font;
-                    tm.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+                    tm.GetComponent<MeshRenderer>().sharedMaterial = GameFeatures.TextMat;
                     tm.text = formulas[(k * 3 + f) % formulas.Length];
                     tm.fontSize = 64;
                     tm.characterSize = 0.06f;

@@ -27,7 +27,11 @@ public static class GameFeatures
     public static GameObject Px(string name, Transform parent, Vector3 pos, Vector3 scale, Color c, bool shadows = false)
     {
         GameManager gm = GameManager.Instance;
-        return LevelBuilder.Visual(name, PrimitiveType.Cube, parent, pos, scale, gm.Mat("Px " + ColorUtility.ToHtmlStringRGB(c), c, 0.15f), shadows);
+        // عالم البكسل يظل مكعبات حادة
+        LevelBuilder.SharpCubes = gm.CurrentLevel != null && gm.CurrentLevel.pixelInk;
+        var go = LevelBuilder.Visual(name, PrimitiveType.Cube, parent, pos, scale, gm.Mat("Px " + ColorUtility.ToHtmlStringRGB(c), c, 0.15f), shadows);
+        LevelBuilder.SharpCubes = false;
+        return go;
     }
 
     // مادة كتابة تحترم العمق (عشان الكتابة ما تطلع فوق الأشياء اللي قدامها)
@@ -38,8 +42,12 @@ public static class GameFeatures
         {
             if (textMat == null)
             {
-                textMat = new Material(ArabicText.Font.material) { name = "Text Depth" };
-                textMat.SetFloat("unity_GUIZTestMode", (float)UnityEngine.Rendering.CompareFunction.LessEqual);
+                Shader sh = Shader.Find("Rowaida/TextDepth");
+                if (sh == null) return ArabicText.Font.material;
+                textMat = new Material(sh) { name = "Text Depth" };
+                textMat.mainTexture = ArabicText.Font.material.mainTexture;
+                // الخط يعيد بناء صورته لما تطلع حروف جديدة: نحدث المادة معه
+                Font.textureRebuilt += f => { if (textMat != null && f == ArabicText.Font) textMat.mainTexture = f.material.mainTexture; };
             }
             return textMat;
         }

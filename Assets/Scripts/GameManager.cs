@@ -366,10 +366,12 @@ public class GameManager : MonoBehaviour
         cameraFollow.SetTarget(Rowaida.transform, true);
 
         InkMax = Ink = data.ink;
+        // مراحل تبدأ والحبر قليل (مثل الصفحة الأخيرة: القلم قرب يخلص)
+        if (data.startInk > 0f) Ink = Mathf.Min(data.startInk, InkMax);
         falling = false;
         hearts = MaxHearts;
         checkpointPage = 0;
-        checkpointInk = data.ink;
+        checkpointInk = Ink;
         timeLeft = data.timeLimit;
         ui.SetHearts(hearts, false);
         IsPlaying = !showcase;
@@ -561,7 +563,7 @@ public class GameManager : MonoBehaviour
 
         Light sun = null;
         foreach (Light l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
-            if (l.type == LightType.Directional) { sun = l; break; }
+            if (l.type == LightType.Directional && l.name != "Rim Light") { sun = l; break; }
         if (sun == null)
         {
             sun = new GameObject("Sun").AddComponent<Light>();
@@ -572,6 +574,17 @@ public class GameManager : MonoBehaviour
         sun.shadows = LightShadows.Soft;
         sun.shadowStrength = 0.85f;
         sun.transform.rotation = Quaternion.Euler(42f, -40f, 0f);
+
+        // ضو خلفي بارد خفيف يحدد أطراف الأشكال ويفصلها عن الخلفية
+        if (GameObject.Find("Rim Light") == null)
+        {
+            var rim = new GameObject("Rim Light").AddComponent<Light>();
+            rim.type = LightType.Directional;
+            rim.color = new Color(0.75f, 0.82f, 1f);
+            rim.intensity = 0.55f;
+            rim.shadows = LightShadows.None;
+            rim.transform.rotation = Quaternion.Euler(28f, 155f, 0f);
+        }
 
         // إضاءة محيطة: سماء بنفسجية، أرض كحلية
         RenderSettings.ambientMode = AmbientMode.Trilight;
@@ -600,21 +613,36 @@ public class GameManager : MonoBehaviour
         volume.profile = profile;
 
         var bloom = profile.Add<Bloom>(true);
-        bloom.intensity.Override(0.45f);
-        bloom.threshold.Override(0.95f);
-        bloom.scatter.Override(0.7f);
+        bloom.intensity.Override(0.6f);
+        bloom.threshold.Override(0.9f);
+        bloom.scatter.Override(0.72f);
+        bloom.highQualityFiltering.Override(true);
 
         var vignette = profile.Add<Vignette>(true);
-        vignette.intensity.Override(0.35f);
-        vignette.smoothness.Override(0.5f);
+        vignette.intensity.Override(0.3f);
+        vignette.smoothness.Override(0.55f);
         vignette.color.Override(new Color(0.04f, 0.03f, 0.1f));
 
         var tonemap = profile.Add<Tonemapping>(true);
         tonemap.mode.Override(TonemappingMode.Neutral);
 
         var color = profile.Add<ColorAdjustments>(true);
-        color.postExposure.Override(0.2f);
-        color.contrast.Override(14f);
-        color.saturation.Override(-4f);
+        color.postExposure.Override(0.18f);
+        color.contrast.Override(16f);
+        color.saturation.Override(8f);
+
+        // ظلال دافية شوي وإضاءة ناعمة (شكل أفلام الكرتون)
+        var smh = profile.Add<ShadowsMidtonesHighlights>(true);
+        smh.shadows.Override(new Vector4(0.96f, 0.95f, 1.06f, 0f));
+        smh.highlights.Override(new Vector4(1.04f, 1.02f, 0.97f, 0f));
+
+        // الخلفية البعيدة تغبش شوي عشان رويدا والعقبات يبانون (يتعدل كل فريم حسب بعد الكاميرا)
+        var dof = profile.Add<DepthOfField>(true);
+        dof.mode.Override(DepthOfFieldMode.Gaussian);
+        dof.gaussianStart.Override(14f);
+        dof.gaussianEnd.Override(34f);
+        dof.gaussianMaxRadius.Override(1.1f);
+        dof.highQualitySampling.Override(true);
+        cam.gameObject.AddComponent<DofFocus>().dof = dof;
     }
 }

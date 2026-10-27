@@ -548,11 +548,72 @@ public static class LevelBuilder
         go.transform.SetParent(parent, false);
         go.transform.localPosition = localPos;
         go.transform.localScale = scale;
-        go.AddComponent<MeshFilter>().sharedMesh = PrimitiveMesh(type);
+        Mesh mesh = type == PrimitiveType.Cube && !SharpCubes ? RoundedCube(scale) : null;
+        go.AddComponent<MeshFilter>().sharedMesh = mesh != null ? mesh : PrimitiveMesh(type);
         var r = go.AddComponent<MeshRenderer>();
         r.sharedMaterial = mat;
         r.shadowCastingMode = castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
         return go;
+    }
+
+    // مكعبات حادة (مثل عالم البكسل)؛ الباقي أطرافه مدورة شوي عشان يطلع ناعم زي الألعاب
+    public static bool SharpCubes;
+    static readonly Dictionary<Vector3Int, Mesh> roundCache = new Dictionary<Vector3Int, Mesh>();
+
+    // مكعب بحواف مدورة: التدوير بنفس الحجم الحقيقي (ما يتمطط مع المقاس)
+    static Mesh RoundedCube(Vector3 scale)
+    {
+        float minD = Mathf.Min(scale.x, Mathf.Min(scale.y, scale.z));
+        if (minD < 0.12f) return null;
+        var key = new Vector3Int(Mathf.RoundToInt(scale.x * 20f), Mathf.RoundToInt(scale.y * 20f), Mathf.RoundToInt(scale.z * 20f));
+        if (roundCache.TryGetValue(key, out Mesh cached) && cached != null) return cached;
+        Vector3 s = new Vector3(key.x, key.y, key.z) / 20f;
+        float rad = Mathf.Clamp(Mathf.Min(s.x, Mathf.Min(s.y, s.z)) * 0.22f, 0.025f, 0.14f);
+        Vector3 h = s * 0.5f, inner = h - Vector3.one * rad;
+        var verts = new List<Vector3>();
+        var norms = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        Vector3[] faceN = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
+        foreach (Vector3 n in faceN)
+        {
+            Vector3 u = Mathf.Abs(n.y) > 0.5f ? Vector3.right : Vector3.up;
+            Vector3 v = Vector3.Cross(n, u);
+            float hu = Mathf.Abs(Vector3.Dot(h, u)), hv = Mathf.Abs(Vector3.Dot(h, v)), hn = Mathf.Abs(Vector3.Dot(h, n));
+            float[] cu = { -hu, -hu + rad * 0.3f, -hu + rad, hu - rad, hu - rad * 0.3f, hu };
+            float[] cv = { -hv, -hv + rad * 0.3f, -hv + rad, hv - rad, hv - rad * 0.3f, hv };
+            int start = verts.Count;
+            for (int i = 0; i < 6; i++)
+                for (int j = 0; j < 6; j++)
+                {
+                    Vector3 p = n * hn + u * cu[i] + v * cv[j];
+                    Vector3 q = new Vector3(Mathf.Clamp(p.x, -inner.x, inner.x), Mathf.Clamp(p.y, -inner.y, inner.y), Mathf.Clamp(p.z, -inner.z, inner.z));
+                    Vector3 d = p - q;
+                    Vector3 nor = d.sqrMagnitude > 1e-10f ? d.normalized : n;
+                    p = q + nor * rad;
+                    verts.Add(new Vector3(p.x / s.x, p.y / s.y, p.z / s.z));
+                    norms.Add(Vector3.Scale(nor, s).normalized);
+                    uvs.Add(new Vector2((cu[i] / hu + 1f) * 0.5f, (cv[j] / hv + 1f) * 0.5f));
+                }
+            for (int i = 0; i < 5; i++)
+                for (int j = 0; j < 5; j++)
+                {
+                    int a = start + i * 6 + j, b = a + 6, c = a + 1, d = b + 1;
+                    // الاتجاه لبرا
+                    Vector3 tn = Vector3.Cross(verts[b] - verts[a], verts[c] - verts[a]);
+                    if (Vector3.Dot(tn, n) >= 0f) { tris.Add(a); tris.Add(b); tris.Add(c); tris.Add(c); tris.Add(b); tris.Add(d); }
+                    else { tris.Add(a); tris.Add(c); tris.Add(b); tris.Add(c); tris.Add(d); tris.Add(b); }
+                }
+        }
+        var mesh = new Mesh { name = "Rounded Cube" };
+        mesh.SetVertices(verts);
+        mesh.SetNormals(norms);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(tris, 0);
+        mesh.RecalculateBounds();
+        mesh.RecalculateTangents();
+        roundCache[key] = mesh;
+        return mesh;
     }
 
     static Mesh PrimitiveMesh(PrimitiveType type)
