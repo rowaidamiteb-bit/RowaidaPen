@@ -723,7 +723,8 @@ public class LaserMirror : MonoBehaviour
 {
     LaserSpec spec;
     readonly List<Transform> beams = new List<Transform>();
-    Transform hitGlow, sensorCup, gate;
+    Transform hitGlow, gate;
+    const float PanelTop = 6.5f;   // طول لوح الأهداف فوق الباب
     BoxCollider gateCol;
     float powerT, openT = -1f;
     bool holding, prompted;
@@ -748,23 +749,22 @@ public class LaserMirror : MonoBehaviour
         LevelBuilder.Visual("Body", PrimitiveType.Cube, em, new Vector3(-0.5f, 0f, 0f), new Vector3(1.2f, 0.6f, 0.6f), dark);
         LevelBuilder.Visual("Lens", PrimitiveType.Cylinder, em, new Vector3(0.15f, 0f, 0f), new Vector3(0.35f, 0.12f, 0.35f), l.beamMat, false).transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
         LevelBuilder.Visual("Stand", PrimitiveType.Cylinder, go.transform, new Vector3(spec.emitter.x - 0.3f, spec.emitter.y - 0.6f, 0.4f), new Vector3(0.12f, 0.5f, 0.12f), steel, false);
-        // الحساس: كوب يستقبل من فوق
-        l.sensorCup = new GameObject("Sensor").transform;
-        l.sensorCup.SetParent(go.transform, false);
-        l.sensorCup.position = new Vector3(spec.sensor.x, spec.sensor.y, 0f);
-        LevelBuilder.Visual("Cup", PrimitiveType.Cylinder, l.sensorCup, new Vector3(0f, -0.2f, 0f), new Vector3(0.8f, 0.2f, 0.8f), steel);
-        l.sensorLamp = LevelBuilder.Visual("Eye", PrimitiveType.Sphere, l.sensorCup, new Vector3(0f, 0.02f, 0f), new Vector3(0.6f, 0.2f, 0.6f), gm.Mat("Lamp Red", new Color(1.6f, 0.2f, 0.2f), 0.5f), false).GetComponent<Renderer>();
-        for (int k = 0; k < 10; k++)
-        {
-            float a = k / 10f * Mathf.PI * 2f;
-            LevelBuilder.Visual("Sensor Dot", PrimitiveType.Sphere, l.sensorCup, new Vector3(Mathf.Cos(a) * 0.6f, 0.5f + Mathf.Sin(a) * 0.15f, -0.1f), Vector3.one * 0.07f, l.beamMat, false);
-        }
-        // الباب المعدني
+        // الباب المعدني، وعليه لوح أهداف طويل: الشعاع إذا لمسه بأي مكان ينفتح الباب
         l.gate = new GameObject("Laser Gate").transform;
         l.gate.SetParent(go.transform, false);
         l.gate.position = new Vector3(spec.gateX, spec.gateY, 0f);
         LevelBuilder.Visual("Door", PrimitiveType.Cube, l.gate, new Vector3(0f, 1.7f, 0f), new Vector3(0.35f, 3.4f, 1.9f), gm.Mat("Lab Frame", new Color(0.55f, 0.6f, 0.68f), 0.7f, 0.5f));
         LevelBuilder.Visual("Door Stripe", PrimitiveType.Cube, l.gate, new Vector3(0f, 1.7f, -0.96f), new Vector3(0.37f, 0.3f, 0.02f), gm.Mat("Hazard Yellow", new Color(1f, 0.82f, 0.15f), 0.4f), false);
+        LevelBuilder.Visual("Target Board", PrimitiveType.Cube, l.gate, new Vector3(0f, PanelTop * 0.5f + 1.7f, 0.1f), new Vector3(0.3f, PanelTop - 3.4f, 1.6f), gm.Mat("Badge White", Color.white, 0.4f), false);
+        Material red = gm.Mat("Target Red", new Color(1f, 0.25f, 0.3f), 0.4f), white = gm.Mat("Badge White", Color.white, 0.4f);
+        for (float ty = 1.2f; ty < PanelTop; ty += 1.9f)
+        {
+            // دواير الهدف
+            float[] rr = { 0.75f, 0.55f, 0.35f, 0.15f };
+            for (int k = 0; k < rr.Length; k++)
+                LevelBuilder.Visual("Target Ring", PrimitiveType.Cylinder, l.gate, new Vector3(-0.2f - k * 0.01f, ty, -0.2f), new Vector3(rr[k] * 2f, 0.02f, rr[k] * 2f), k % 2 == 0 ? red : white, false).transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        }
+        l.sensorLamp = LevelBuilder.Visual("Lamp", PrimitiveType.Sphere, l.gate, new Vector3(0f, PanelTop + 0.3f, 0f), Vector3.one * 0.5f, gm.Mat("Lamp Red", new Color(1.6f, 0.2f, 0.2f), 0.5f), false).GetComponent<Renderer>();
         l.gateCol = l.gate.gameObject.AddComponent<BoxCollider>();
         l.gateCol.center = new Vector3(0f, 1.7f, 0f);
         l.gateCol.size = new Vector3(0.4f, 3.4f, 2f);
@@ -809,11 +809,14 @@ public class LaserMirror : MonoBehaviour
                 if (h.collider.GetComponentInParent<InkMark>() != null || h.collider.GetComponentInParent<RowaidaController>() != null) continue;
                 if (h.distance < best) { best = h.distance; bestSeg = -2; }
             }
-            // الحساس (من فوق بس)
-            Vector2 sc = spec.sensor + Vector2.up * 0.1f;
-            Vector2 toS = sc - pos;
-            float along = Vector2.Dot(toS, dir);
-            if (along > 0f && along < best && (toS - dir * along).magnitude < 0.45f && dir.y < -0.5f) { best = along; bestSeg = -3; }
+            // لوح الأهداف على الباب (من أي ارتفاع)
+            float panelX = spec.gateX - 0.3f;
+            if (Mathf.Abs(dir.x) > 0.3f)
+            {
+                float tp = (panelX - pos.x) / dir.x;
+                float hy = pos.y + dir.y * tp;
+                if (tp > 0f && tp < best && hy > spec.gateY && hy < spec.gateY + PanelTop) { best = tp; bestSeg = -3; }
+            }
 
             Vector2 end = pos + dir * best;
             Transform bm = Beam(used++);
@@ -823,10 +826,8 @@ public class LaserMirror : MonoBehaviour
             bm.localScale = new Vector3(best, 0.08f + Mathf.Sin(t * 40f) * 0.015f, 0.08f);
             if (bestSeg == -3) { hitSensor = true; hitGlow.position = new Vector3(end.x, end.y, -0.1f); break; }
             if (bestSeg < 0) { hitGlow.position = new Vector3(end.x, end.y, -0.1f); break; }
-            // ترتد على المراية
-            Vector2 sa = new Vector2(segs[bestSeg].x, segs[bestSeg].y), sb = new Vector2(segs[bestSeg].z, segs[bestSeg].w);
-            Vector2 s = (sb - sa).normalized, n = new Vector2(-s.y, s.x);
-            dir = (dir - 2f * Vector2.Dot(dir, n) * n).normalized;
+            // أي خط يقطع الشعاع يصير مراية ترده على الباب على طول (ما يحتاج زاوية معينة)
+            dir = new Vector2(spec.gateX >= end.x ? 1f : -1f, 0f);
             pos = end;
             if (Random.value < 0.15f) Fx.Sparkle(new Vector3(end.x, end.y, -0.1f), new Color(1f, 0.4f, 0.4f), 2);
         }
@@ -837,7 +838,7 @@ public class LaserMirror : MonoBehaviour
         if (hum != null) hum.volume = r != null ? Mathf.Clamp01(1f - Mathf.Abs(r.transform.position.x - spec.emitter.x) / 14f) * 0.25f : 0f;
         powerT = hitSensor ? powerT + dt : 0f;
         sensorLamp.sharedMaterial = hitSensor ? gm.Mat("Lamp Green", new Color(0.3f, 1.6f, 0.4f), 0.5f) : gm.Mat("Lamp Red", new Color(1.6f, 0.2f, 0.2f), 0.5f);
-        if (powerT > 0.5f && openT < 0f) { openT = 0f; LevelSfx.Play("chime", 0.9f, 1.4f); LevelSfx.Play("whoosh", 0.6f); Fx.Sparkle(new Vector3(spec.sensor.x, spec.sensor.y, 0f), new Color(1f, 0.5f, 0.5f), 20); }
+        if (powerT > 0.5f && openT < 0f) { openT = 0f; LevelSfx.Play("chime", 0.9f, 1.4f); LevelSfx.Play("whoosh", 0.6f); Fx.Sparkle(hitGlow.position, new Color(1f, 0.5f, 0.5f), 20); }
         if (openT >= 0f && openT < 1f)
         {
             openT = Mathf.Min(1f, openT + dt / 0.9f);
@@ -845,9 +846,9 @@ public class LaserMirror : MonoBehaviour
             if (openT >= 1f) gateCol.enabled = false;
         }
         bool wait = openT < 0f && HoldHelper.Before(spec.gateX - 0.3f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "ليزر! ارسمي خطوط مستقيمة تصير مرايا... وصلي الشعاع للحساس من فوق"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "ليزر! ارسمي خط يقطع الشعاع الأحمر... يرتد على الهدف ويفتح الباب"); }
         HoldHelper.Hold(ref holding, wait);
-        if (openT < 0f) { float mh = Mathf.Max(spec.sensor.y, spec.emitter.y) + 3.8f; LabFeatures.Show(spec.emitter.x - 6f, spec.gateX, new Vector3(spec.emitter.x - 1f, spec.emitter.y - 1.2f, 0f), new Vector3(spec.sensor.x + 1f, mh, 0f), new Vector3(spec.gateX + 0.8f, spec.gateY + 3.5f, 0f)); }
+        if (openT < 0f) LabFeatures.Show(spec.emitter.x - 6f, spec.gateX, new Vector3(spec.emitter.x - 1f, spec.emitter.y - 1.2f, 0f), new Vector3(spec.gateX + 0.8f, spec.gateY + PanelTop + 0.6f, 0f));
     }
 
     // شعاع يصطدم بقطعة؟ (المسافة d)
