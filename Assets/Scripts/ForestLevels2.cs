@@ -14,6 +14,7 @@ public static class ForestFeatures2
         foreach (Vector3 s in data.hedgehogs) Hedgehog.Create(root, s, gm);
         foreach (Vector3 s in data.turtlePonds) TurtlePond.Create(root, s, gm);
         foreach (Vector3 s in data.stonePonds) SteppingStones.Create(root, s, gm);
+        foreach (Vector2 s in data.stumps) JumpStump.Create(root, s, gm);
     }
 
     // سطح مويه هادي بتموج خفيف (للبرك)
@@ -988,5 +989,51 @@ public class SteppingStones : MonoBehaviour
         }
         if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "الحجار تطلع وتغطس! رويدا تنط عليها لما تطلع... والمويه تبلع الخطوط"); }
         HoldHelper.Hold(ref holding, wait);
+    }
+}
+
+// ---------- جذع شجرة مقطوع على الطريق: رويدا ما تقدر تعديه، اللاعبة تنط (المسافة أو السهم فوق) ----------
+public class JumpStump : MonoBehaviour
+{
+    static bool told;
+    float x, top;
+    Transform mush;
+
+    public static void Create(Transform root, Vector2 s, GameManager gm)
+    {
+        var go = new GameObject("Jump Stump");
+        go.transform.SetParent(root, false);
+        var j = go.AddComponent<JumpStump>();
+        j.x = s.x; j.top = s.y;
+        told = false;
+        Material bark = gm.Mat("Stump Bark", new Color(0.5f, 0.33f, 0.2f), 0.25f);
+        Material ring = gm.Mat("Stump Rings", new Color(0.88f, 0.72f, 0.5f), 0.3f);
+        Vector3 b = new Vector3(j.x, j.top, 0f);
+        LevelBuilder.Visual("Stump", PrimitiveType.Cylinder, go.transform, b + new Vector3(0f, 0.38f, 0f), new Vector3(0.95f, 0.38f, 1.5f), bark, true);
+        LevelBuilder.Visual("Stump Top", PrimitiveType.Cylinder, go.transform, b + new Vector3(0f, 0.765f, 0f), new Vector3(0.85f, 0.01f, 1.4f), ring, false);
+        for (int k = 1; k <= 2; k++) LevelBuilder.Visual("Ring", PrimitiveType.Cylinder, go.transform, b + new Vector3(0f, 0.772f, 0f), new Vector3(0.85f - k * 0.25f, 0.005f, 1.4f - k * 0.4f), bark, false);
+        for (int k = 0; k < 3; k++) LevelBuilder.Visual("Root", PrimitiveType.Sphere, go.transform, b + new Vector3(-0.45f + k * 0.45f, 0.08f, -0.6f + k * 0.5f), new Vector3(0.35f, 0.18f, 0.3f), bark, false);
+        LevelBuilder.Visual("Moss", PrimitiveType.Sphere, go.transform, b + new Vector3(-0.3f, 0.45f, -0.7f), new Vector3(0.35f, 0.25f, 0.1f), gm.Mat("Moss", new Color(0.4f, 0.7f, 0.3f), 0.2f), false);
+        j.mush = new GameObject("Tiny Mushroom").transform;
+        j.mush.SetParent(go.transform, false);
+        j.mush.position = b + new Vector3(0.38f, 0.78f, -0.3f);
+        LevelBuilder.Visual("Cap", PrimitiveType.Sphere, j.mush, new Vector3(0f, 0.16f, 0f), new Vector3(0.26f, 0.14f, 0.26f), gm.Mat("Mush Red", new Color(0.95f, 0.3f, 0.3f), 0.4f), false);
+        LevelBuilder.Visual("Stem", PrimitiveType.Cylinder, j.mush, new Vector3(0f, 0.06f, 0f), new Vector3(0.08f, 0.07f, 0.08f), gm.Mat("Badge White", Color.white, 0.4f), false);
+        var col = go.AddComponent<BoxCollider>();
+        col.center = b + new Vector3(0f, 0.38f, 0f);
+        col.size = new Vector3(0.85f, 0.76f, 1.8f);
+    }
+
+    void Update()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+        mush.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 2f + x) * 6f);
+        RowaidaController r = gm.Rowaida;
+        if (!told && r != null && gm.IsPlaying && r.transform.position.x > x - 3f && r.transform.position.x < x)
+        {
+            told = true;
+            gm.UI.ShowMessage("", 3.6f, "جذع على الطريق! اضغطي المسافة (أو السهم فوق) عشان رويدا تنط");
+        }
     }
 }

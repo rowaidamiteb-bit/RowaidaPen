@@ -266,6 +266,7 @@ public class LevelData
     public List<Vector3> hedgehogs = new List<Vector3>();   // قنفذ يتدحرج (من x، لـ x، سطح الأرض)
     public List<Vector3> turtlePonds = new List<Vector3>(); // بركة سلاحف (من x، لـ x، سطح الأرض)
     public List<Vector3> stonePonds = new List<Vector3>();  // بركة حجار تطلع وتغطس (من x، لـ x، كل كم ثانية)
+    public List<Vector2> stumps = new List<Vector2>();      // جذع مقطوع على الطريق تنطين فوقه (x، سطح)
     public bool forest;                                     // منظر الغابة (شجر، عشب، فراشات، أرانب، طيور)
     public Vector3? sticker;                                // ملصق مخفي (الجزء الثالث)
     public bool concertStage;                               // اللحن الأخير: المرحلة مسرح (ستارة، جمهور، أضواء، قائد أوركسترا)
@@ -1301,10 +1302,12 @@ public static class Levels
             hazards = { new HazardSpec("rollinglog", 17f, 1.8f, 4.2f), new HazardSpec("mole", 33f, 1.2f, 3.2f, 1f) },
             title = "مدخل الغابة",
             theme = LevelTheme.Forest(),
-            subtitle = "قطعي الشبكة، ازرعي بذرة، نطي فوق الجذع، وادفعي الشجرة اليابسة!",
+            subtitle = "بهالمرحلة تنطين بنفسك (المسافة أو السهم فوق)! قطعي الشبكة، ازرعي بذرة، ونطي فوق الجذوع",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(37f, 0f, 0f),
             ink = 12f,
+            allowJump = true,
+            stumps = { new Vector2(14.5f, 0f), new Vector2(30.5f, 0f) },
             blocks =
             {
                 Page(-7f, 6f),

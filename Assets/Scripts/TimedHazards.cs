@@ -893,7 +893,9 @@ public class TimedHazard : MonoBehaviour
         if (spec.kind == "pencil" || spec.kind == "rollinglog")
         {
             float gap = model.position.x - p.x;
-            if (on && gm.IsPlaying && gap > 1.1f && gap < 2.4f && Mathf.Abs(p.y - spec.y - 0.7f) < 0.4f) rw.Jump(true);
+            // تنط لحالها، إلا بالمراحل اللي فيها نط (هناك اللاعبة تنط بنفسها)
+            bool manual = gm.CurrentLevel != null && gm.CurrentLevel.allowJump;
+            if (!manual && on && gm.IsPlaying && gap > 1.1f && gap < 2.4f && Mathf.Abs(p.y - spec.y - 0.7f) < 0.4f) rw.Jump(true);
             if (on && Mathf.Abs(gap) < 0.45f && p.y - spec.y < 1.05f && p.y - spec.y > -0.5f && !rw.IsKnocked)
             {
                 rw.Knockback(-1.2f);
