@@ -63,10 +63,10 @@ public class IntroCutscene : MonoBehaviour
         // رويدا وهي كبيرة تحكي قصتها لما كانت صغيرة
         captions = new[]
         {
-            new Caption { from = 0.8f, to = 5.8f, voice = "intro_0", text = "كنت أحب الرسم كثيرا... وفي كل ليلة كنت أرسم في دفتري قبل أن أنام" },
-            new Caption { from = 6.3f, to = 9.8f, voice = "intro_1", text = "لكنني في تلك الليلة... كنت متعبة جدا" },
-            new Caption { from = 10.1f, to = 13.2f, voice = "intro_2", text = "نمت وأنا أمسك قلمي... فسقط الدفتر على الأرض" },
-            new Caption { from = 13.5f, to = 16.2f, voice = "intro_3", text = "وفجأة... بدأ الدفتر يتوهج!" },
+            new Caption { from = 0.8f, to = 5.8f, voice = "intro_0", text = "كنت أحب الرسم... كل ليلة أرسم في دفتري قبل أن أنام" },
+            new Caption { from = 6.3f, to = 9.8f, voice = "intro_1", text = "لكن تلك الليلة... كنت متعبة جدا" },
+            new Caption { from = 10.1f, to = 13.2f, voice = "intro_2", text = "نمت وأنا أمسك قلمي... وسقط الدفتر" },
+            new Caption { from = 13.5f, to = 16.2f, voice = "intro_3", text = "وفجأة... صار الدفتر يضيء!" },
             new Caption { from = 16.4f, to = 18.6f, voice = "intro_4", text = "ووجدت نفسي داخل دفتر رسمي..." },
         };
 
@@ -300,7 +300,7 @@ public class IntroCutscene : MonoBehaviour
         yield return null;
 
         // الشاشة البيضا تختفي، وجملة تشرح الهدف
-        string goal = ArabicText.Fix("والطريق الوحيد للعودة إلى غرفتي... كان الوصول إلى الصفحة الأخيرة");
+        string goal = ArabicText.Fix("الطريق الوحيد للعودة إلى غرفتي... هو الوصول إلى آخر صفحة");
         float show = Mathf.Max(4.5f, Narration.Length("intro_5") + 1.6f);
         bool said = false;
         for (float k = 0f; k < show; k += Time.deltaTime)
@@ -378,7 +378,7 @@ public class IntroCutscene : MonoBehaviour
         var t = new GameObject("Text", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
         t.transform.SetParent(parent, false);
         t.font = ArabicText.Font;
-        t.fontSize = size;
+        t.fontSize = ArabicText.Size(size);
         t.alignment = TextAnchor.MiddleCenter;
         t.color = Color.white;
         t.raycastTarget = false;

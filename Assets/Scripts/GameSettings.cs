@@ -170,7 +170,7 @@ public class SkipButton : MonoBehaviour
         var label = new GameObject("Text", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
         label.transform.SetParent(go.transform, false);
         label.font = ArabicText.Font;
-        label.fontSize = 40;
+        label.fontSize = ArabicText.Size(40);
         label.fontStyle = FontStyle.Bold;
         label.alignment = TextAnchor.MiddleCenter;
         label.color = Color.white;

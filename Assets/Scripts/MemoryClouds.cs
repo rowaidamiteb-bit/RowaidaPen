@@ -158,7 +158,7 @@ public class MemoryCard : MonoBehaviour
         t.rectTransform.anchorMax = Vector2.one;
         t.rectTransform.offsetMin = t.rectTransform.offsetMax = Vector2.zero;
         t.font = ArabicText.Font;
-        t.fontSize = 26;
+        t.fontSize = ArabicText.Size(26);
         t.fontStyle = FontStyle.Bold;
         t.alignment = TextAnchor.MiddleCenter;
         t.color = new Color(0.78f, 0.33f, 0.55f);

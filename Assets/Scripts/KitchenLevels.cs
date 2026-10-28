@@ -191,7 +191,7 @@ public class RecipePot : MonoBehaviour
                         LevelSfx.Play("error", 0.8f);
                         coughUntil = t + 1.4f;
                         for (int k = 0; k < 8; k++) SmokeCloud.Puff(new Vector3(cx + Random.Range(-1f, 1f), top - 0.5f, Random.Range(-0.5f, 0.5f)), Random.Range(0.8f, 1.4f));
-                        gm.UI.ShowMessage("", 2.4f, "مو هذا! شوفي كرت الوصفة واتبعي الترتيب");
+                        gm.UI.ShowMessage("", 2.4f, "ليس هذا! لننظر إلى بطاقة الوصفة ونتبع الترتيب");
                         step = 0;
                         for (int k = 0; k < 3; k++) dropT[k] = -1f;
                     }
@@ -211,7 +211,7 @@ public class RecipePot : MonoBehaviour
         }
 
         // كل المكونات بالترتيب: تغلي والمغرفة تنزل
-        if (step >= 3 && ladleT < 0f) { ladleT = 0f; LevelSfx.Play("boil", 0.9f); soup.GetComponent<MeshRenderer>().sharedMaterial = soupDone; gm.UI.ShowMessage("", 2f, "يم! الشوربة جاهزة"); }
+        if (step >= 3 && ladleT < 0f) { ladleT = 0f; LevelSfx.Play("boil", 0.9f); soup.GetComponent<MeshRenderer>().sharedMaterial = soupDone; gm.UI.ShowMessage("", 2f, "لذيذ! الحساء جاهز"); }
         if (ladleT >= 0f && ladleT < 1f)
         {
             ladleT = Mathf.Min(1f, ladleT + dt / 1.4f);
@@ -235,7 +235,7 @@ public class RecipePot : MonoBehaviour
         if (step >= 3 && Random.value < 0.15f) SmokeCloud.Puff(new Vector3(cx + Random.Range(-1f, 1f), top - 0.3f, 1f), Random.Range(0.7f, 1.2f));
 
         bool wait = HoldHelper.Before(from) && !bridge.enabled && !RowaidaController.BridgeCovers(from, to, top);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "اتبعي الوصفة! المسي المكونات بخط بنفس ترتيب الكرت"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "لنتبع الوصفة! نلمس المكونات بخط بترتيب البطاقة نفسه"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -311,7 +311,7 @@ public class FridgeWind : MonoBehaviour
             magnet = true;
             magnetT.gameObject.SetActive(true);
             LevelSfx.Play("clank", 0.7f, 1.4f);
-            gm.UI.ShowMessage("", 2.2f, "مغناطيس! الثلاجة تسكرت");
+            gm.UI.ShowMessage("", 2.2f, "مغناطيس! أُغلقت الثلاجة");
         }
         float open = Open01;
         door.localRotation = Quaternion.Euler(0f, open * 75f, 0f);
@@ -334,7 +334,7 @@ public class FridgeWind : MonoBehaviour
 
         float cross = (range + 1.6f) / (r != null ? r.walkSpeed : 2.8f);
         bool wait = !magnet && HoldHelper.Before(x - range) && (blowing || UntilOpen < cross);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "الثلاجة تطلع ريح باردة! استني لين تتسكر... أو ارسمي دايرة على بابها"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "الثلاجة تُخرج ريحًا باردة! لننتظر حتى تُغلق... أو نرسم دائرة على بابها"); }
         HoldHelper.Hold(ref holding, wait);
     }
 
@@ -443,7 +443,7 @@ public class ChocoRiver : MonoBehaviour
         float cross = (to - from + 1.6f) / (r != null ? r.walkSpeed : 2.8f);
         bool ready = all && (minLeft > cross || rowaidaOn);
         bool wait = HoldHelper.Before(from) && !ready;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "نهر شوكولاتة! الخطوط تغرق... ارسمي دواير بالأماكن المنقطة تصير مارشملو"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "نهر شوكولاتة! الخطوط تغرق... لنرسم دوائر في الأماكن المنقطة تصبح مارشملو"); }
         HoldHelper.Hold(ref holding, wait);
     }
 
@@ -551,7 +551,7 @@ public class GumballPit : MonoBehaviour
         }
 
         bool wait = HoldHelper.Before(from) && !fillCol.enabled && !RowaidaController.BridgeCovers(from, to, top);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "مكينة علك! المسي يدها الحمرا بخط عشان تعبي الحفرة"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "آلة علكة! لنلمس ذراعها الحمراء بخط لتملأ الحفرة"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -629,7 +629,7 @@ public class CandyGate : MonoBehaviour
             if (liftT >= 1f) Fx.Sparkle(new Vector3(x, top + 2f, 0f), new Color(1f, 0.6f, 0.7f), 14);
         }
         bool wait = liftT < 0.9f && HoldHelper.Before(x - 1.6f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "بوابة عصا الحلاوة! المسيها بخط عشان ترتفع"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "بوابة عصا الحلوى! لنلمسها بخط لترتفع"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -711,7 +711,7 @@ public class PancakeFlip : MonoBehaviour
             }
         }
         bool wait = HoldHelper.Before(from) && !bridge.enabled && !RowaidaController.BridgeCovers(from, to, top);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "المسي المقلاة بخط تقلب البان كيك... ويصير جسر!"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "لنلمس المقلاة بخط فتقلب الفطيرة... وتصبح جسرًا!"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -788,7 +788,7 @@ public class OvenDoor : MonoBehaviour
         {
             stuckOpen = true;
             LevelSfx.Play("clank", 0.6f, 1.5f);
-            gm.UI.ShowMessage("", 2.2f, "الفرن صار مفتوح على طول");
+            gm.UI.ShowMessage("", 2.2f, "صار الفرن مفتوحًا دائمًا");
         }
         float open = Open01;
         hinge.localRotation = Quaternion.Euler(0f, 0f, -90f * (1f - open));
@@ -801,7 +801,7 @@ public class OvenDoor : MonoBehaviour
         float cross = (to - from + 1.6f) / (r != null ? r.walkSpeed : 2.8f);
         bool ready = bridge.enabled && (OpenLeft > cross || rowaidaOn);
         bool wait = HoldHelper.Before(from) && !ready && !RowaidaController.BridgeCovers(from, to, top);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "باب الفرن يصير جسر لما ينفتح! استني... أو المسي زر الفرن بخط"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "باب الفرن يصبح جسرًا حين يُفتح! لننتظر... أو نلمس زر الفرن بخط"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -908,7 +908,7 @@ public class Conveyor : MonoBehaviour
         if (motor != null) motor.volume = r != null ? Mathf.Clamp01(1f - Mathf.Abs(r.transform.position.x - (from + to) * 0.5f) / 10f) * 0.35f : 0f;
 
         bool wait = dir < 0f && HoldHelper.Before(from);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "السير يرجعك لورا! المسي المفتاح اللي بعده بخط عشان ينعكس"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "السير يعيد رويدا إلى الخلف! لنلمس المفتاح الذي بعده بخط لينعكس"); }
         HoldHelper.Hold(ref holding, wait);
     }
 
@@ -990,7 +990,7 @@ public class JellyBears : MonoBehaviour
             candy = MakeCandy(c.x < from ? Mathf.Min(c.x, from - 1.5f) : Mathf.Max(c.x, to + 1.5f), gm);
             busyUntil = t + BusyTime;
             LevelSfx.Play("pop", 0.8f, 1.2f);
-            gm.UI.ShowMessage("", 2.2f, "الدببة راحت للحلاوة! بسرعة ارسمي الجسر");
+            gm.UI.ShowMessage("", 2.2f, "ذهبت الدببة إلى الحلوى! لنرسم الجسر بسرعة");
         }
         if (candy != null && t > busyUntil && !rowaidaOn) { Destroy(candy.gameObject); candy = null; }
 
@@ -1037,11 +1037,11 @@ public class JellyBears : MonoBehaviour
             spotted.Remove(target);
             Destroy(target.gameObject);
             target = null;
-            gm.UI.ShowMessage("", 2.4f, "الدب أكل خطك! ارسمي دايرة حلاوة تلهيهم أول");
+            gm.UI.ShowMessage("", 2.4f, "أكل الدب الخط! لنرسم أولًا دائرة حلوى تلهيها");
         }
 
         bool wait = HoldHelper.Before(from) && !(RowaidaController.BridgeCovers(from, to, top) && (Busy || rowaidaOn));
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "دببة الجيلي تاكل الخطوط! ارسمي دايرة تصير حلاوة تلهيهم... وبعدين الجسر"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "دببة الجيلي تأكل الخطوط! لنرسم دائرة تصبح حلوى تلهيها... ثم الجسر"); }
         HoldHelper.Hold(ref holding, wait);
     }
 
@@ -1143,7 +1143,7 @@ public class CakeTower : MonoBehaviour
             if (r != null && gm.IsPlaying && r.transform.position.y > top && r.transform.position.x > candleX[i] - 1.5f && r.transform.position.x < candleX[i] - 0.5f) wait = true;
         }
         glow.intensity = litCount * 0.8f;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "شمعة بالطريق! طفيها بخط عليها"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "شمعة في الطريق! لنطفئها بخط عليها"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }

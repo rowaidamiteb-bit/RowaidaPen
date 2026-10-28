@@ -470,17 +470,20 @@ public class MenuUI : MonoBehaviour
 
     void DrawGear(RectTransform p)
     {
+        // ترس عادي: جسم دايري وثمان أسنان مربعة حوله وفتحة بالنص
         Color c = Color.white;
-        for (int k = 0; k < 4; k++)
+        for (int k = 0; k < 8; k++)
         {
+            float a = k * 45f * Mathf.Deg2Rad;
             var tooth = Panel(p, "Tooth", c);
-            Place(tooth.rectTransform, Vector2.zero, new Vector2(16f, 66f));
-            tooth.rectTransform.localRotation = Quaternion.Euler(0f, 0f, k * 45f);
+            tooth.sprite = rounded; tooth.type = Image.Type.Sliced; tooth.pixelsPerUnitMultiplier = 10f;
+            Place(tooth.rectTransform, new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * 25f, new Vector2(15f, 16f));
+            tooth.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -k * 45f);
         }
         var ring = Panel(p, "Ring", c); ring.sprite = circle;
         Place(ring.rectTransform, Vector2.zero, new Vector2(46f, 46f));
         var hole = Panel(p, "Hole", Lilac); hole.sprite = circle;
-        Place(hole.rectTransform, Vector2.zero, new Vector2(20f, 20f));
+        Place(hole.rectTransform, Vector2.zero, new Vector2(18f, 18f));
     }
 
     // ---------- الإعدادات: الموسيقى والأصوات (مستوى وكتم) وصوت رويدا ----------
@@ -583,14 +586,14 @@ public class MenuUI : MonoBehaviour
         titleRect = title.rectTransform;
         var pen = MiniPencil(mainPanel, new Vector2(-290f, 340f));
         pen.localScale = Vector3.one * 2.6f;
-        Label(mainPanel, ArabicText.Fix("ارسمي طريق رويدا لين ترجع لغرفتها"), 32, new Vector2(0f, 190f), new Vector2(760f, 50f)).color = Grey;
+        Label(mainPanel, ArabicText.Fix("لنرسم طريق رويدا حتى تعود إلى غرفتها"), 32, new Vector2(0f, 190f), new Vector2(760f, 50f)).color = Grey;
 
         playLabel = PrimaryButton(mainPanel, "", new Vector2(0f, 75f), new Vector2(560f, 120f), () => gm.PlayFromMenu(), 50);
         SecondaryButton(mainPanel, "خريطة المراحل", new Vector2(0f, -55f), new Vector2(560f, 100f), () => ShowLevels(false), 42, SkyBlue);
         SecondaryButton(mainPanel, "صندوق الأقلام", new Vector2(190f, -170f), new Vector2(240f, 96f), ShowPencil, 30, Lilac);
         SecondaryButton(mainPanel, "الإعدادات", new Vector2(-15f, -170f), new Vector2(160f, 96f), () => ShowSettings(mainPanel), 30, Teal);
         SecondaryButton(mainPanel, "من جديد", new Vector2(-200f, -170f), new Vector2(170f, 96f), ShowConfirm, 30, Orange);
-        SecondaryButton(mainPanel, "اطلعي من اللعبة", new Vector2(0f, -285f), new Vector2(560f, 90f), Application.Quit, 34, MintC);
+        SecondaryButton(mainPanel, "الخروج من اللعبة", new Vector2(0f, -285f), new Vector2(560f, 90f), Application.Quit, 34, MintC);
 
         // عداد النجوم بشريط أصفر صغير
         var pill = Framed(mainPanel, "Stars Pill", new Vector2(0f, -385f), new Vector2(300f, 70f), new Color(1f, 0.93f, 0.7f), YellowDark, 4f, 1.6f);
@@ -602,7 +605,7 @@ public class MenuUI : MonoBehaviour
 
     void RefreshMain()
     {
-        playLabel.text = ArabicText.Fix(SaveData.HasProgress ? "كمّلي — المرحلة " + (SaveData.Unlocked + 1) : "ابدئي الحكاية!");
+        playLabel.text = ArabicText.Fix(SaveData.HasProgress ? "متابعة — المرحلة " + (SaveData.Unlocked + 1) : "لنبدأ الحكاية!");
         starsTotal.text = SaveData.TotalStars + " / " + Levels.All.Count * SaveData.MaxStars;
     }
 
@@ -659,7 +662,7 @@ public class MenuUI : MonoBehaviour
     {
         levelsPanel = NotebookCard(canvasRect, "Levels", new Vector2(1640f, 1000f), 0.4f);
         levelsTitle = Label(levelsPanel, "", 58, new Vector2(240f, 405f), new Vector2(1000f, 90f));
-        Label(levelsPanel, ArabicText.Fix("اختاري الصفحة الجاية!"), 30, new Vector2(240f, 345f), new Vector2(800f, 44f)).color = Grey;
+        Label(levelsPanel, ArabicText.Fix("لنختر الصفحة التالية!"), 30, new Vector2(240f, 345f), new Vector2(800f, 44f)).color = Grey;
 
         // كل جزء (20 مرحلة) بخريطة لحاله
         int partCount = (Levels.All.Count + PerPart - 1) / PerPart;
@@ -744,7 +747,7 @@ public class MenuUI : MonoBehaviour
         infoHint.color = Grey;
         infoHint.fontStyle = FontStyle.Normal;
 
-        startLabel = PrimaryButton(levelsPanel, "ابدئي اللعب!", new Vector2(-540f, -350f), new Vector2(420f, 104f), () =>
+        startLabel = PrimaryButton(levelsPanel, "لنبدأ اللعب!", new Vector2(-540f, -350f), new Vector2(420f, 104f), () =>
         {
             if (selected <= SaveData.Unlocked) gm.StartLevelFromMenu(selected);
         }, 44);
@@ -806,8 +809,8 @@ public class MenuUI : MonoBehaviour
         infoTitle.text = ArabicText.Fix("المرحلة " + (sel + 1) + ": " + d.title);
         int st = SaveData.Stars(sel);
         for (int s = 0; s < infoStars.Length; s++) infoStars[s].color = s < st ? Gold : StarOff;
-        string hint = selOpen ? d.subtitle : "خلصي المراحل اللي قبلها عشان تنفتح";
-        if (selOpen && d.sticker.HasValue) hint += SaveData.HasSticker(sel) ? " — لقيتي الملصق!" : " — فيها ملصق مخفي";
+        string hint = selOpen ? d.subtitle : "تُفتح بعد إنهاء المراحل السابقة";
+        if (selOpen && d.sticker.HasValue) hint += SaveData.HasSticker(sel) ? " — عُثر على الملصق!" : " — فيها ملصق مخفي";
         infoHint.text = WrapFix(hint, 30);
         startButton.GetComponent<Image>().color = selOpen ? PinkDark : LockedDark;
         startButton.transform.GetChild(0).GetComponent<Image>().color = selOpen ? Pink : Locked;
@@ -822,11 +825,11 @@ public class MenuUI : MonoBehaviour
     void BuildConfirm()
     {
         confirmPanel = NotebookCard(canvasRect, "Confirm Restart", new Vector2(820f, 600f), 1f);
-        Label(confirmPanel, ArabicText.Fix("تبين تبدين من جديد؟"), 60, new Vector2(0f, 160f), new Vector2(760f, 90f));
-        var warn = Label(confirmPanel, ArabicText.Fix("بتنمسح كل المراحل اللي فتحتيها والنجوم"), 32, new Vector2(0f, 75f), new Vector2(760f, 50f));
+        Label(confirmPanel, ArabicText.Fix("البدء من جديد؟"), 60, new Vector2(0f, 160f), new Vector2(760f, 90f));
+        var warn = Label(confirmPanel, ArabicText.Fix("ستُمسح كل المراحل المفتوحة والنجوم"), 32, new Vector2(0f, 75f), new Vector2(760f, 50f));
         warn.color = PinkDark;
-        // من اليمين: "إيه" وبعدها "لا"
-        PrimaryButton(confirmPanel, "إيه، من جديد", new Vector2(160f, -90f), new Vector2(300f, 100f), () =>
+        // من اليمين: "نعم" وبعدها "لا"
+        PrimaryButton(confirmPanel, "نعم، من جديد", new Vector2(160f, -90f), new Vector2(300f, 100f), () =>
         {
             SaveData.ResetProgress();
             DrawingMemory.Clear();
@@ -897,7 +900,7 @@ public class MenuUI : MonoBehaviour
         Place(preview.rectTransform, new Vector2(0f, -320f), new Vector2(640f, 36f));
         previewGlow = preview.gameObject.AddComponent<Outline>();
 
-        PrimaryButton(pencilPanel, "اختاري قلمك!", new Vector2(0f, -405f), new Vector2(380f, 90f), ShowMain, 40);
+        PrimaryButton(pencilPanel, "هذا قلمي!", new Vector2(0f, -405f), new Vector2(380f, 90f), ShowMain, 40);
     }
 
     public void ShowPencil()
@@ -954,7 +957,7 @@ public class MenuUI : MonoBehaviour
                 preview.uvRect = new Rect(0f, 0f, 2f, 1f);
                 break;
         }
-        previewName.text = ArabicText.Fix("خطك: " + PencilStyle.StyleNames[(int)st] + " — " + PencilStyle.ColorNames[c]);
+        previewName.text = ArabicText.Fix("الخط: " + PencilStyle.StyleNames[(int)st] + " — " + PencilStyle.ColorNames[c]);
     }
 
     // ---------- الاستراحة ----------
@@ -977,12 +980,12 @@ public class MenuUI : MonoBehaviour
             Place(bar.rectTransform, new Vector2(s * 22f, 0f), new Vector2(26f, 74f));
         }
         pauseIcon = icon.rectTransform;
-        PrimaryButton(pausePanel, "كمّلي اللعب", new Vector2(0f, 45f), new Vector2(460f, 100f), () => gm.Resume(), 44);
-        SecondaryButton(pausePanel, "أعيدي المرحلة", new Vector2(0f, -60f), new Vector2(460f, 84f), () => gm.RestartLevel(), 34, MintC);
+        PrimaryButton(pausePanel, "متابعة اللعب", new Vector2(0f, 45f), new Vector2(460f, 100f), () => gm.Resume(), 44);
+        SecondaryButton(pausePanel, "إعادة المرحلة", new Vector2(0f, -60f), new Vector2(460f, 84f), () => gm.RestartLevel(), 34, MintC);
         SecondaryButton(pausePanel, "خريطة المراحل", new Vector2(0f, -152f), new Vector2(460f, 84f), () => ShowLevels(true), 34, SkyBlue);
         SecondaryButton(pausePanel, "الإعدادات", new Vector2(0f, -244f), new Vector2(460f, 84f), () => ShowSettings(pausePanel), 34, Teal);
         SecondaryButton(pausePanel, "القائمة الرئيسية", new Vector2(0f, -336f), new Vector2(460f, 84f), () => gm.GoToMainMenu(), 34, Lilac);
-        Label(pausePanel, ArabicText.Fix("دفترك ينتظرك"), 28, new Vector2(-10f, -410f), new Vector2(400f, 44f)).color = Grey;
+        Label(pausePanel, ArabicText.Fix("الدفتر في الانتظار"), 28, new Vector2(-10f, -410f), new Vector2(400f, 44f)).color = Grey;
         MiniPencil(pausePanel, new Vector2(120f, -410f));
     }
 
@@ -1050,17 +1053,17 @@ public class MenuUI : MonoBehaviour
             reasons[i].alignment = TextAnchor.MiddleRight;
         }
         nextLabel = PrimaryButton(completePanel, "", new Vector2(0f, -330f), new Vector2(520f, 104f), () => nextAction?.Invoke(), 42);
-        SecondaryButton(completePanel, "أعيدي", new Vector2(130f, -428f), new Vector2(230f, 72f), () => gm.RestartLevel(), 32, MintC);
+        SecondaryButton(completePanel, "إعادة", new Vector2(130f, -428f), new Vector2(230f, 72f), () => gm.RestartLevel(), 32, MintC);
         SecondaryButton(completePanel, "خريطة المراحل", new Vector2(-130f, -428f), new Vector2(250f, 72f), () => ShowLevels(false), 30, SkyBlue);
     }
 
     public void ShowComplete(int index, bool[] earned, bool last, Action next)
     {
         nextAction = next;
-        completeTitle.text = ArabicText.Fix(last ? "خلصتي كل المراحل!" : "أحسنتِ يا رويدا!");
+        completeTitle.text = ArabicText.Fix(last ? "اكتملت كل المراحل!" : "أحسنتِ يا رويدا!");
         completeLevel.text = ArabicText.Fix("المرحلة " + (index + 1) + " — " + Levels.All[index].title);
         nextLabel.text = ArabicText.Fix(last ? "القائمة الرئيسية" : "للصفحة التالية  <");
-        string[] texts = { "خلصتي المرحلة", "ما خسرتي ولا قلب", "وفّرتي حبر" };
+        string[] texts = { "إنهاء المرحلة", "بلا خسارة أي قلب", "توفير الحبر" };
         for (int i = 0; i < SaveData.MaxStars; i++)
         {
             reasons[i].text = ArabicText.Fix(texts[i]);
@@ -1306,7 +1309,7 @@ public class MenuUI : MonoBehaviour
         var t = go.GetComponent<Text>();
         t.font = font;
         t.text = text;
-        t.fontSize = size;
+        t.fontSize = ArabicText.Size(size);
         t.fontStyle = FontStyle.Bold;
         t.alignment = TextAnchor.MiddleCenter;
         t.color = Navy;

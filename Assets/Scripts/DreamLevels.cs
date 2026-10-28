@@ -145,7 +145,7 @@ public class CloudBounce : MonoBehaviour
             puffs.localScale = new Vector3(1f + squish * 0.1f, 1f - Mathf.Sin(squish * Mathf.PI) * 0.35f, 1f);
         }
         bool wait = cloud == null && HoldHelper.Before(x0);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "جدار عالي! ارسمي خط على الأرض قدامه... يصير غيمة تنططك فوق"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "جدار عالٍ! لنرسم خطًّا على الأرض أمامه... يصبح غيمة تقفز برويدا إلى الأعلى"); }
         HoldHelper.Hold(ref holding, wait);
         if (cloud == null) LabFeatures.Show(x0 - 5f, x1, new Vector3(x0 - 2f, top - 0.5f, 0f), new Vector3(wallX + 1f, top + 5f, 0f));
     }
@@ -219,7 +219,7 @@ public class SleepyWind : MonoBehaviour
             if (inZone) { r.WalkBonus = -4.3f; pushing = true; }
             else Release();
             if (blow != null) blow.volume = r != null ? Mathf.Clamp01(1f - Mathf.Abs(r.transform.position.x - head.x) / 12f) * 0.4f : 0f;
-            if (inZone && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "ريح نعسانة تنفخ رويدا لورا! ارسمي لها مخدة (شكل مسكر) جنب راسها عشان تنام"); }
+            if (inZone && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "ريح نعسانة تدفع رويدا إلى الخلف! لنرسم لها وسادة (شكلًا مغلقًا) بجانب رأسها لتنام"); }
             // مخدة جنب الراس؟
             foreach (InkMark m in GameFeatures.Fresh(seen))
             {
@@ -323,7 +323,7 @@ public class SheepBridge : MonoBehaviour
         }
         bool done = sheep.Count >= slots && sheep.TrueForAll(s => s.t >= 1f);
         bool wait = !done && HoldHelper.Before(gapFrom);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "عدي الخرفان! ارسمي " + slots + " دواير... كل وحدة تصير خروف يصف بالحفرة"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "لنعدّ الخراف! نرسم " + slots + " دوائر... كل واحدة تصبح خروفًا يصطف في الحفرة"); }
         HoldHelper.Hold(ref holding, wait);
         if (!done) LabFeatures.Show(gapFrom - 5f, gapFrom, new Vector3(gapFrom - 3f, top - 1f, 0f), new Vector3(gapTo + 1f, top + 3.5f, 0f));
     }
@@ -406,7 +406,7 @@ public class Constellation : MonoBehaviour
                 foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
                     if (!m.closed && m.path != null && GameFeatures.PathDistance(m.path, pos[0]) < 1f) { Fx.Sparkle(GameFeatures.Center(m), new Color(1f, 0.9f, 0.5f), 8); Destroy(m.gameObject); }
                 LevelSfx.Play("chime", 0.8f, 1.2f);
-                gm.UI.ShowMessage("", 2f, "كوكبة! النجوم صارت جسر من نور");
+                gm.UI.ShowMessage("", 2f, "كوكبة! صارت النجوم جسرًا من نور");
             }
         }
         else if (bridgeT < 1f)
@@ -417,7 +417,7 @@ public class Constellation : MonoBehaviour
             if (bridgeT >= 1f) bridgeCol.enabled = true;
         }
         bool wait = bridgeT < 1f && HoldHelper.Before(gapFrom);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "نجوم فوق الحفرة! ارسمي خط يمر على كل النجوم ويوصلها"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "نجوم فوق الحفرة! لنرسم خطًّا يمر على كل النجوم ويصلها"); }
         HoldHelper.Hold(ref holding, wait);
         if (bridgeT < 0f) LabFeatures.Show(gapFrom - 5f, gapFrom, new Vector3(gapFrom - 2.5f, top - 1f, 0f), new Vector3(gapTo + 1f, pos[3].y + 1.2f, 0f));
     }
@@ -493,7 +493,7 @@ public class MoonFog : MonoBehaviour
                 moonR.sharedMaterial = gm.Mat("Moon Awake", new Color(2.6f, 2.4f, 1.4f), 0.4f);
                 LevelSfx.Play("chime", 0.8f, 1.1f);
                 LevelSfx.Play("twinkle", 0.7f);
-                gm.UI.ShowMessage("", 2.2f, "صحى القمر وضوى الطريق!");
+                gm.UI.ShowMessage("", 2.2f, "استيقظ القمر وأضاء الطريق!");
                 break;
             }
         }
@@ -510,7 +510,7 @@ public class MoonFog : MonoBehaviour
             if (wakeT >= 1f) foreach (Transform fo in fog) fo.gameObject.SetActive(false);
         }
         bool wait = wakeT < 1f && HoldHelper.Before(x0);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "ظلام! رويدا خايفة... ارسمي خط يلمس القمر النايم ويصحيه"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "ظلام! رويدا خائفة... لنرسم خطًّا يلمس القمر النائم ويوقظه"); }
         HoldHelper.Hold(ref holding, wait);
         if (wakeT < 0f) LabFeatures.Show(x0 - 5f, x0, new Vector3(x0 - 2.5f, top - 0.5f, 0f), new Vector3(Mathf.Max(x1, moon.x + 1.5f), moon.y + 1.6f, 0f));
     }
@@ -573,7 +573,7 @@ public class LanternLift : MonoBehaviour
                 Destroy(m.gameObject);
                 LevelSfx.Play("whoosh", 0.7f);
                 LevelSfx.Play("chime", 0.6f, 1.2f);
-                gm.UI.ShowMessage("", 2f, "الفانوس انفخ وضوى!");
+                gm.UI.ShowMessage("", 2f, "انتفخ الفانوس وأضاء!");
                 break;
             }
         }
@@ -596,7 +596,7 @@ public class LanternLift : MonoBehaviour
             LabFeatures2.Stretch(ropes[i], basket.position + new Vector3(sx, 0.15f, 0f), lantern.position + new Vector3(sx * 0.4f, -1f * lantern.localScale.y, 0f), 0.04f);
         }
         bool wait = r != null && gm.IsPlaying && !delivered && r.transform.position.x > platX - 0.2f && r.transform.position.x < platX + 0.6f && r.transform.position.y - top < lift + 1.5f;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "سلة فانوس! ارسمي دايرة فوقها... تصير فانوس يطير ويرفعك"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "سلة فانوس! لنرسم دائرة فوقها... تصبح فانوسًا يطير ويرفع رويدا"); }
         HoldHelper.Hold(ref holding, wait);
         if (!delivered) LabFeatures.Show(platX - 6f, platX + 0.6f, new Vector3(platX - 3f, top - 0.5f, 0f), new Vector3(platX + 2f, top + lift + 4.5f, 0f));
     }
@@ -677,7 +677,7 @@ public class ShadowChase : MonoBehaviour
             light.type = LightType.Point; light.color = new Color(1f, 0.9f, 0.6f); light.range = 6f; light.intensity = 2.5f;
             lamps.Add(m.transform); lampT.Add(t);
             LevelSfx.Play("twinkle", 0.6f);
-            if (!told) { told = true; gm.UI.ShowMessage("", 2.2f, "لمبة! الظل يخاف من النور"); }
+            if (!told) { told = true; gm.UI.ShowMessage("", 2.2f, "مصباح! الظل يخاف من النور"); }
         }
         for (int i = lamps.Count - 1; i >= 0; i--)
         {
@@ -808,9 +808,9 @@ public class ScaryEyes : MonoBehaviour
                         bodyR.sharedMaterial = gm.Mat("Cute Fur", new Color(0.75f, 0.6f, 0.95f), 0.3f);
                         foreach (Renderer rr in monster.GetComponentsInChildren<Renderer>()) if (rr.name == "Fur Spike") rr.sharedMaterial = bodyR.sharedMaterial;
                         LevelSfx.Play("meow", 0.9f);
-                        gm.UI.ShowMessage("", 2.4f, "ابتسم! طلع قطو لطيف ما يخوف");
+                        gm.UI.ShowMessage("", 2.4f, "ابتسم! وصار قطًّا لطيفًا لا يخيف");
                     }
-                    else if (t - warnTold > 3f) { warnTold = t; gm.UI.ShowMessage("", 2f, "ارسمي له ابتسامة (خط مقوس لتحت)"); }
+                    else if (t - warnTold > 3f) { warnTold = t; gm.UI.ShowMessage("", 2f, "لنرسم له ابتسامة (خطًّا مقوسًا إلى الأسفل)"); }
                     break;
                 }
             }
@@ -824,7 +824,7 @@ public class ScaryEyes : MonoBehaviour
             if (friendT >= 1f) col.enabled = false;
         }
         bool wait = risen && friendT < 1f && HoldHelper.Before(x - 1f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "وحش بالظلام! ارسمي له ابتسامة على وجهه عشان ما يخوف"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "وحش في الظلام! لنرسم ابتسامة على وجهه كي لا يخيف"); }
         HoldHelper.Hold(ref holding, wait);
         if (risen && friendT < 0f) LabFeatures.Show(x - 5f, x, new Vector3(x - 3f, top - 0.5f, 0f), new Vector3(x + 1.5f, top + 3.5f, 0f));
     }
@@ -889,7 +889,7 @@ public class AlarmWake : MonoBehaviour
                 Destroy(m.gameObject);
                 LevelSfx.Play("alarm", 1f);
                 if (ShadowChase.Instance != null) ShadowChase.Instance.Vanish();
-                gm.UI.ShowMessage("", 3f, "رن المنبه! رويدا صحت من الحلم");
+                gm.UI.ShowMessage("", 3f, "رنّ المنبه! استيقظت رويدا من الحلم");
                 // ومضة بيضا قدام الكاميرا
                 var cam = Camera.main;
                 if (cam != null)
@@ -914,7 +914,7 @@ public class AlarmWake : MonoBehaviour
             }
         }
         bool wait = ringT < 2.6f && HoldHelper.Before(x - 1.5f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "منبه عملاق! ارسمي خط يضرب زره الأحمر فوق ويصحي رويدا"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "منبه عملاق! لنرسم خطًّا يضرب زره الأحمر في الأعلى ويوقظ رويدا"); }
         HoldHelper.Hold(ref holding, wait);
         if (ringT < 0f) LabFeatures.Show(x - 7f, x, new Vector3(x - 4f, top - 0.5f, 0f), new Vector3(x + 2f, top + 5f, 0f));
     }

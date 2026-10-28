@@ -131,7 +131,7 @@ public class RulerSeesaw : MonoBehaviour
         if (wait && prompted == 0)
         {
             prompted = 1;
-            gm.UI.ShowMessage("", 2.5f, "ارمي كورة على طرف المسطرة الثاني... كل ما كانت أبعد كانت أقوى");
+            gm.UI.ShowMessage("", 2.5f, "لنرمِ كرة على طرف المسطرة الآخر... كلما كانت أبعد كانت أقوى");
         }
         if (wait) { r.Held = true; r.CarryX = 0f; holding = true; }
         else if (holding) { r.Held = false; holding = false; }
@@ -224,7 +224,7 @@ public class ColorGate : MonoBehaviour
                 {
                     shake = 0.4f;
                     LevelSfx.Play("buzz");
-                    gm.UI.ShowMessage("", 2f, "لون غلط! الباب يبي " + Wanted());
+                    gm.UI.ShowMessage("", 2f, "لون خاطئ! الباب يحتاج إلى " + Wanted());
                 }
                 Destroy(mark.gameObject);
             }
@@ -248,7 +248,7 @@ public class ColorGate : MonoBehaviour
         if (wait && prompted == 0)
         {
             prompted = 1;
-            gm.UI.ShowMessage("", 2.8f, "الباب يبي " + Wanted() + "... اختاري اللون وارسمي عليه");
+            gm.UI.ShowMessage("", 2.8f, "الباب يحتاج إلى " + Wanted() + "... لنختر اللون ونرسم عليه");
         }
         if (wait) { r0.Held = true; r0.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
         else if (holding) { r0.Held = false; holding = false; }
@@ -343,7 +343,7 @@ public class CalcPuzzle : MonoBehaviour
         t.text = text;
         t.font = ArabicText.Font;
         t.fontSize = 80;
-        t.characterSize = size * 0.1f;
+        t.characterSize = size * 0.1f * ArabicText.Scale;
         t.anchor = TextAnchor.MiddleCenter;
         t.alignment = TextAlignment.Center;
         t.color = color;
@@ -418,13 +418,13 @@ public class CalcPuzzle : MonoBehaviour
                 doorCol.enabled = false;
                 LevelSfx.Play("success");
                 Fx.Confetti(new Vector3(spec.gateX, 2f, -0.5f), 30);
-                gm.UI.ShowMessage("", 1.8f, "صح! " + spec.target);
+                gm.UI.ShowMessage("", 1.8f, "صحيح! " + spec.target);
             }
             else if (sum > spec.target && resetAt < 0f)
             {
                 resetAt = Time.time + 1.2f;
                 LevelSfx.Play("error");
-                gm.UI.ShowMessage("", 2f, "أكثر من " + spec.target + "! جربي مرة ثانية");
+                gm.UI.ShowMessage("", 2f, "أكثر من " + spec.target + "! لنحاول مرة أخرى");
             }
             if (resetAt > 0f && Time.time >= resetAt)
             {
@@ -449,7 +449,7 @@ public class CalcPuzzle : MonoBehaviour
         if (wait && prompted == 0)
         {
             prompted = 1;
-            gm.UI.ShowMessage("", 2.8f, "ارمي كور على الأرقام... لازم مجموعها يصير " + spec.target);
+            gm.UI.ShowMessage("", 2.8f, "لنرمِ كرات على الأرقام... يجب أن يكون مجموعها " + spec.target);
         }
         if (wait) { r.Held = true; r.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
         else if (holding) { r.Held = false; holding = false; }
@@ -536,7 +536,7 @@ public class GiantScissors : MonoBehaviour
                 jamAngle = AngleFor(jamBall.GetComponent<MeshRenderer>().bounds);
                 LevelSfx.Play("clank");
                 Fx.Sparkle(b.center, new Color(1f, 0.9f, 0.5f), 18);
-                gm.UI.ShowMessage("", 2f, "علق المقص! ارسمي الجسر");
+                gm.UI.ShowMessage("", 2f, "علِق المقص! لنرسم الجسر");
                 break;
             }
         }
@@ -581,7 +581,7 @@ public class GiantScissors : MonoBehaviour
         if (wait && prompted != stage)
         {
             prompted = stage;
-            gm.UI.ShowMessage("", 2.6f, stage == 0 ? "المقص يقص الجسور! ارمي كورة بين شفراته" : "ارسمي الجسر");
+            gm.UI.ShowMessage("", 2.6f, stage == 0 ? "المقص يقص الجسور! لنرمِ كرة بين شفرتيه" : "لنرسم الجسر");
         }
         if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; }
         else if (holding) { rw.Held = false; holding = false; }
@@ -710,7 +710,7 @@ public class Zipper : MonoBehaviour
         bridge.size = new Vector3(Mathf.Max(0.01f, w + 0.2f), 0.3f, 2f);
 
         bool wait = HoldHelper.Before(from) && slider < to - 0.01f;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "السحاب مفتوح! ارسمي خط من المسكة لين آخر الحفرة عشان يتسكر"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "السحّاب مفتوح! لنرسم خطًّا من المقبض حتى آخر الحفرة ليُغلق"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -782,7 +782,7 @@ public class Sharpener : MonoBehaviour
                     var rb = m.GetComponent<Rigidbody>();
                     if (rb != null) rb.isKinematic = true;
                     LevelSfx.Play("grind", 0.9f);
-                    if (!promptedEat) { promptedEat = true; gm.UI.ShowMessage("", 3.2f, "البراية أكلت خطك! وهي تبري ارسمي الجسر بسرعة"); }
+                    if (!promptedEat) { promptedEat = true; gm.UI.ShowMessage("", 3.2f, "أكلت البرّاية الخط! لنرسم الجسر بسرعة وهي تبري"); }
                     break;
                 }
             }
@@ -821,7 +821,7 @@ public class Sharpener : MonoBehaviour
         float cross = (to - from + 1.6f) / (r != null ? r.walkSpeed : 2.8f);
         bool safe = RowaidaController.BridgeCovers(from, to, top) && (busyUntil - t > cross || rowaidaOn);
         bool wait = HoldHelper.Before(from) && !safe;
-        if (wait && !prompted && !IsBusy) { prompted = true; gm.UI.ShowMessage("", 3.2f, "البراية جوعانة! ارسمي خط تاكله، وهي تبري ارسمي الجسر"); }
+        if (wait && !prompted && !IsBusy) { prompted = true; gm.UI.ShowMessage("", 3.2f, "البرّاية جائعة! لنرسم خطًّا تأكله، وبينما تبري نرسم الجسر"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -910,7 +910,7 @@ public class GluePuddle : MonoBehaviour
         {
             prompted = true;
             LevelSfx.Play("glue", 0.7f);
-            gm.UI.ShowMessage("", 3f, honey ? "عسل! بتلزقين فيه... ارسمي خط فوقه تمشين عليه" : "صمغ! بتلزقين فيه... ارسمي خط فوقه تمشين عليه");
+            gm.UI.ShowMessage("", 3f, honey ? "عسل! ستلتصق رويدا به... لنرسم خطًّا فوقه تمشي عليه" : "صمغ! ستلتصق رويدا به... لنرسم خطًّا فوقه تمشي عليه");
         }
         HoldHelper.Hold(ref holding, wait);
     }

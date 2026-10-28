@@ -29,7 +29,7 @@ public class TallyGate : MonoBehaviour
         GameFeatures.Px("Box Left", go.transform, bc + new Vector3(-1.75f, 0f, 0f), new Vector3(0.1f, 2f, 0.1f), frame);
         GameFeatures.Px("Box Right", go.transform, bc + new Vector3(1.75f, 0f, 0f), new Vector3(0.1f, 2f, 0.1f), frame);
         LevelBuilder.Visual("Box Paper", PrimitiveType.Cube, go.transform, bc + new Vector3(0f, 0f, 0.15f), new Vector3(3.4f, 1.8f, 0.05f), gm.Mat("Badge White", Color.white, 0.4f), false);
-        GameFeatures.Text(go.transform, bc + new Vector3(0f, 1.35f, -0.2f), "ارسمي " + g.n + " خطوط هنا", 0.055f, new Color(0.85f, 0.3f, 0.4f));
+        GameFeatures.Text(go.transform, bc + new Vector3(0f, 1.35f, -0.2f), "لنرسم " + g.n + " خطوط هنا", 0.055f, new Color(0.85f, 0.3f, 0.4f));
         g.countT = GameFeatures.Text(go.transform, bc + new Vector3(2.3f, 0f, -0.2f), "0", 0.1f, new Color(0.3f, 0.45f, 0.85f));
         // البوابة ورقمها الكبير
         g.gate = new GameObject("Number Gate").transform;
@@ -64,7 +64,7 @@ public class TallyGate : MonoBehaviour
                 {
                     openT = 0f;
                     LevelSfx.Play("powerup", 0.7f);
-                    gm.UI.ShowMessage("", 2f, "صح! " + n + " بالضبط");
+                    gm.UI.ShowMessage("", 2f, "صحيح! " + n + " بالضبط");
                 }
                 else if (count > n)
                 {
@@ -73,7 +73,7 @@ public class TallyGate : MonoBehaviour
                     marks.Clear();
                     count = 0;
                     GameFeatures.SetText(countT, "0");
-                    gm.UI.ShowMessage("", 2.4f, "كثير! لازم " + n + " بالضبط، جربي من جديد");
+                    gm.UI.ShowMessage("", 2.4f, "أكثر من اللازم! المطلوب " + n + " بالضبط، لنحاول من جديد");
                 }
             }
         }
@@ -84,7 +84,7 @@ public class TallyGate : MonoBehaviour
             if (openT >= 1f) col.enabled = false;
         }
         bool wait = openT < 1f && HoldHelper.Before(gateX - 0.4f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "بوابة الرقم " + n + "! ارسمي داخل المربع " + n + " خطوط بالضبط"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "بوابة الرقم " + n + "! لنرسم داخل المربع " + n + " خطوط بالضبط"); }
         HoldHelper.Hold(ref holding, wait);
         if (openT < 0f) LabFeatures.Show(box.xMin - 4f, gateX, new Vector3(box.xMin - 0.5f, top - 0.5f, 0f), new Vector3(gateX + 1f, box.yMax + 1f, 0f));
     }
@@ -179,7 +179,7 @@ public class NumberScale : MonoBehaviour
             Destroy(extra.gameObject);
             inPan.Remove(extra);
             LevelSfx.Play("pxbuzz", 0.6f);
-            gm.UI.ShowMessage("", 2.2f, "كثير! لازم " + need + " بالضبط");
+            gm.UI.ShowMessage("", 2.2f, "أكثر من اللازم! المطلوب " + need + " بالضبط");
         }
         if (inPan.Count != count)
         {
@@ -193,7 +193,7 @@ public class NumberScale : MonoBehaviour
         if (bridgeT < 0f)
         {
             stableT = count == need && offset < 0.02f ? stableT + dt : 0f;
-            if (stableT > 0.5f) { bridgeT = 0f; LevelSfx.Play("powerup", 0.7f); LevelSfx.Play("rope", 0.6f); gm.UI.ShowMessage("", 2f, "توازن الميزان! الجسر نزل"); }
+            if (stableT > 0.5f) { bridgeT = 0f; LevelSfx.Play("powerup", 0.7f); LevelSfx.Play("rope", 0.6f); gm.UI.ShowMessage("", 2f, "توازن الميزان! نزل الجسر"); }
         }
         else if (bridgeT < 1f)
         {
@@ -202,7 +202,7 @@ public class NumberScale : MonoBehaviour
             if (bridgeT >= 1f) { bridgeCol.enabled = true; LevelSfx.Play("thud", 0.7f); }
         }
         bool wait = bridgeT < 1f && HoldHelper.Before(gapFrom);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "ميزان الأرقام! حطي بالكفة اليمين " + need + " دواير عشان يتوازن وينزل الجسر"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "ميزان الأرقام! لنضع في الكفة اليمنى " + need + " دوائر ليتوازن وينزل الجسر"); }
         HoldHelper.Hold(ref holding, wait);
         if (bridgeT < 1f) LabFeatures.Show(sx - 5f, gapFrom, new Vector3(sx - 2.8f, top - 0.5f, 0f), new Vector3(gapTo + 0.8f, top + 6.2f, 0f));
     }
@@ -287,12 +287,12 @@ public class CalcRamp : MonoBehaviour
                     printT = 0f;
                     GameFeatures.SetText(screen, expr + ans);
                     LevelSfx.Play("powerup", 0.7f);
-                    gm.UI.ShowMessage("", 2f, "صح! الآلة قاعدة تطبع");
+                    gm.UI.ShowMessage("", 2f, "صحيح! الآلة تطبع الآن");
                 }
                 else
                 {
                     LevelSfx.Play("pxbuzz", 0.8f);
-                    gm.UI.ShowMessage("", 2.2f, "غلط! جربي جواب ثاني");
+                    gm.UI.ShowMessage("", 2.2f, "خطأ! لنجرب جوابًا آخر");
                 }
                 break;
             }
@@ -305,7 +305,7 @@ public class CalcRamp : MonoBehaviour
             if (printT >= 1f) { rampCol.enabled = true; LevelSfx.Play("chime", 0.6f, 1.3f); }
         }
         bool wait = printT < 1f && HoldHelper.Before(rampFrom);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "آلة حاسبة! حوطي الجواب الصح بدايرة وتطبع لك درج"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "آلة حاسبة! لنحِط الجواب الصحيح بدائرة فتطبع درجًا"); }
         HoldHelper.Hold(ref holding, wait);
         if (printT < 1f) LabFeatures.Show(wallX - 11f, rampFrom, new Vector3(wallX - 9.2f, top - 0.5f, 0f), new Vector3(wallX + 1f, top + 6.8f, 0f));
     }
@@ -421,7 +421,7 @@ public class VirusBoss : MonoBehaviour
                 m.beingEaten = true;
                 stuckT = 2.6f;
                 LevelSfx.Play("sizzle", 0.8f);
-                if (!told) { told = true; gm.UI.ShowMessage("", 2.4f, "جدار حماية! الفيروس وقف"); }
+                if (!told) { told = true; gm.UI.ShowMessage("", 2.4f, "جدار حماية! توقف الفيروس"); }
                 break;
             }
         }
@@ -493,7 +493,7 @@ public class PopupAd : MonoBehaviour
         GameFeatures.Text(p.win, p.win.position + new Vector3(1.05f, 3.05f, -0.26f), "X", 0.06f, Color.white);
         GameFeatures.Text(p.win, p.win.position + new Vector3(-0.3f, 3.05f, -0.22f), "!!!", 0.05f, Color.white);
         GameFeatures.Text(p.win, p.win.position + new Vector3(0f, 2.2f, -0.2f), "مبروك!!", 0.085f, new Color(0.9f, 0.25f, 0.35f));
-        GameFeatures.Text(p.win, p.win.position + new Vector3(0f, 1.55f, -0.2f), "ربحتي جايزة", 0.06f, new Color(0.2f, 0.25f, 0.4f));
+        GameFeatures.Text(p.win, p.win.position + new Vector3(0f, 1.55f, -0.2f), "جائزة كبرى", 0.06f, new Color(0.2f, 0.25f, 0.4f));
         GameFeatures.Px("Gift", p.win, new Vector3(0f, 0.8f, -0.2f), new Vector3(0.6f, 0.5f, 0.1f), new Color(1f, 0.75f, 0.2f));
         GameFeatures.Px("Gift Ribbon", p.win, new Vector3(0f, 0.8f, -0.26f), new Vector3(0.1f, 0.5f, 0.02f), new Color(0.9f, 0.25f, 0.35f));
         GameFeatures.Px("OK", p.win, new Vector3(0f, 0.25f, -0.2f), new Vector3(1f, 0.3f, 0.05f), new Color(0.35f, 0.8f, 0.4f));
@@ -527,7 +527,7 @@ public class PopupAd : MonoBehaviour
                 col.enabled = false;
                 Destroy(m.gameObject);
                 LevelSfx.Play("bugzap", 0.6f, 1.4f);
-                gm.UI.ShowMessage("", 1.6f, "سكرتيه!");
+                gm.UI.ShowMessage("", 1.6f, "أُغلق!");
                 break;
             }
         }
@@ -537,7 +537,7 @@ public class PopupAd : MonoBehaviour
             win.localScale = Vector3.one * showK;
         }
         bool wait = shown && !closed && HoldHelper.Before(x - 1.4f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "إعلان مزعج سد الطريق! ارسمي خط على زر X الأحمر يسكره"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "إعلان مزعج سدّ الطريق! لنرسم خطًّا على زر X الأحمر لإغلاقه"); }
         HoldHelper.Hold(ref holding, wait);
         if (shown && !closed) LabFeatures.Show(x - 6f, x, new Vector3(x - 3.5f, top - 0.5f, 0f), new Vector3(x + 1.8f, top + 3.9f, 0f));
     }
@@ -571,7 +571,7 @@ public class SaveButton : MonoBehaviour
         GameFeatures.Px("Disk Shutter", b.diskT, new Vector3(0.05f, 0.33f, -0.09f), new Vector3(0.6f, 0.38f, 0.03f), new Color(0.8f, 0.82f, 0.88f));
         GameFeatures.Px("Disk Hole", b.diskT, new Vector3(0.18f, 0.33f, -0.11f), new Vector3(0.12f, 0.24f, 0.02f), new Color(0.2f, 0.35f, 0.85f));
         GameFeatures.Px("Disk Label", b.diskT, new Vector3(0f, -0.2f, -0.09f), new Vector3(0.8f, 0.5f, 0.03f), Color.white);
-        b.label = GameFeatures.Text(go.transform, b.disk + new Vector3(0f, 1.2f, -0.2f), "احفظي", 0.07f, new Color(0.5f, 0.9f, 1f));
+        b.label = GameFeatures.Text(go.transform, b.disk + new Vector3(0f, 1.2f, -0.2f), "حفظ", 0.07f, new Color(0.5f, 0.9f, 1f));
         // شريط التقدم
         GameFeatures.Px("Bar Frame", go.transform, b.disk + new Vector3(0f, -0.95f, -0.1f), new Vector3(1.6f, 0.24f, 0.05f), new Color(0.2f, 0.2f, 0.25f));
         b.fill = GameFeatures.Px("Bar Fill", go.transform, b.disk + new Vector3(-0.75f, -0.95f, -0.14f), new Vector3(0.001f, 0.16f, 0.05f), new Color(0.3f, 1f, 0.5f)).transform;
@@ -606,10 +606,10 @@ public class SaveButton : MonoBehaviour
                     LevelSfx.Play("save", 0.9f);
                     var boss = FindFirstObjectByType<VirusBoss>();
                     if (boss != null) boss.Defeat();
-                    gm.UI.ShowMessage("", 2.6f, "انحفظت اللعبة! والفيروس انمسح");
+                    gm.UI.ShowMessage("", 2.6f, "حُفظت اللعبة! ومُسح الفيروس");
                     break;
                 }
-                if (t - missTold > 4f && Vector3.Distance(GameFeatures.Center(m), disk) < 3f) { missTold = t; gm.UI.ShowMessage("", 2f, "حوطي الديسك كله بالدايرة"); }
+                if (t - missTold > 4f && Vector3.Distance(GameFeatures.Center(m), disk) < 3f) { missTold = t; gm.UI.ShowMessage("", 2f, "لنحط القرص كله بالدائرة"); }
             }
         }
         else
@@ -635,7 +635,7 @@ public class SaveButton : MonoBehaviour
             }
         }
         bool wait = savedT < 1f && HoldHelper.Before(x + 1.2f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "زر الحفظ! حوطي الديسك بدايرة عشان تحفظين اللعبة"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "زر الحفظ! لنحط القرص بدائرة لحفظ اللعبة"); }
         HoldHelper.Hold(ref holding, wait);
         if (savedT < 0f) LabFeatures.Show(x - 6f, x + 1.6f, new Vector3(x - 2.5f, top - 0.5f, 0f), new Vector3(x + 3f, top + 5.2f, 0f));
     }

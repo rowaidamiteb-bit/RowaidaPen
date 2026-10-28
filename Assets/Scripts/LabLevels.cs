@@ -269,7 +269,7 @@ public class LiquidNetwork : MonoBehaviour
                 LevelSfx.Play("bake", 0.5f);
                 Fx.Sparkle(f.mouth, LabFeatures.MixColor(f.need), 24);
                 f.lamp.sharedMaterial = gm.Mat("Lamp Green", new Color(0.3f, 1.6f, 0.4f), 0.5f);
-                gm.UI.ShowMessage("", 2.2f, "طلع " + LabFeatures.ColorName(f.need) + "! البوابة انفتحت");
+                gm.UI.ShowMessage("", 2.2f, "ظهر اللون: " + LabFeatures.ColorName(f.need) + "! فُتحت البوابة");
             }
             if (t - f.lastPour > 0.3f && f.level > 0f && f.level < 1f && f.bits != f.need) { }
             float lv = Mathf.Clamp01(f.level);
@@ -289,7 +289,7 @@ public class LiquidNetwork : MonoBehaviour
                 if (f.openT >= 1f) f.gateCol.enabled = false;
             }
             bool wait = f.openT < 0f && HoldHelper.Before(f.gateX - 0.3f);
-            if (wait && !f.prompted) { f.prompted = true; gm.UI.ShowMessage("", 3.6f, "البوابة تبي لون " + LabFeatures.ColorName(f.need) + "! ارسمي أنابيب من الخزانات للدورق وخلطي الألوان"); }
+            if (wait && !f.prompted) { f.prompted = true; gm.UI.ShowMessage("", 3.6f, "البوابة تحتاج إلى لون: " + LabFeatures.ColorName(f.need) + "! لنرسم أنابيب من الخزانات إلى الدورق ونمزج الألوان"); }
             HoldHelper.Hold(ref f.holding, wait);
             if (f.openT < 0f)
             {
@@ -315,7 +315,7 @@ public class LiquidNetwork : MonoBehaviour
         {
             f.mudT = 0f;
             LevelSfx.Play("error", 0.8f);
-            gm.UI.ShowMessage("", 2.6f, "اوه! صار لون طين... هذا اللون مو بالخلطة. شيلي أنبوبه وجربي ثاني");
+            gm.UI.ShowMessage("", 2.6f, "أوه! صار اللون طينيًّا... هذا اللون ليس من الخلطة. لنُزل أنبوبه ونحاول مرة أخرى");
         }
     }
 }
@@ -393,7 +393,7 @@ public class SlimeFriend : MonoBehaviour
                 chewT = 0.8f;
                 LevelSfx.Play("gloop", 0.9f, 1.3f - size * 0.15f);
                 Fx.Sparkle(transform.position + Vector3.up, new Color(0.5f, 1f, 0.5f), 14);
-                if (size >= 3) { jumpT = 0f; gm.UI.ShowMessage("", 2.2f, "شبع وكبر! شوفي وش بيسوي"); }
+                if (size >= 3) { jumpT = 0f; gm.UI.ShowMessage("", 2.2f, "شبع وكبر! لنرَ ماذا سيفعل"); }
             }
             float wob = Mathf.Sin(t * 4f) * 0.05f + (chewT > 0f ? Mathf.Sin(t * 30f) * 0.08f : 0f);
             body.localScale = new Vector3(baseScale * (1f + wob), baseScale * (1f - wob), baseScale);
@@ -436,7 +436,7 @@ public class SlimeFriend : MonoBehaviour
         }
 
         bool wait = HoldHelper.Before(from) && !bridge.enabled && !RowaidaController.BridgeCovers(from, to, top);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "سلايم جوعان! ارسمي له دواير ياكلها... يكبر ويساعدك"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "سلايم جائع! لنرسم له دوائر يأكلها... فيكبر ويساعد"); }
         HoldHelper.Hold(ref holding, wait);
         if (!bridge.enabled) LabFeatures.Show(from - 6f, to, new Vector3(from - 1f, top - 1f, 0f), new Vector3(to + 1f, top + 4.5f, 0f), new Vector3(homeX - 1.5f, top, 0f));
     }
@@ -529,7 +529,7 @@ public class CircuitLift : MonoBehaviour
                 LevelSfx.Play("tesla", 0.6f, 1.4f);
                 LevelSfx.Play("chime", 0.5f, 1.6f);
                 bulb.GetComponent<Renderer>().sharedMaterial = gm.Mat("Bulb Glow", new Color(2.5f, 2f, 1.2f), 0.5f);
-                gm.UI.ShowMessage("", 2f, "الكهربا وصلت!");
+                gm.UI.ShowMessage("", 2f, "وصلت الكهرباء!");
             }
         }
         bool powered = wire != null;
@@ -560,7 +560,7 @@ public class CircuitLift : MonoBehaviour
         }
         // رويدا توقف على المصعد لين يوصل فوق
         bool wait = r != null && gm.IsPlaying && !delivered && r.transform.position.x > liftX - 0.7f && r.transform.position.x < liftX + 0.3f && r.transform.position.y - top < height + 1.5f;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "المصعد طافي! ارسمي سلك من طرف البطارية للمحرك فوق"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "المصعد متوقف! لنرسم سلكًا من طرف البطارية إلى المحرك في الأعلى"); }
         HoldHelper.Hold(ref holding, wait);
         if (!delivered) LabFeatures.Show(bx - 5f, liftX + 0.5f, new Vector3(bx - 2f, top, 0f), termA, termB + Vector3.up * 1.2f, new Vector3(liftX + 1.2f, top + height + 2.2f, 0f));
     }
@@ -644,7 +644,7 @@ public class AcidPool : MonoBehaviour
             LevelSfx.Play("sizzle", 0.6f);
             Fx.Sparkle(r.bounds.center, new Color(0.6f, 1f, 0.4f), 12);
             Destroy(m.gameObject);
-            if (!prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "الحمض ذوب الخط! ارسمي دواير صودا... تفور وتصير رغوة"); }
+            if (!prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "أذاب الحمض الخط! لنرسم دوائر صودا... تفور وتصبح رغوة"); }
         }
         // دايرة: صودا تطيح وتفور جزيرة رغوة
         // كل دايرة لمست الحمض أو الرغوة (نشيك عليهم كلهم، عشان ولا وحدة تطيح وتضيع)
@@ -681,7 +681,7 @@ public class AcidPool : MonoBehaviour
             i.col.size = new Vector3(1f, 0.5f, 1.6f);
         }
         bool wait = HoldHelper.Before(from) && !Covered();
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "بركة حمض! الخطوط تذوب... ارسمي دواير صودا تفور وتصير رغوة"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "بركة حمض! الخطوط تذوب... لنرسم دوائر صودا تفور وتصبح رغوة"); }
         HoldHelper.Hold(ref holding, wait);
         if (!Covered()) LabFeatures.Show(from - 6f, to, new Vector3(from - 1f, top - 1f, 0f), new Vector3(to + 1f, top + 3.5f, 0f));
     }
@@ -839,7 +839,7 @@ public class LaserMirror : MonoBehaviour
             if (openT >= 1f) gateCol.enabled = false;
         }
         bool wait = openT < 0f && HoldHelper.Before(spec.gateX - 0.3f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "ليزر! ارسمي خط يقطع الشعاع الأحمر... يرتد على الهدف ويفتح الباب"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "ليزر! لنرسم خطًّا يقطع الشعاع الأحمر... فيرتد إلى الهدف ويفتح الباب"); }
         HoldHelper.Hold(ref holding, wait);
         if (openT < 0f) LabFeatures.Show(spec.emitter.x - 6f, spec.gateX, new Vector3(spec.emitter.x - 1f, spec.emitter.y - 1.2f, 0f), new Vector3(spec.gateX + 0.8f, spec.gateY + PanelTop + 0.6f, 0f));
     }
@@ -946,9 +946,9 @@ public class FoamTower : MonoBehaviour
 
         bool atTarget = level == (int)target && Mathf.Abs(shown - level) < 0.02f;
         if (atTarget && onPlate && !done) { done = true; LevelSfx.Play("chime", 0.8f, 1.3f); Fx.Sparkle(plate.position + Vector3.up, new Color(1f, 0.9f, 0.5f), 18); }
-        if (level > target && onPlate && !warnedHigh) { warnedHigh = true; gm.UI.ShowMessage("", 2.8f, "عالي زيادة! استني الرغوة تنزل درجة..."); }
+        if (level > target && onPlate && !warnedHigh) { warnedHigh = true; gm.UI.ShowMessage("", 2.8f, "مرتفع أكثر من اللازم! لننتظر حتى تنزل الرغوة درجة..."); }
         bool wait = r != null && gm.IsPlaying && !done && r.transform.position.x > x - 0.05f && r.transform.position.x < x + 0.6f && r.transform.position.y - top < 8f;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "برج الرغوة! كل قطرة (دايرة) فوقه ترفعه درجة... وقفي عند العلامة الصفرا بالضبط"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "برج الرغوة! كل قطرة (دائرة) فوقه ترفعه درجة... لنتوقف عند العلامة الصفراء بالضبط"); }
         HoldHelper.Hold(ref holding, wait);
         if (!done) LabFeatures.Show(x - 6f, x + 1f, new Vector3(x - 1.5f, top - 0.5f, 0f), new Vector3(x + 2.5f, top + target * step + 3f, 0f));
     }

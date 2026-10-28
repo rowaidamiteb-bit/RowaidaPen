@@ -291,11 +291,11 @@ public class EndingCutscene : MonoBehaviour
             text = s;
             alpha = Mathf.Clamp01((t - from) / 0.4f) * Mathf.Clamp01((to - t) / 0.4f);
         }
-        Say(1f, 4.6f, "استيقظت... فإذا أنا في غرفتي! والشمس مشرقة");
-        Say(5f, 8.4f, "أكان ذلك كله حلما؟");
+        Say(1f, 4.6f, "استيقظت... وأنا في غرفتي! والشمس مشرقة");
+        Say(5f, 8.4f, "هل كان كله حلما؟");
         Say(8.8f, 10.4f, "لكن الدفتر...");
-        Say(PagesStart, spreadsEnd, "كان فيه كل الرسومات التي أعادتني إلى بيتي!");
-        Say(spreadsEnd + 0.3f, spreadsEnd + 3.6f, "شكرا لكل من رسم معي طريقي إلى البيت");
+        Say(PagesStart, spreadsEnd, "فيه كل الرسومات التي أعادتني!");
+        Say(spreadsEnd + 0.3f, spreadsEnd + 3.6f, "شكرا على رسم طريقي إلى البيت");
         string shaped = ArabicText.Fix(text);
         if (caption.text != shaped) caption.text = shaped;
         caption.color = new Color(1f, 1f, 1f, alpha);
@@ -451,7 +451,7 @@ public class EndingCutscene : MonoBehaviour
         var t = new GameObject("Label", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
         t.transform.SetParent(page, false);
         t.font = ArabicText.Font;
-        t.fontSize = 34;
+        t.fontSize = ArabicText.Size(34);
         t.fontStyle = FontStyle.Bold;
         t.alignment = TextAnchor.MiddleCenter;
         t.color = new Color(0.2f, 0.2f, 0.28f);
@@ -618,7 +618,7 @@ public class EndingCutscene : MonoBehaviour
         var t = new GameObject("Text", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
         t.transform.SetParent(parent, false);
         t.font = ArabicText.Font;
-        t.fontSize = size;
+        t.fontSize = ArabicText.Size(size);
         t.fontStyle = FontStyle.Bold;
         t.alignment = TextAnchor.MiddleCenter;
         t.color = Color.white;

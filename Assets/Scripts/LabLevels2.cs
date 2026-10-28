@@ -142,7 +142,7 @@ public class FreezePool : MonoBehaviour
                     foreach (Collider c in m.GetComponentsInChildren<Collider>()) c.enabled = false;
                     LevelSfx.Play("cold", 0.8f);
                     LevelSfx.Play("crack", 0.5f, 1.3f);
-                    if (!frozeOnce) { frozeOnce = true; gm.UI.ShowMessage("", 2.4f, "تجمدت! عدي بسرعة قبل ما تذوبها الدفاية"); }
+                    if (!frozeOnce) { frozeOnce = true; gm.UI.ShowMessage("", 2.4f, "تجمّد الماء! لنعبر بسرعة قبل أن تذيبه المدفأة"); }
                 }
             }
         }
@@ -174,7 +174,7 @@ public class FreezePool : MonoBehaviour
         float cross = (to - from + 1.6f) / 2.8f;
         bool safe = iceT >= 0f && grow >= 0.98f && Last - (t - iceT) > cross + 0.6f;
         bool wait = HoldHelper.Before(from) && !safe;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "مويه! ارسمي خط من مسدس التجميد للمويه... تتجمد وتصير جسر"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "ماء! لنرسم خطًّا من مسدس التجميد إلى الماء... فيتجمد ويصبح جسرًا"); }
         HoldHelper.Hold(ref holding, wait);
         if (!safe || t - iceT < 1f) LabFeatures.Show(gunX - 5f, to, new Vector3(gunX - 1f, top - 1f, 0f), new Vector3(to + 1.5f, top + 3.2f, 0f));
     }
@@ -269,7 +269,7 @@ public class IceWall : MonoBehaviour
                 LevelSfx.Play("steam", 0.6f);
                 if (line != null) { SmokeCloud.Puff(line.GetComponent<MeshRenderer>().bounds.center, 0.8f); Destroy(line.gameObject); }
                 line = null;
-                gm.UI.ShowMessage("", 2f, "الثلج قاعد يذوب!");
+                gm.UI.ShowMessage("", 2f, "الثلج يذوب!");
             }
         }
         if (meltT >= 0f && meltT < 1f)
@@ -286,7 +286,7 @@ public class IceWall : MonoBehaviour
             if (meltT >= 1f) { col.enabled = false; block.gameObject.SetActive(false); LevelSfx.Play("chime", 0.6f, 1.3f); }
         }
         bool wait = meltT < 1f && HoldHelper.Before(x - 0.7f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "جدار ثلج! ارسمي خط من نار الموقد للجدار... الخط يحمى ويذوب الثلج"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "جدار ثلج! لنرسم خطًّا من نار الموقد إلى الجدار... فيسخن الخط ويذيب الثلج"); }
         HoldHelper.Hold(ref holding, wait);
         if (meltT < 1f) LabFeatures.Show(burnerX - 4f, x, new Vector3(burnerX - 1.5f, top - 0.5f, 0f), new Vector3(x + 1.2f, top + height + 0.8f, 0f));
     }
@@ -334,7 +334,7 @@ public class IcicleCeiling : MonoBehaviour
         float t = Time.time, dt = Time.deltaTime;
         RowaidaController r = gm.Rowaida;
         bool inZone = r != null && gm.IsPlaying && r.transform.position.x > from - 2f && r.transform.position.x < to;
-        if (inZone && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "سقف ثلج! ارسمي خط فوق راسها... مظلة تحميها من الثلج اللي يطيح"); }
+        if (inZone && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "سقف ثلج! لنرسم خطًّا فوق رأسها... مظلة تحميها من الثلج المتساقط"); }
         if (inZone) LabFeatures.Show(from - 4f, to, new Vector3(from - 1f, ceil - 4.5f, 0f), new Vector3(to + 1f, ceil + 1f, 0f));
         if (inZone && t > next)
         {
@@ -371,7 +371,7 @@ public class IcicleCeiling : MonoBehaviour
                             hit = true;
                             if (!r.IsKnocked) r.Knockback(-1f);
                             LevelSfx.Play("crack", 0.8f, 1.1f);
-                            if (!warned) { warned = true; gm.UI.ShowMessage("", 2.4f, "آي! ارسمي خط فوقها يحميها"); }
+                            if (!warned) { warned = true; gm.UI.ShowMessage("", 2.4f, "آه! لنرسم خطًّا فوقها يحميها"); }
                         }
                     }
                     if (!hit)
@@ -527,7 +527,7 @@ public class SizeRay : MonoBehaviour
                 target = scale;
                 LevelSfx.Play(scale < 1f ? "wobble" : "grow", 0.8f, scale < 1f ? 1.5f : 0.9f);
                 Fx.Sparkle(r.transform.position, scale < 1f ? new Color(0.6f, 0.9f, 1f) : new Color(1f, 0.6f, 1f), 24);
-                if (!told) { told = true; gm.UI.ShowMessage("", 2.4f, scale < 1f ? "صغرت! الحين تقدر تدخل بيت الفار" : "رجعت لحجمها!"); }
+                if (!told) { told = true; gm.UI.ShowMessage("", 2.4f, scale < 1f ? "صغُرت رويدا! يمكنها الآن دخول بيت الفأر" : "عادت إلى حجمها!"); }
             }
             lastX = x;
             // أول شعاع يتحكم بحجمها
@@ -538,7 +538,7 @@ public class SizeRay : MonoBehaviour
             }
         }
         bool wait = !on && HoldHelper.Before(rayX);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "شعاع التصغير طافي! ارسمي دايرة تطيح على الزر الأحمر اللي فوق الرف"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "شعاع التصغير متوقف! لنرسم دائرة تسقط على الزر الأحمر فوق الرف"); }
         HoldHelper.Hold(ref holding, wait);
         if (!on) LabFeatures.Show(buttonX - 4f, rayX, new Vector3(buttonX - 1.5f, top - 0.5f, 0f), new Vector3(rayX + 1.5f, top + 4.4f, 0f));
     }
@@ -623,7 +623,7 @@ public class GrowBeam : MonoBehaviour
         }
         bool covered = RowaidaController.BridgeCovers(from, to, top);
         bool wait = HoldHelper.Before(from) && (!covered || growing.Count > 0);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "حفرة كبيرة! ارسمي خط صغير داخل الشعاع الأخضر... يكبر ويصير جسر"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "حفرة كبيرة! لنرسم خطًّا صغيرًا داخل الشعاع الأخضر... فيكبر ويصبح جسرًا"); }
         HoldHelper.Hold(ref holding, wait);
         if (!covered) LabFeatures.Show(from - 4f, to, new Vector3(from - 1.5f, top - 1f, 0f), new Vector3(to + 1.5f, top + height + 1f, 0f));
     }
@@ -706,7 +706,7 @@ public class PulleyLift : MonoBehaviour
                 {
                     heavy = true;
                     LevelSfx.Play("plop", 0.8f);
-                    gm.UI.ShowMessage("", 2f, "السطل ثقل!");
+                    gm.UI.ShowMessage("", 2f, "ثقُل الدلو!");
                 }
             }
         }
@@ -728,7 +728,7 @@ public class PulleyLift : MonoBehaviour
         LabFeatures2.Stretch(ropeC, new Vector3(bucketX, wy - 0.4f, 0.3f), new Vector3(bucketX, bucket.position.y + 1.25f, 0.3f), 0.06f);
 
         bool wait = r != null && gm.IsPlaying && !delivered && r.transform.position.x > platX - 0.2f && r.transform.position.x < platX + 0.6f && r.transform.position.y - top < lift + 1.5f;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "مصعد بحبل! ارسمي دايرة تطيح في السطل الأزرق... يثقل وينزل وانتي تطلعين"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "مصعد بحبل! لنرسم دائرة تسقط في الدلو الأزرق... فيثقل وينزل وترتفع رويدا"); }
         HoldHelper.Hold(ref holding, wait);
         if (!delivered) LabFeatures.Show(Mathf.Min(platX, bucketX) - 5f, platX + 0.6f, new Vector3(Mathf.Min(platX, bucketX) - 1.5f, top - 0.5f, 0f), new Vector3(platX + 1.8f, wy + 0.8f, 0f));
     }
@@ -793,7 +793,7 @@ public class VolcanoFoam : MonoBehaviour
                 if (r != null && r.transform.position.y - foamY > 9f) s *= 1.8f;
                 foamY += s * dt;
             }
-            if (!told) { told = true; gm.UI.ShowMessage("", 3.8f, "البركان انفجر! الرغوة طالعة... ارسمي درج (خط مايل) لكل درجة بسرعة"); }
+            if (!told) { told = true; gm.UI.ShowMessage("", 3.8f, "انفجر البركان! الرغوة ترتفع... لنرسم منحدرًا (خطًّا مائلًا) لكل درجة بسرعة"); }
         }
         float w = endX - startX + 30f, mid = (startX + endX) * 0.5f;
         foam.position = new Vector3(mid, foamY - 6f, 0.3f);
@@ -916,7 +916,7 @@ public class RobotHelper : MonoBehaviour
                         if (mk != null) mk.path = current.path;
                         LevelSfx.Play("chime", 0.6f, 1.5f);
                         Fx.Sparkle(current.path[current.path.Length / 2], new Color(1f, 0.85f, 0.3f), 18);
-                        if (t - told > 20f) { told = t; gm.UI.ShowMessage("", 2.2f, "الروبوت قلد رسمتك للدرجة اللي بعدها!"); }
+                        if (t - told > 20f) { told = t; gm.UI.ShowMessage("", 2.2f, "قلّد الروبوت الرسمة للدرجة التالية!"); }
                     }
                     current = null;
                 }
@@ -987,7 +987,7 @@ public class BlastFlask : MonoBehaviour
         // تستنى قبل الدورق إذا قرب ينفجر
         float cross = 4.4f / 2.8f;
         bool wait = HoldHelper.Before(x - 1.6f) && (left < cross || phase < 0.25f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 2.6f, "دورق بينفجر! استني لين يفرقع وبعدين عدي"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 2.6f, "دورق سينفجر! لننتظر حتى يفرقع ثم نعبر"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }

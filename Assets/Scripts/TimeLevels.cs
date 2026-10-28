@@ -23,7 +23,7 @@ public static class TimeFeatures
         t.text = text;
         t.font = ArabicText.Font;
         t.fontSize = 80;
-        t.characterSize = size * 0.1f;
+        t.characterSize = size * 0.1f * ArabicText.Scale;
         t.anchor = TextAnchor.MiddleCenter;
         t.alignment = TextAlignment.Center;
         t.color = color;
@@ -121,7 +121,7 @@ public class ClockBridge : MonoBehaviour
                 handCol.enabled = true;
                 LevelSfx.Play("clank");
                 Fx.Sparkle(new Vector3(to - 0.5f, 0f, 0f), new Color(1f, 0.85f, 0.4f), 18);
-                gm.UI.ShowMessage("", 1.8f, "وقف العقرب!");
+                gm.UI.ShowMessage("", 1.8f, "توقف العقرب!");
             }
             else angle = Mathf.Repeat(next, 360f);
             Apply();
@@ -135,7 +135,7 @@ public class ClockBridge : MonoBehaviour
         if (wait && prompted != 0)
         {
             prompted = 0;
-            gm.UI.ShowMessage("", 2.8f, "العقرب يلف! ارسمي خط تحت مكانه لما يصير مستوي يوقفه");
+            gm.UI.ShowMessage("", 2.8f, "العقرب يدور! لنرسم خطًّا تحت مكانه حين يستوي فيوقفه");
         }
         if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
         else if (holding) { rw.Held = false; holding = false; }
@@ -198,7 +198,7 @@ public class SandPit : MonoBehaviour
             prompted = 0;
             bool any = false;
             foreach (Hourglass g in glasses) if (g.Flipped) any = true;
-            gm.UI.ShowMessage("", 2.8f, any ? "باقي ساعة رملية... اقلبيها هي بعد" : "المسي الساعة الرملية بخط عشان تنقلب وتملي الحفرة");
+            gm.UI.ShowMessage("", 2.8f, any ? "بقيت ساعة رملية... لنقلبها هي أيضًا" : "لنلمس الساعة الرملية بخط لتنقلب وتملأ الحفرة");
             if (any) prompted = 1;
         }
         if (wait) { r.Held = true; r.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
@@ -429,7 +429,7 @@ public class GearBridge : MonoBehaviour
         if (wait && prompted != turning)
         {
             prompted = turning;
-            gm.UI.ShowMessage("", 2.8f, turning == 1 ? "ارسمي خط يلمس الترسين... يصير سير ويدورهم" : "باقي ترس! وصليه بخط بعد");
+            gm.UI.ShowMessage("", 2.8f, turning == 1 ? "لنرسم خطًّا يلمس الترسين... فيصبح سيرًا يديرهما" : "بقي ترس! لنصله بخط أيضًا");
         }
         if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
         else if (holding) { rw.Held = false; holding = false; }
@@ -536,7 +536,7 @@ public class AlarmSleeper : MonoBehaviour
                 ringT = 0f;
                 Destroy(mark.gameObject, 0.6f);   // الكورة تنستخدم مرة وحدة
                 LevelSfx.Play("alarm"); LevelSfx.Play("meow", 0.8f);
-                gm.UI.ShowMessage("", 1.8f, "رررن! صحت القطوة");
+                gm.UI.ShowMessage("", 1.8f, "رررن! استيقظت القطة");
                 break;
             }
         }
@@ -553,7 +553,7 @@ public class AlarmSleeper : MonoBehaviour
                 alarm.localRotation = Quaternion.identity;
                 prompted = 0;
                 LevelSfx.Play("snore", 0.7f);
-                gm.UI.ShowMessage("", 2.4f, "القطوة رجعت نامت! صحيها لما توصل رويدا");
+                gm.UI.ShowMessage("", 2.4f, "عادت القطة إلى النوم! لنوقظها حين تصل رويدا");
                 return;
             }
             // المنبه يرن (يهتز)
@@ -575,7 +575,7 @@ public class AlarmSleeper : MonoBehaviour
         if (wait && prompted == 0)
         {
             prompted = 1;
-            gm.UI.ShowMessage("", 2.8f, "القطوة نايمة بالطريق! ارمي كورة على زر المنبه");
+            gm.UI.ShowMessage("", 2.8f, "القطة نائمة في الطريق! لنرمِ كرة على زر المنبه");
         }
         if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
         else if (holding) { rw.Held = false; holding = false; }
@@ -716,7 +716,7 @@ public class DayNight : MonoBehaviour
         if (wait && prompted != need)
         {
             prompted = need;
-            gm.UI.ShowMessage("", 2.6f, need == 1 ? "الصفحة الزرقا تطلع بالليل... المسي القمر بخط" : "الصفحة الصفرا تطلع بالنهار... المسي الشمس بخط");
+            gm.UI.ShowMessage("", 2.6f, need == 1 ? "الصفحة الزرقاء تظهر في الليل... لنلمس القمر بخط" : "الصفحة الصفراء تظهر في النهار... لنلمس الشمس بخط");
         }
         if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; }
         else if (holding) { rw.Held = false; holding = false; }

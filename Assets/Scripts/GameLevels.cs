@@ -63,7 +63,7 @@ public static class GameFeatures
         tm.GetComponent<MeshRenderer>().sharedMaterial = TextMat;
         tm.text = Fix(text);
         tm.fontSize = 64;
-        tm.characterSize = size;
+        tm.characterSize = size * ArabicText.Scale;
         tm.anchor = anchor;
         tm.alignment = TextAlignment.Center;
         tm.color = c;
@@ -300,11 +300,11 @@ public class CoinGate : MonoBehaviour
                 }
                 LevelSfx.Play("powerup", 0.8f);
                 GameFeatures.SetText(counter, "!");
-                gm.UI.ShowMessage("", 2f, "جمعتي كل العملات! الجدار انكسر");
+                gm.UI.ShowMessage("", 2f, "جُمعت كل العملات! انكسر الجدار");
             }
         }
         bool wait = !open && HoldHelper.Before(wallX - 0.5f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "جدار طوب! ارسمي خط يمر على العملات الخمس ويجمعها"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "جدار طوب! لنرسم خطًّا يمر على العملات الخمس ويجمعها"); }
         HoldHelper.Hold(ref holding, wait);
         if (!open) LabFeatures.Show(x0 - 4f, wallX, new Vector3(x0 - 1f, top - 0.5f, 0f), new Vector3(wallX + 1f, top + 5.2f, 0f));
     }
@@ -379,7 +379,7 @@ public class PixelCreature : MonoBehaviour
                 m.transform.position += new Vector3(x - c.x, top + 0.7f - c.y, 0f);
                 trapT = 0f;
                 LevelSfx.Play("snap", 0.8f);
-                gm.UI.ShowMessage("", 2f, "انحبس الوحش!");
+                gm.UI.ShowMessage("", 2f, "حُبس الوحش!");
                 break;
             }
         }
@@ -403,7 +403,7 @@ public class PixelCreature : MonoBehaviour
             }
         }
         bool wait = trapT < 0f && HoldHelper.Before(x0);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "وحش بكسل! ارسمي صندوق (شكل مسكر) يطيح عليه ويحبسه"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "وحش بكسلات! لنرسم صندوقًا (شكلًا مغلقًا) يسقط عليه ويحبسه"); }
         HoldHelper.Hold(ref holding, wait);
         if (trapT < 0f) LabFeatures.Show(x0 - 4f, x1, new Vector3(x0 - 1.5f, top - 0.5f, 0f), new Vector3(x1 + 1f, top + 4f, 0f));
     }
@@ -568,7 +568,7 @@ public class Breakout : MonoBehaviour
         }
         bool done = BricksLowGone() && RowaidaController.BridgeCovers(pitFrom, pitTo, top);
         bool wait = !done && HoldHelper.Before(pitFrom);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "تكسير الطوب! ارسمي خط فوق الحفرة: يصير مضرب يرد الكورة للطوب، وجسر لرويدا"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "تكسير الطوب! لنرسم خطًّا فوق الحفرة: يصبح مضربًا يردّ الكرة إلى الطوب، وجسرًا لرويدا"); }
         HoldHelper.Hold(ref holding, wait);
         if (!done) LabFeatures.Show(pitFrom - 5f, wallX, new Vector3(left - 0.3f, top - 1f, 0f), new Vector3(right + 0.3f, ceil + 0.4f, 0f));
     }
@@ -620,7 +620,7 @@ public class CommandLift : MonoBehaviour
         GameFeatures.Px("Monitor Neck", go.transform, sc + new Vector3(0f, -1.9f, 0.3f), new Vector3(0.3f, 0.8f, 0.2f), new Color(0.15f, 0.16f, 0.2f));
         c.console = GameFeatures.Text(go.transform, new Vector3(sc.x - 1.95f, sc.y + 1.15f, sc.z - 0.1f), "", 0.045f, new Color(0.4f, 1f, 0.6f), TextAnchor.UpperLeft);
         c.console.alignment = TextAlignment.Left;
-        GameFeatures.Text(go.transform, sc + new Vector3(0f, 1.75f, -0.2f), "ارسمي سهم هنا", 0.06f, new Color(0.5f, 1f, 1f));
+        GameFeatures.Text(go.transform, sc + new Vector3(0f, 1.75f, -0.2f), "لنرسم سهمًا هنا", 0.06f, new Color(0.5f, 1f, 1f));
         c.lines.Add("> robot.ready();");
         c.Refresh();
     }
@@ -684,7 +684,7 @@ public class CommandLift : MonoBehaviour
         }
         bool done = ix == 1 && iy == 1 && moveT < 0f;
         bool wait = on && !done && gm.IsPlaying;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "برمجي المنصة! ارسمي سهم على الشاشة: لفوق ترتفع، ولليمين تمشي"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "لنبرمج المنصة! نرسم سهمًا على الشاشة: للأعلى ترتفع، ولليمين تتحرك"); }
         HoldHelper.Hold(ref holding, wait);
         if (holding && r != null) r.CarryX = vx;
         if (!done) LabFeatures.Show(platX - 7f, platX + rightD + 0.8f, new Vector3(screen.xMin - 0.5f, top - 0.5f, 0f), new Vector3(platX + rightD + 1.6f, screen.yMax + 0.8f, 0f));
@@ -765,10 +765,10 @@ public class BugCatch : MonoBehaviour
                     LevelSfx.Play("powerup", 0.6f);
                     jar = LevelBuilder.Visual("Jar", PrimitiveType.Cylinder, transform, bug, new Vector3(0.8f, 0.45f, 0.8f), LabFeatures.Glass(0.45f), false).transform;
                     LevelBuilder.Visual("Jar Lid", PrimitiveType.Cylinder, jar, new Vector3(0f, 1.05f, 0f), new Vector3(1.05f, 0.15f, 1.05f), gm.Mat("Lid Red", new Color(0.9f, 0.25f, 0.3f), 0.4f), false);
-                    gm.UI.ShowMessage("", 2.2f, "مسكتي الباق! الخطأ انصلح");
+                    gm.UI.ShowMessage("", 2.2f, "أُمسكت الحشرة! وأُصلح الخطأ");
                     break;
                 }
-                if (t - missTold > 4f && Vector3.Distance(GameFeatures.Center(m), bug) < 3f) { missTold = t; gm.UI.ShowMessage("", 2f, "فاتتك! حوطي الحشرة كلها بالدايرة"); }
+                if (t - missTold > 4f && Vector3.Distance(GameFeatures.Center(m), bug) < 3f) { missTold = t; gm.UI.ShowMessage("", 2f, "أفلتت! لنحط الحشرة كلها بالدائرة"); }
             }
         }
         else
@@ -793,7 +793,7 @@ public class BugCatch : MonoBehaviour
             }
         }
         bool wait = caughtT < 0f && HoldHelper.Before(wallX - 0.4f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "حشرة باق خربت الطريق! حوطيها بدايرة عشان تمسكينها"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "حشرة برمجية أفسدت الطريق! لنحطها بدائرة كي نمسكها"); }
         HoldHelper.Hold(ref holding, wait);
         if (caughtT < 0f) LabFeatures.Show(bx - 5f, wallX, new Vector3(bx - 2.5f, top - 0.5f, 0f), new Vector3(wallX + 1f, top + 4.6f, 0f));
     }
@@ -881,7 +881,7 @@ public class LoopDoor : MonoBehaviour
                 GameFeatures.SetText(code, "while (true) { break; }");
                 code.color = new Color(0.4f, 1f, 0.5f);
                 LevelSfx.Play("powerup", 0.7f);
-                gm.UI.ShowMessage("", 2f, "قطعتي الحلقة! الباب وقف مفتوح");
+                gm.UI.ShowMessage("", 2f, "انقطعت الحلقة! توقف الباب مفتوحًا");
                 break;
             }
         }
@@ -889,7 +889,7 @@ public class LoopDoor : MonoBehaviour
         panel.position = new Vector3(doorX, top + openK * 3.3f, 0f);
         col.enabled = openK < 0.6f;
         bool wait = !broken && HoldHelper.Before(doorX - 0.3f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "باب يفتح ويتسكر بلا وقفة! ارسمي خط يقطع الحلقة البرتقالية"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "باب يُفتح ويُغلق بلا توقف! لنرسم خطًّا يقطع الحلقة البرتقالية"); }
         HoldHelper.Hold(ref holding, wait);
         if (!broken) LabFeatures.Show(doorX - 6f, doorX, new Vector3(ring.x - 2.5f, top - 0.5f, 0f), new Vector3(doorX + 1f, ring.y + 2f, 0f));
     }

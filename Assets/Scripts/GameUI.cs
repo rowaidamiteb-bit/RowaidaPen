@@ -64,7 +64,7 @@ public class GameUI : MonoBehaviour
         subtitleText.color = Color.white;
         subtitleText.gameObject.AddComponent<Outline>().effectColor = new Color(0.05f, 0.03f, 0.1f, 0.9f);
         messageText.gameObject.AddComponent<Outline>().effectColor = Color.white;
-        Label(root, ArabicText.Fix("استراحة") + " Esc   •   " + ArabicText.Fix("ارسمي بالماوس   •   R تعيد المرحلة"), 28, TextAnchor.MiddleCenter, new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1200f, 40f))
+        Label(root, ArabicText.Fix("استراحة") + " Esc   •   " + ArabicText.Fix("الرسم بالفأرة   •   R لإعادة المرحلة"), 28, TextAnchor.MiddleCenter, new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1200f, 40f))
             .color = new Color(0f, 0f, 0f, 0.6f);
     }
 
@@ -85,7 +85,7 @@ public class GameUI : MonoBehaviour
         airRoot = new GameObject("Air", typeof(RectTransform)).GetComponent<RectTransform>();
         airRoot.SetParent(root, false);
         Place(airRoot, new Vector2(0.5f, 1f), new Vector2(0f, -45f), new Vector2(560f, 50f));
-        Label(airRoot, ArabicText.Fix("الهوا"), 34, TextAnchor.MiddleRight, new Vector2(1f, 0.5f), new Vector2(0f, 0f), new Vector2(110f, 50f)).gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.85f);
+        Label(airRoot, ArabicText.Fix("الهواء"), 34, TextAnchor.MiddleRight, new Vector2(1f, 0.5f), new Vector2(0f, 0f), new Vector2(110f, 50f)).gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.85f);
         Image frame = Panel(airRoot, "Air Bar", new Color(0.1f, 0.3f, 0.5f));
         Place(frame.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0f), new Vector2(430f, 40f));
         Image inner = Panel(frame.transform, "Inner", Color.white);
@@ -467,7 +467,7 @@ public class GameUI : MonoBehaviour
         var t = go.GetComponent<Text>();
         t.font = font;
         t.text = text;
-        t.fontSize = size;
+        t.fontSize = ArabicText.Size(size);
         t.fontStyle = FontStyle.Bold;
         t.alignment = align;
         t.color = Color.black;

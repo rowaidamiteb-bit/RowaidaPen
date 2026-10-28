@@ -59,13 +59,17 @@ public static class ArabicText
 
     static Font font;
 
+    // خط النسخ التقليدي حروفه أصغر من تاهوما: نكبر كل الكتابة بهالنسبة
+    public const float Scale = 1.28f;
+    public static int Size(int s) => Mathf.RoundToInt(s * Scale);
+
     // خط من الويندوز يدعم الحروف العربية
     public static Font Font
     {
         get
         {
             if (font == null)
-                font = Font.CreateDynamicFontFromOSFont(new[] { "Tahoma", "Segoe UI", "Arial" }, 64);
+                font = Font.CreateDynamicFontFromOSFont(new[] { "Traditional Arabic", "Tahoma", "Segoe UI", "Arial" }, 64);
             return font;
         }
     }

@@ -88,7 +88,7 @@ public class InkDrops : MonoBehaviour
         if (!told && gm.IsPlaying && gm.Rowaida != null && gm.Rowaida.transform.position.x > -4.5f)
         {
             told = true;
-            gm.UI.ShowMessage("", 4f, "قلم رويدا قرب يخلص حبره! ارسمي خط يمر على قطرات الحبر الطايرة ويعبي القلم");
+            gm.UI.ShowMessage("", 4f, "حبر قلم رويدا يكاد ينفد! لنرسم خطًّا يمر على قطرات الحبر الطائرة ويملأ القلم");
         }
         for (int i = 0; i < drops.Count; i++)
         {
@@ -191,7 +191,7 @@ public class PhotoBridge : MonoBehaviour
                 foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
                     if (!m.closed && m.path != null && GameFeatures.PathDistance(m.path, home[1]) < 1f) Destroy(m.gameObject);
                 LevelSfx.Play("whoosh", 0.7f);
-                gm.UI.ShowMessage("", 2.2f, "ذكرياتك صارت جسر!");
+                gm.UI.ShowMessage("", 2.2f, "صارت الذكريات جسرًا!");
             }
         }
         else if (settleT < 1f)
@@ -209,7 +209,7 @@ public class PhotoBridge : MonoBehaviour
             if (settleT >= 1f) { col.enabled = true; LevelSfx.Play("thud", 0.6f); }
         }
         bool wait = settleT < 1f && HoldHelper.Before(gapFrom);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "صور من رحلتك! ارسمي خط يمر على الثلاث صور ويصيرون جسر"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.6f, "صور من الرحلة! لنرسم خطًّا يمر على الصور الثلاث فتصبح جسرًا"); }
         HoldHelper.Hold(ref holding, wait);
         if (settleT < 0f) LabFeatures.Show(gapFrom - 5f, gapFrom, new Vector3(gapFrom - 2.5f, top - 1f, 0f), new Vector3(gapTo + 1f, top + 4.6f, 0f));
     }
@@ -276,7 +276,7 @@ public class TurningPage : MonoBehaviour
                 if (!above || !below || n == 0) continue;
                 if (angle > 4f)
                 {
-                    if (!warned) { warned = true; gm.UI.ShowMessage("", 2f, "ارسميها وهي نايمة على الحفرة!"); }
+                    if (!warned) { warned = true; gm.UI.ShowMessage("", 2f, "لنرسم الخط وهي مستلقية على الحفرة!"); }
                     continue;
                 }
                 marked = true;
@@ -295,7 +295,7 @@ public class TurningPage : MonoBehaviour
         }
         rb.MoveRotation(Quaternion.Euler(0f, 0f, -angle));
         bool wait = !marked && HoldHelper.Before(gapFrom);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 4f, "صفحة عملاقة تنقلب! ارسمي خط من فوق لتحت يقطعها وهي نايمة... يصير علامة كتاب ويثبتها"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 4f, "صفحة عملاقة تنقلب! لنرسم خطًّا من الأعلى إلى الأسفل يقطعها وهي مستلقية... فيصبح علامة كتاب تثبتها"); }
         HoldHelper.Hold(ref holding, wait);
         if (!marked) LabFeatures.Show(gapFrom - 5f, gapFrom, new Vector3(gapFrom - 2.5f, top - 2f, 0f), new Vector3(gapTo + w() + 0.5f, top + 5.6f, 0f));
     }
@@ -374,7 +374,7 @@ public class PaperPlane : MonoBehaviour
                 plane.gameObject.SetActive(true);
                 LevelSfx.Play("rip", 0.5f, 1.4f);
                 LevelSfx.Play("whoosh", 0.7f);
-                gm.UI.ShowMessage("", 2.2f, "انطوت الورقة وصارت طيارة!");
+                gm.UI.ShowMessage("", 2.2f, "انطوت الورقة وصارت طائرة!");
                 break;
             }
         }
@@ -418,7 +418,7 @@ public class PaperPlane : MonoBehaviour
         }
         bool delivered = flyT >= 1f;
         bool wait = r != null && gm.IsPlaying && !delivered && (readyT < 1f ? HoldHelper.Before(padX + 0.9f) : flyT >= 0f && onPlane);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "وادي كبير! ارسمي شكل مسكر فوق المنصة... ينطوي ويصير طيارة ورق تشيلك"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.8f, "وادٍ كبير! لنرسم شكلًا مغلقًا فوق المنصة... فينطوي ويصبح طائرة ورقية تحمل رويدا"); }
         HoldHelper.Hold(ref holding, wait);
         if (holding && r != null && flyT >= 0f) r.CarryX = vx;
         if (readyT < 1f) LabFeatures.Show(padX - 6f, padX + 1f, new Vector3(padX - 3f, top - 0.5f, 0f), new Vector3(padX + 3f, top + 5f, 0f));

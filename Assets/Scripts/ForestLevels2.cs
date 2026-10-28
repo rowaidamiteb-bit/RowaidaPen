@@ -151,7 +151,7 @@ public class DeadTree : MonoBehaviour
         }
 
         bool wait = HoldHelper.Before(from) && !landed && !RowaidaController.BridgeCovers(from, to, top);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "شجرة يابسة! ادفعيها بخط من فوق... تطيح وتصير جسر"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "شجرة يابسة! لندفعها بخط من الأعلى... فتسقط وتصبح جسرًا"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -282,7 +282,7 @@ public class SpiderWeb : MonoBehaviour
         if (cutT > 3f) spider.gameObject.SetActive(false);
 
         bool wait = cutT < 0f && HoldHelper.Before(x - 0.4f);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "شبكة عنكبوت تسد الطريق! قطعيها بخط"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "شبكة عنكبوت تسد الطريق! لنقطعها بخط"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -387,7 +387,7 @@ public class OwlWatch : MonoBehaviour
                 mask.gameObject.SetActive(true);
                 LevelSfx.Play("owl", 0.5f, 0.8f);
                 Fx.Sparkle(head.position, new Color(0.5f, 0.9f, 0.4f), 14);
-                gm.UI.ShowMessage("", 2.2f, "البومة نامت! تقدرين تعدين");
+                gm.UI.ShowMessage("", 2.2f, "نامت البومة! يمكن العبور الآن");
                 break;
             }
 
@@ -428,13 +428,13 @@ public class OwlWatch : MonoBehaviour
                 r.Knockback(-1.6f);
                 LevelSfx.Play("owl", 0.9f, 1.2f);
                 Fx.Sparkle(r.transform.position + Vector3.up * 0.8f, new Color(1f, 0.9f, 0.4f), 12);
-                if (!spottedOnce) { spottedOnce = true; gm.UI.ShowMessage("", 2.4f, "البومة شافتك! استني لين تغمض عيونها"); }
+                if (!spottedOnce) { spottedOnce = true; gm.UI.ShowMessage("", 2.4f, "رأت البومة رويدا! لننتظر حتى تغمض عينيها"); }
             }
         }
 
         float cross = (range * 2f + 1.6f) / (r != null ? r.walkSpeed : 2.8f);
         bool wait = !blind && HoldHelper.Before(x - range) && (watching || UntilWatch < cross);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "البومة تراقب! استني لين تغمض... أو ارسمي دايرة على عيونها"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "البومة تراقب! لننتظر حتى تغمض عينيها... أو نرسم دائرة على عينيها"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -573,7 +573,7 @@ public class VineSwing : MonoBehaviour
         if (riding) { r.Held = true; return; }
 
         bool wait = HoldHelper.Before(from) && !done && !RowaidaController.BridgeCovers(from, to, top);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, pasta ? "المكرونة قصيرة! ارسمي خط تحتها يطولها وتمرجحي" : extended ? "استني الكرمة توصل لك!" : "الكرمة قصيرة! ارسمي خط تحتها يطولها"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, pasta ? "المعكرونة قصيرة! لنرسم خطًّا تحتها يطيلها ونتأرجح" : extended ? "لننتظر حتى تصل الكرمة!" : "الكرمة قصيرة! لنرسم خطًّا تحتها يطيلها"); }
         HoldHelper.Hold(ref holding, wait);
     }
 
@@ -687,7 +687,7 @@ public class Hedgehog : MonoBehaviour
         }
 
         bool wait = stopT < 0f && HoldHelper.Before(from);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "قنفذ يتدحرج! ارسمي خط قدامه يوقفه"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "قنفذ يتدحرج! لنرسم خطًّا أمامه يوقفه"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -838,7 +838,7 @@ public class TurtlePond : MonoBehaviour
         float cross = (to - from + 1.6f) / (r != null ? r.walkSpeed : 2.8f);
         bool ready = feeding && allIn && (feedUntil - t > cross || rowaidaOn);
         bool wait = HoldHelper.Before(from) && !ready;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "بركة سلاحف! ارسمي دايرة بالمويه تصير خس... يتجمعون ويصيرون جسر"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.4f, "بركة سلاحف! لنرسم دائرة في الماء تصبح خسًّا... فتتجمع السلاحف وتصبح جسرًا"); }
         HoldHelper.Hold(ref holding, wait);
     }
 
@@ -987,7 +987,7 @@ public class SteppingStones : MonoBehaviour
                 if (next != cur && next >= 0 && next < stones.Count && TopAt(next, t + 1.4f) < top - 0.2f && curTop > top - 0.1f) wait = true;
             }
         }
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "الحجار تطلع وتغطس! رويدا تنط عليها لما تطلع... والمويه تبلع الخطوط"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "الحجارة تطفو وتغطس! تقفز رويدا عليها حين تطفو... والماء يبتلع الخطوط"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -1033,7 +1033,7 @@ public class JumpStump : MonoBehaviour
         if (!told && r != null && gm.IsPlaying && r.transform.position.x > x - 3f && r.transform.position.x < x)
         {
             told = true;
-            gm.UI.ShowMessage("", 3.6f, "جذع على الطريق! اضغطي المسافة (أو السهم فوق) عشان رويدا تنط");
+            gm.UI.ShowMessage("", 3.6f, "جذع على الطريق! الضغط على المسافة (أو السهم للأعلى) يجعل رويدا تقفز");
         }
     }
 }

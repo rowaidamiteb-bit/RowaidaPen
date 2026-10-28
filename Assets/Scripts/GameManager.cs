@@ -107,7 +107,7 @@ public class GameManager : MonoBehaviour
         menu.Transition(ShowMainMenu);
     }
 
-    // "ابدئي": أول مرة تشوف البداية في غرفتها، بعدين تكمل من آخر مرحلة وصلتها
+    // "لنبدأ": أول مرة تشوف البداية في غرفتها، بعدين تكمل من آخر مرحلة وصلتها
     public void PlayFromMenu()
     {
         if (menu.Transitioning) return;
@@ -273,7 +273,7 @@ public class GameManager : MonoBehaviour
             if (timeLeft <= 0f)
             {
                 timeLeft = 0f;
-                ui.ShowMessage("الصفحة انطوت!", 1.5f);
+                ui.ShowMessage("انطوت الصفحة!", 1.5f);
                 KillRowaida();
             }
         }
@@ -298,7 +298,7 @@ public class GameManager : MonoBehaviour
             RespawnAtCheckpoint();
             menu.Flash();
             Fx.Sparkle(Rowaida.transform.position, new Color(1f, 0.9f, 0.6f), 16);
-            ui.ShowMessage("", 1.6f, hearts == 1 ? "باقي لك قلب واحد!" : "باقي لك قلبين");
+            ui.ShowMessage("", 1.6f, hearts == 1 ? "بقي قلب واحد!" : "بقي قلبان");
         }
         else
         {
@@ -333,7 +333,7 @@ public class GameManager : MonoBehaviour
     {
         IsPlaying = false;
         Rowaida.Stop();
-        ui.ShowMessage("خسرتي كل القلوب!", 2.2f, "نعيد المرحلة من البداية");
+        ui.ShowMessage("نفدت كل القلوب!", 2.2f, "نعيد المرحلة من البداية");
         yield return new WaitForSeconds(2f);
         int index = levelIndex;
         menu.Transition(() => LoadLevel(index));

@@ -30,8 +30,18 @@ public static class SaveData
     }
 
     // مفتاح ثابت من اسم المرحلة (أرقام وحروف إنجليزي بس)
+    // مراحل تغير اسمها (لما صار الكلام بالفصحى): نحفظها بالاسم القديم عشان ما تضيع النجوم
+    static readonly System.Collections.Generic.Dictionary<string, string> Renamed = new System.Collections.Generic.Dictionary<string, string>
+    {
+        { "الأرض الطائرة", "الأرض الطايرة" },
+        { "صفحات الخربشات", "صفحات الشخابيط" },
+        { "خربشات أكثر", "شخابيط أكثر" },
+        { "قلعة الحلوى", "قلعة الحلاوة" },
+    };
+
     static string Key(string title)
     {
+        if (Renamed.TryGetValue(title, out string old)) title = old;
         uint h = 2166136261;
         foreach (char c in title) { h ^= c; h *= 16777619; }
         return "stars_" + h.ToString("x8");

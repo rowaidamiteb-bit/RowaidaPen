@@ -149,7 +149,7 @@ public class SeedPit : MonoBehaviour
         }
 
         bool wait = HoldHelper.Before(from) && !Grown && !RowaidaController.BridgeCovers(from, to, top);
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "ارسمي دايرة (بذرة) وخليها تطيح بالتراب... وشوفي وش يطلع!"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "لنرسم دائرة (بذرة) ونتركها تسقط في التراب... ولنرَ ماذا ينمو!"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -285,7 +285,7 @@ public class Mushroom : MonoBehaviour
         }
 
         bool wait = !Awake && r != null && gm.IsPlaying && r.transform.position.x > x - 1.9f && r.transform.position.x < x - 0.7f;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "الفطرة نايمة! المسيها بخط عشان تصحى وتنطط رويدا"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "الفطرة نائمة! لنلمسها بخط لتستيقظ وتقفز برويدا"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }
@@ -481,7 +481,7 @@ public class RiverLogs : MonoBehaviour
         if (wait && !prompted)
         {
             prompted = true;
-            gm.UI.ShowMessage("", 3.2f, "النهر يجري! ارسمي خط على النهر يصير حبل يصيد جذع");
+            gm.UI.ShowMessage("", 3.2f, "النهر يجري! لنرسم خطًّا على النهر يصبح حبلًا يصطاد جذعًا");
         }
         HoldHelper.Hold(ref holding, wait);
     }
@@ -611,7 +611,7 @@ public class BeeHive : MonoBehaviour
                 LevelSfx.Play("zap", 0.5f, 1.6f);
                 gm.Sound.PlaySqueak(1.5f);
                 Fx.Sparkle(rp, new Color(1f, 0.85f, 0.2f), 12);
-                gm.UI.ShowMessage("", 1.6f, "آي! النحلة قرصتك");
+                gm.UI.ShowMessage("", 1.6f, "آه! لسعت النحلة رويدا");
             }
         }
         // صوت الطنين يعلى كل ما قربت رويدا
@@ -625,7 +625,7 @@ public class BeeHive : MonoBehaviour
         if (flower != null) flower.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 2f) * 5f);
 
         bool wait = HoldHelper.Before(x - range) && !Lured;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "النحل يحرس الطريق! ارسمي دايرة تصير وردة تلهيه"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "النحل يحرس الطريق! لنرسم دائرة تصبح وردة تلهيه"); }
         HoldHelper.Hold(ref holding, wait);
     }
 
@@ -1131,7 +1131,7 @@ public class Sticker : MonoBehaviour
         LevelSfx.Play("sticker", 0.9f);
         Fx.Sparkle(transform.position, new Color(1f, 0.6f, 0.8f), 30);
         Fx.Sparkle(transform.position, new Color(1f, 0.95f, 0.5f), 20);
-        gm.UI.ShowMessage("", 2.4f, first ? "لقيتي الملصق المخفي!" : "هذا الملصق عندك من قبل");
+        gm.UI.ShowMessage("", 2.4f, first ? "عُثر على الملصق المخفي!" : "هذا الملصق موجود من قبل");
         Destroy(gameObject, 0.05f);
     }
 }

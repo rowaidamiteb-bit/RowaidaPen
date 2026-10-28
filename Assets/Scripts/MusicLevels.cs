@@ -159,7 +159,7 @@ public class PianoPuzzle : MonoBehaviour
         if (wait && prompted == 0)
         {
             prompted = 1;
-            gm.UI.ShowMessage("", 2.8f, "اعزفي اللحن! ارمي كور على المفاتيح بنفس ترتيب ألوان النوتة");
+            gm.UI.ShowMessage("", 2.8f, "لنعزف اللحن! نرمي كرات على المفاتيح بترتيب ألوان النوتة");
         }
         if (wait) { r.Held = true; r.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
         else if (holding) { r.Held = false; holding = false; }
@@ -183,7 +183,7 @@ public class PianoPuzzle : MonoBehaviour
                 doorCol.enabled = false;
                 LevelSfx.Play("success");
                 Fx.Confetti(new Vector3(spec.gateX, 2f, -0.5f), 30);
-                gm.UI.ShowMessage("", 1.8f, "لحن حلو! انفتح الباب");
+                gm.UI.ShowMessage("", 1.8f, "لحن جميل! فُتح الباب");
             }
         }
         else
@@ -191,7 +191,7 @@ public class PianoPuzzle : MonoBehaviour
             progress = spec.song[0] == key ? 1 : 0;
             flash = 0.6f;
             LevelSfx.Play("error");
-            gm.UI.ShowMessage("", 2f, "نوتة غلط! ابدئي اللحن من أوله");
+            gm.UI.ShowMessage("", 2f, "نوتة خاطئة! لنبدأ اللحن من أوله");
         }
     }
 
@@ -246,7 +246,7 @@ public class DrumPit : MonoBehaviour
         }
         LevelSfx.Play("drum");
         Fx.Sparkle(drum.position + Vector3.up, new Color(1f, 0.8f, 0.3f), 16);
-        gm.UI.ShowMessage("", 1.6f, "صار طبل!");
+        gm.UI.ShowMessage("", 1.6f, "صار طبلًا!");
     }
 
     void Update()
@@ -293,7 +293,7 @@ public class DrumPit : MonoBehaviour
         if (inPit && drum == null && prompted == 0)
         {
             prompted = 1;
-            gm.UI.ShowMessage("", 2.8f, "الجدار عالي! ارسمي دايرة بقاع الحفرة تصير طبل وتنطين عليه");
+            gm.UI.ShowMessage("", 2.8f, "الجدار عالٍ! لنرسم دائرة في قاع الحفرة تصبح طبلًا تقفز عليه رويدا");
         }
         if (wait) { r0.Held = true; r0.CarryX = 0f; holding = true; }
         else if (holding) { r0.Held = false; holding = false; }
@@ -412,7 +412,7 @@ public class NoteSection : MonoBehaviour
             if (atStart && prompted == 0)
             {
                 prompted = 1;
-                gm.UI.ShowMessage("", 2.8f, "جمعي النوتات! ارسمي طريق مثل التلة يوصل رويدا لها");
+                gm.UI.ShowMessage("", 2.8f, "لنجمع النوتات! نرسم طريقًا مثل التلة يوصل رويدا إليها");
             }
             if (line) started = true;
             if (atStart && !line) { r.Held = true; r.CarryX = 0f; holding = true; CameraFollow.PullRequest = Mathf.Max(CameraFollow.PullRequest, 1f); }
@@ -428,7 +428,7 @@ public class NoteSection : MonoBehaviour
             r.Respawn(new Vector3(spec.startX - 1f, 1f, 0f));
             started = false;
             Camera.main.GetComponent<CameraFollow>().SetTarget(r.transform, true);
-            gm.UI.ShowMessage("", 2.4f, "فاتتك نوتة! ارسمي طريق يوصلك لها");
+            gm.UI.ShowMessage("", 2.4f, "فاتت نوتة! لنرسم طريقًا يوصل إليها");
         }
     }
 }
@@ -537,7 +537,7 @@ public class StringBridge : MonoBehaviour
         if (wait && prompted != stage)
         {
             prompted = stage;
-            gm.UI.ShowMessage("", 2.6f, stage == 0 ? "الوتر يهتز! ارسمي خط يلمسه عشان يسكت" : "رجع يهتز! سكتيه مرة ثانية");
+            gm.UI.ShowMessage("", 2.6f, stage == 0 ? "الوتر يهتز! لنرسم خطًّا يلمسه ليسكت" : "عاد يهتز! لنسكته مرة أخرى");
         }
         if (wait) { rw.Held = true; rw.CarryX = 0f; holding = true; }
         else if (holding) { rw.Held = false; holding = false; }
@@ -747,7 +747,7 @@ public class StaffBridge : MonoBehaviour
                 {
                     Destroy(m.gameObject);
                     LevelSfx.Play("error", 0.7f);
-                    if (t >= nextWrong) { nextWrong = t + 2f; gm.UI.ShowMessage("", 2.4f, "السطر يبي نوتات مو خطوط! ارسمي دايرة بكل مكان منقط"); }
+                    if (t >= nextWrong) { nextWrong = t + 2f; gm.UI.ShowMessage("", 2.4f, "السطر يحتاج نوتات لا خطوطًا! لنرسم دائرة في كل مكان منقط"); }
                     continue;
                 }
                 if (c.x < spec.from - 0.5f || c.x > spec.to + 0.5f || c.y < spec.top - 0.5f || c.y > spec.top + 3.2f) continue;
@@ -797,7 +797,7 @@ public class StaffBridge : MonoBehaviour
                 lines[i].localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 2f + i) * (done ? 0.6f : 0.25f));
 
         bool wait = HoldHelper.Before(spec.from) && !bridge.enabled;
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "ارسمي نوتة (دايرة) بكل مكان منقط عشان يكتمل اللحن"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3.2f, "لنرسم نوتة (دائرة) في كل مكان منقط ليكتمل اللحن"); }
         HoldHelper.Hold(ref holding, wait);
     }
 
@@ -917,7 +917,7 @@ public class KeyLift : MonoBehaviour
                 if (next != cur && (Mathf.Abs(nextTop - curTop) > 0.25f || Mathf.Abs(nextNow - curTop) > 0.25f)) wait = true;
             }
         }
-        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "مفاتيح البيانو تطلع وتنزل! رويدا تمشي عليها لما تصير بنفس الارتفاع"); }
+        if (wait && !prompted) { prompted = true; gm.UI.ShowMessage("", 3f, "مفاتيح البيانو تصعد وتنزل! تمشي رويدا عليها حين تصبح بالارتفاع نفسه"); }
         HoldHelper.Hold(ref holding, wait);
     }
 }

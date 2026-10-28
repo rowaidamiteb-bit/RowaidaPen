@@ -313,7 +313,7 @@ public class Crab : MonoBehaviour
                     if (!warned)
                     {
                         warned = true;
-                        gm.UI.ShowMessage("", 3f, IsScorpion ? "العقرب جاي يقرصك! ارسمي خط عليه يقلبه على ظهره" : "السلطعون جاي يهجم! ارسمي خط عليه يقلبه على ظهره");
+                        gm.UI.ShowMessage("", 3f, IsScorpion ? "العقرب قادم ليلدغ! لنرسم خطًّا عليه يقلبه على ظهره" : "السلطعون قادم ليهجم! لنرسم خطًّا عليه يقلبه على ظهره");
                     }
                 }
                 break;
@@ -344,9 +344,9 @@ public class Crab : MonoBehaviour
                         {
                             r.WalkBonus = -1.5f;
                             poisonUntil = t + 3.5f;
-                            gm.UI.ShowMessage("", 2.2f, "آي! العقرب قرصك... بتمشين ببطء شوي");
+                            gm.UI.ShowMessage("", 2.2f, "آه! لدغ العقرب رويدا... ستمشي ببطء قليلًا");
                         }
-                        else gm.UI.ShowMessage("", 1.6f, "آي! السلطعون قرصك");
+                        else gm.UI.ShowMessage("", 1.6f, "آه! قرص السلطعون رويدا");
                         gm.Sound.PlaySqueak(1.4f);
                     }
                     LevelSfx.Play("snip", 0.8f);
@@ -445,7 +445,7 @@ public class AirTank : MonoBehaviour
     {
         if (gm.IsPlaying) air = Mathf.Max(0f, air - Drain * Time.deltaTime);
         gm.UI.SetAir(true, air);
-        if (air < 0.3f && !warned && gm.IsPlaying) { warned = true; gm.UI.ShowMessage("", 2.2f, "الهوا قرب يخلص! خذي فقاعة"); }
+        if (air < 0.3f && !warned && gm.IsPlaying) { warned = true; gm.UI.ShowMessage("", 2.2f, "الهواء يكاد ينفد! لنأخذ فقاعة"); }
         if (air > 0.5f) warned = false;
         // خمس فقاعات فوق الراس على شكل قوس
         Vector3 head = transform.position + Vector3.up * 1.35f;
@@ -806,7 +806,7 @@ public class Tentacle : MonoBehaviour
                     {
                         state = State.Sleeping;
                         Fx.Sparkle(new Vector3(Cx, water + 0.5f, -0.5f), new Color(1f, 0.6f, 0.8f), 20);
-                        gm.UI.ShowMessage("", 2f, "شبع ونام! ارسمي الجسر");
+                        gm.UI.ShowMessage("", 2f, "شبع ونام! لنرسم الجسر");
                     }
                     else state = State.Hungry;
                     stateT = 0f;
@@ -868,7 +868,7 @@ public class Tentacle : MonoBehaviour
         if (wait && prompted != (int)state * 10 + (bridge ? 1 : 0))
         {
             prompted = (int)state * 10 + (bridge ? 1 : 0);
-            gm.UI.ShowMessage("", 2.5f, state != State.Sleeping ? "الأخطبوط جوعان! ارمي له كورة بالمويه" : "ارسمي الجسر");
+            gm.UI.ShowMessage("", 2.5f, state != State.Sleeping ? "الأخطبوط جائع! لنرمِ له كرة في الماء" : "لنرسم الجسر");
         }
         if (wait) { rowaida.Held = true; rowaida.CarryX = 0f; holding = true; }
         else if (holding) { rowaida.Held = false; holding = false; }
@@ -1140,7 +1140,7 @@ public class SeaBoat : MonoBehaviour
             else if (SharkAhead(b))
             {
                 // قرش طالع قدام: القارب يوقف لين ضو المنارة يخوفه
-                if (!Waiting) { Waiting = true; gm.UI.ShowMessage("", 2.4f, "قرش قدام! القارب يستنى ضو المنارة"); }
+                if (!Waiting) { Waiting = true; gm.UI.ShowMessage("", 2.4f, "قرش في الأمام! القارب ينتظر ضوء المنارة"); }
                 if (rowaida != null) { rowaida.Held = true; rowaida.CarryX = 0f; }
             }
             else
@@ -1196,7 +1196,7 @@ public class SeaBoat : MonoBehaviour
         if (rowaida != null && sailing && !done) { rowaida.Held = false; rowaida.CarryX = 0f; }
         foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
         GameManager.Instance.Sound.PlayChomp(); LevelSfx.Play("shark");
-        GameManager.Instance.UI.ShowMessage("", 2.8f, "القرش عض القارب! ارسمي القارب لما يكون ضو المنارة على القرش");
+        GameManager.Instance.UI.ShowMessage("", 2.8f, "عضّ القرش القارب! لنرسم القارب حين يكون ضوء المنارة على القرش");
         Fx.Sparkle(Box.center, new Color(0.7f, 0.9f, 1f), 18);
     }
 
@@ -1391,7 +1391,7 @@ public class GapWait : MonoBehaviour
             if (p.x < x0 - 1.6f || p.x > x0 - 0.5f || p.y < top) continue;
             if (RowaidaController.BridgeCovers(x0, x1, top)) continue;
             wait = true;
-            if (lastPrompt != i) { lastPrompt = i; gm.UI.ShowMessage("", 2.2f, "ارسمي جسر عشان تعدي"); }
+            if (lastPrompt != i) { lastPrompt = i; gm.UI.ShowMessage("", 2.2f, "لنرسم جسرًا لتعبر رويدا"); }
         }
         if (wait) { r.Held = true; r.CarryX = 0f; holding = true; }
         else if (holding) { r.Held = false; holding = false; }
@@ -1461,7 +1461,7 @@ public class TideWait : MonoBehaviour
             if (lastPrompt != i)
             {
                 lastPrompt = i;
-                gm.UI.ShowMessage("", 2.5f, cross > 5f ? "الرمل طويل! ارسمي ممشى فوق المويه" : "استني الجزر... أو ارسمي ممشى");
+                gm.UI.ShowMessage("", 2.5f, cross > 5f ? "الرمل طويل! لنرسم ممشى فوق الماء" : "لننتظر الجزر... أو نرسم ممشى");
             }
         }
         if (wait) { r.Held = true; r.CarryX = 0f; holding = true; }
