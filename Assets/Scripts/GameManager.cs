@@ -78,7 +78,9 @@ public class GameManager : MonoBehaviour
             LoadLevel(Mathf.Clamp(startLevel, 0, Levels.All.Count - 1));
             return;
         }
+        // أول ما تفتح اللعبة: شاشة البداية (الاسم، زر اللعب، والصوت)
         ShowMainMenu();
+        menu.ShowTitle();
     }
 
     // ---------- القوائم ----------

@@ -185,8 +185,12 @@ public class EndingCutscene : MonoBehaviour
     System.Action onFinished;
     Bedroom room;
     Camera cam;
-    float t, endTime;
+    float t, endTime, realT;
     bool finished, magicPlayed;
+    TimeWarp warp;
+    SkipButton skip;
+    float[] voiceAt;
+    static readonly string[] Voices = { "ending_0", "ending_1", "ending_2", "ending_3", "ending_4", "ending_5" };
 
     Image fade;
     Text caption, bigText;
@@ -213,6 +217,14 @@ public class EndingCutscene : MonoBehaviour
         spreads = Mathf.Max(1, Mathf.CeilToInt(memoryLevels.Count / 2f));
         endTime = PagesStart + spreads * FlipEvery + 8f;
 
+        // صوت رويدا: كل جملة تبدأ بنقطة، والمشهد يبطئ لو الجملة تبي وقت أطول
+        float spreadsEnd = PagesStart + spreads * FlipEvery;
+        voiceAt = new[] { 1f, 5f, 8.8f, PagesStart, spreadsEnd + 0.3f, spreadsEnd + 3.8f };
+        float[] marks = { 0f, 1f, 5f, 8.8f, PagesStart, spreadsEnd, spreadsEnd + 0.3f, spreadsEnd + 3.8f, endTime };
+        var minReal = new float[marks.Length - 1];
+        int[] seg = { 1, 2, 3, 4, 6, 7 };
+        for (int i = 0; i < Voices.Length; i++) minReal[seg[i]] = Narration.Length(Voices[i]) + (i == 5 ? 1.2f : 0.6f);
+        warp = new TimeWarp(marks, minReal);
 
         SetupLighting();
         BuildOverlay();
@@ -222,18 +234,31 @@ public class EndingCutscene : MonoBehaviour
     void Update()
     {
         if (room == null || finished) return;
-        if (SkipPressed() && t > 1f) t = Mathf.Max(t, endTime - 1.2f);
-        t += Time.deltaTime;
+        // زر التخطي يطلع بعد ما يمر نص المشهد
+        bool half = realT >= warp.RealEnd * 0.5f;
+        if (half && !skip.Shown && t < endTime - 1.2f) skip.SetVisible(true);
+        if (half && SkipPressed()) Skip();
+        float prev = t;
+        realT += Time.deltaTime;
+        t = warp.Anim(realT);
+        for (int i = 0; i < Voices.Length; i++) if (prev < voiceAt[i] && t >= voiceAt[i]) Narration.Say(Voices[i]);
         Apply();
-        if (t >= endTime) StartCoroutine(Finish());
+        if (t >= endTime) { skip.SetVisible(false); StartCoroutine(Finish()); }
+    }
+
+    void Skip()
+    {
+        if (finished || t >= endTime - 1.2f) return;
+        realT = warp.Real(endTime - 1.2f);
+        t = endTime - 1.2f;
+        Narration.Stop();
+        skip.SetVisible(false);
     }
 
     static bool SkipPressed()
     {
         var kb = Keyboard.current;
-        var mouse = Mouse.current;
-        return (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame))
-            || (mouse != null && mouse.rightButton.wasPressedThisFrame);
+        return kb != null && (kb.escapeKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame);
     }
 
     // ---------- كل إطار ----------
@@ -266,11 +291,11 @@ public class EndingCutscene : MonoBehaviour
             text = s;
             alpha = Mathf.Clamp01((t - from) / 0.4f) * Mathf.Clamp01((to - t) / 0.4f);
         }
-        Say(1f, 4.6f, "صحت رويدا... وهي في غرفتها! الشمس طالعة");
-        Say(5f, 8.4f, "كان كله حلم؟");
-        Say(8.8f, 10.4f, "بس الدفتر...");
-        Say(PagesStart, spreadsEnd, "فيه كل الرسومات اللي رسمتيها عشان ترجع!");
-        Say(spreadsEnd + 0.3f, spreadsEnd + 3.6f, "شكرًا لأنك رسمتي طريق رويدا للبيت");
+        Say(1f, 4.6f, "استيقظت... فإذا أنا في غرفتي! والشمس مشرقة");
+        Say(5f, 8.4f, "أكان ذلك كله حلما؟");
+        Say(8.8f, 10.4f, "لكن الدفتر...");
+        Say(PagesStart, spreadsEnd, "كان فيه كل الرسومات التي أعادتني إلى بيتي!");
+        Say(spreadsEnd + 0.3f, spreadsEnd + 3.6f, "شكرا لكل من رسم معي طريقي إلى البيت");
         string shaped = ArabicText.Fix(text);
         if (caption.text != shaped) caption.text = shaped;
         caption.color = new Color(1f, 1f, 1f, alpha);
@@ -561,7 +586,7 @@ public class EndingCutscene : MonoBehaviour
 
     void BuildOverlay()
     {
-        var go = new GameObject("Ending UI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+        var go = new GameObject("Ending UI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvas = go.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceCamera;
         canvas.worldCamera = cam;
@@ -585,6 +610,7 @@ public class EndingCutscene : MonoBehaviour
         bigText = NewText(go.transform, 150, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1200f, 220f));
         bigText.text = ArabicText.Fix("النهاية");
         bigText.color = Color.clear;
+        skip = SkipButton.Create(go.transform, Skip);
     }
 
     static Text NewText(Transform parent, int size, Vector2 anchor, Vector2 pos, Vector2 box)

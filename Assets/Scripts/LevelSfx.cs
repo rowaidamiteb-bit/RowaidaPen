@@ -21,6 +21,7 @@ public static class LevelSfx
         oneShot.playOnAwake = false;
         ambience = go.AddComponent<AudioSource>();
         ambience.loop = true;
+        ambience.ignoreListenerVolume = true;
         ambience.playOnAwake = false;
         player = go.AddComponent<AmbiencePlayer>();
     }
@@ -42,10 +43,16 @@ public static class LevelSfx
         AudioClip c = Get("amb_" + key);
         if (ambience.clip == c && ambience.isPlaying) return;
         ambience.clip = c;
-        ambience.volume = 0.32f;
+        ambience.volume = 0.32f * GameSettings.MusicLevel;
         ambience.Play();
     }
 
+
+    // صوت خلفية المرحلة يتبع مستوى الموسيقى بالإعدادات
+    public static void SyncAmbienceVolume()
+    {
+        if (ambience != null && ambience.clip != null) ambience.volume = 0.32f * GameSettings.MusicLevel;
+    }
     // مصدر صوت مستمر لشي بالمرحلة (مثل الوتر وهو يهتز)
     public static AudioSource LoopSource(GameObject owner, string key, float volume)
     {
@@ -1604,6 +1611,7 @@ public class AmbiencePlayer : MonoBehaviour
 
     void Update()
     {
+        LevelSfx.SyncAmbienceVolume();
         if (extras != null) extraKey = extras[Random.Range(0, extras.Length)];
         if (string.IsNullOrEmpty(extraKey) || Time.time < nextAt) return;
         nextAt = Time.time + Random.Range(minGap, maxGap);

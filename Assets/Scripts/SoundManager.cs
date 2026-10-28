@@ -28,6 +28,8 @@ public class SoundManager : MonoBehaviour
         StepClips = new[] { SynthAudio.Footstep(0), SynthAudio.Footstep(1), SynthAudio.Footstep(2), SynthAudio.Footstep(3) };
 
         music = NewSource("Music", MusicClip, true);
+        music.ignoreListenerVolume = true;   // الموسيقى لها مستواها بالإعدادات (المؤثرات تتحكم بالسماعة)
+        GameSettings.Apply();
         music.volume = musicVolume;
         music.Play();
 
@@ -54,7 +56,7 @@ public class SoundManager : MonoBehaviour
     {
         // نخفض الموسيقى شوي وقت صوت الفوز أو الخسارة
         duckTimer -= Time.deltaTime;
-        float targetMusic = duckTimer > 0f ? musicVolume * 0.35f : musicVolume;
+        float targetMusic = (duckTimer > 0f ? musicVolume * 0.35f : musicVolume) * GameSettings.MusicLevel;
         music.volume = Mathf.MoveTowards(music.volume, targetMusic, Time.deltaTime * 0.6f);
     }
 

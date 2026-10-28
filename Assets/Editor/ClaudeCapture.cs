@@ -272,6 +272,15 @@ public static class ClaudeCapture
                 case "pencilmenu":
                     Object.FindAnyObjectByType<MenuUI>().ShowPencil();
                     break;
+                case "title":
+                    Object.FindAnyObjectByType<MenuUI>().ShowTitle();
+                    break;
+                case "settings":
+                    Object.FindAnyObjectByType<MenuUI>().ShowSettings(null);
+                    break;
+                case "intro":
+                    typeof(GameManager).GetMethod("StartIntro", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(GameManager.Instance, null);
+                    break;
                 case "levels":
                     Object.FindAnyObjectByType<MenuUI>().ShowLevels(false);
                     break;

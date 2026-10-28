@@ -10,17 +10,19 @@ public class IntroCutscene : MonoBehaviour
     const float EndTime = 18.6f;
 
     struct Shot { public float t; public Vector3 pos, look; }
-    struct Caption { public float from, to; public string text; }
+    struct Caption { public float from, to; public string text, voice; }
 
     GameManager gm;
     System.Action onFinished;
     Bedroom room;
     Camera cam;
-    float t;
+    float t, realT;
     bool finished;
+    TimeWarp warp;
+    SkipButton skip;
 
     Image fade;
-    Text caption, skipHint;
+    Text caption;
     Canvas canvas;
 
     readonly List<Transform> sparkles = new List<Transform>();
@@ -58,14 +60,23 @@ public class IntroCutscene : MonoBehaviour
             new Shot { t = 18.5f, pos = room.NotebookFloor + new Vector3(0f, 0.12f, -0.02f), look = room.NotebookFloor },
         };
 
+        // رويدا وهي كبيرة تحكي قصتها لما كانت صغيرة
         captions = new[]
         {
-            new Caption { from = 0.8f, to = 5.8f, text = "رويدا تحب الرسم... كل ليلة ترسم في دفترها قبل ما تنام" },
-            new Caption { from = 6.3f, to = 9.8f, text = "بس الليلة... كانت تعبانة مرة" },
-            new Caption { from = 10.1f, to = 13.2f, text = "نامت رويدا وهي ماسكة قلمها... وطاح الدفتر" },
-            new Caption { from = 13.5f, to = 16.2f, text = "وفجأة... صار الدفتر يضوي!" },
-            new Caption { from = 16.4f, to = 18.6f, text = "ولقت نفسها داخل دفتر رسمها..." },
+            new Caption { from = 0.8f, to = 5.8f, voice = "intro_0", text = "كنت أحب الرسم كثيرا... وفي كل ليلة كنت أرسم في دفتري قبل أن أنام" },
+            new Caption { from = 6.3f, to = 9.8f, voice = "intro_1", text = "لكنني في تلك الليلة... كنت متعبة جدا" },
+            new Caption { from = 10.1f, to = 13.2f, voice = "intro_2", text = "نمت وأنا أمسك قلمي... فسقط الدفتر على الأرض" },
+            new Caption { from = 13.5f, to = 16.2f, voice = "intro_3", text = "وفجأة... بدأ الدفتر يتوهج!" },
+            new Caption { from = 16.4f, to = 18.6f, voice = "intro_4", text = "ووجدت نفسي داخل دفتر رسمي..." },
         };
+
+        // المشهد يبطئ بالأماكن اللي يحتاج فيها صوت رويدا وقت أطول
+        var marks = new List<float> { 0f };
+        foreach (Caption c in captions) marks.Add(c.from);
+        marks.Add(EndTime);
+        var minReal = new float[marks.Count - 1];
+        for (int i = 0; i < captions.Length; i++) minReal[i + 1] = Narration.Length(captions[i].voice) + 0.6f;
+        warp = new TimeWarp(marks.ToArray(), minReal);
 
         SetupLighting();
         BuildOverlay();
@@ -76,7 +87,10 @@ public class IntroCutscene : MonoBehaviour
 
     public void Skip()
     {
-        if (!finished && t < EndTime) t = EndTime;
+        if (finished || t >= EndTime) return;
+        realT = warp.RealEnd;
+        t = EndTime;
+        Narration.Stop();
     }
 
     void Update()
@@ -85,19 +99,24 @@ public class IntroCutscene : MonoBehaviour
 
         if (!finished)
         {
-            if (SkipPressed()) Skip();
-            t += Time.deltaTime;
+            // زر التخطي يطلع بعد ما يمر نص المشهد
+            bool half = realT >= warp.RealEnd * 0.5f;
+            if (half && !skip.Shown) skip.SetVisible(true);
+            if (half && SkipPressed()) Skip();
+            float prev = t;
+            realT += Time.deltaTime;
+            t = warp.Anim(realT);
+            // صوت رويدا يبدأ مع كل جملة
+            foreach (Caption c in captions) if (prev < c.from && t >= c.from) Narration.Say(c.voice);
             Apply();
-            if (t >= EndTime) StartCoroutine(Finish());
+            if (t >= EndTime) { skip.SetVisible(false); StartCoroutine(Finish()); }
         }
     }
 
     static bool SkipPressed()
     {
-        var mouse = Mouse.current;
         var kb = Keyboard.current;
-        return (mouse != null && mouse.leftButton.wasPressedThisFrame)
-            || (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame));
+        return kb != null && (kb.escapeKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame);
     }
 
     // ---------- كل إطار: الكاميرا، رويدا، الدفتر، الكلام، الإضاءة ----------
@@ -133,7 +152,6 @@ public class IntroCutscene : MonoBehaviour
         else if (t > 17.4f) fade.color = new Color(1f, 0.98f, 0.94f, Mathf.Clamp01((t - 17.4f) / 1.1f));
         else fade.color = Color.clear;
 
-        skipHint.color = new Color(1f, 1f, 1f, 0.55f * Mathf.Clamp01((t - 1f) / 0.5f) * Mathf.Clamp01((16f - t) / 0.5f));
     }
 
     void GetShot(float time, out Vector3 pos, out Vector3 look)
@@ -271,7 +289,6 @@ public class IntroCutscene : MonoBehaviour
     {
         finished = true;
         caption.text = "";
-        skipHint.text = "";
         fade.color = new Color(1f, 0.98f, 0.94f, 1f);
         gm.Sound.SetPencil(false, 0f);
         yield return null;
@@ -283,12 +300,15 @@ public class IntroCutscene : MonoBehaviour
         yield return null;
 
         // الشاشة البيضا تختفي، وجملة تشرح الهدف
-        string goal = ArabicText.Fix("الطريق الوحيد للرجوع لغرفتها... هو الوصول لآخر صفحة");
-        for (float k = 0f; k < 4.5f; k += Time.deltaTime)
+        string goal = ArabicText.Fix("والطريق الوحيد للعودة إلى غرفتي... كان الوصول إلى الصفحة الأخيرة");
+        float show = Mathf.Max(4.5f, Narration.Length("intro_5") + 1.6f);
+        bool said = false;
+        for (float k = 0f; k < show; k += Time.deltaTime)
         {
+            if (!said && k > 0.8f) { said = true; Narration.Say("intro_5"); }
             fade.color = new Color(1f, 0.98f, 0.94f, 1f - Mathf.Clamp01(k / 1.2f));
             caption.text = goal;
-            caption.color = new Color(1f, 1f, 1f, Mathf.Clamp01((k - 0.8f) / 0.4f) * Mathf.Clamp01((4.5f - k) / 0.6f));
+            caption.color = new Color(1f, 1f, 1f, Mathf.Clamp01((k - 0.8f) / 0.4f) * Mathf.Clamp01((show - k) / 0.6f));
             yield return null;
         }
         Destroy(canvas.gameObject);
@@ -330,7 +350,7 @@ public class IntroCutscene : MonoBehaviour
 
     void BuildOverlay()
     {
-        var go = new GameObject("Intro UI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+        var go = new GameObject("Intro UI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvas = go.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceCamera;
         canvas.worldCamera = cam;
@@ -350,9 +370,7 @@ public class IntroCutscene : MonoBehaviour
         fade.raycastTarget = false;
 
         caption = NewText(go.transform, 50, new Vector2(0.5f, 0f), new Vector2(0f, 120f), new Vector2(1700f, 90f));
-        skipHint = NewText(go.transform, 26, new Vector2(1f, 0f), new Vector2(-40f, 36f), new Vector2(600f, 40f));
-        skipHint.alignment = TextAnchor.MiddleRight;
-        skipHint.text = ArabicText.Fix("اضغطي على الشاشة للتخطي");
+        skip = SkipButton.Create(go.transform, Skip);
     }
 
     static Text NewText(Transform parent, int size, Vector2 anchor, Vector2 pos, Vector2 box)

@@ -45,7 +45,7 @@ public class MenuUI : MonoBehaviour
 
     public bool Transitioning { get; private set; }
     public bool PauseOpen => pausePanel.gameObject.activeSelf || (levelsPanel.gameObject.activeSelf && levelsFromPause);
-    public bool AnyOpen => mainPanel.gameObject.activeSelf || levelsPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf || completePanel.gameObject.activeSelf || pencilPanel.gameObject.activeSelf || confirmPanel.gameObject.activeSelf;
+    public bool AnyOpen => mainPanel.gameObject.activeSelf || levelsPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf || completePanel.gameObject.activeSelf || pencilPanel.gameObject.activeSelf || confirmPanel.gameObject.activeSelf || titlePanel.gameObject.activeSelf || settingsPanel.gameObject.activeSelf;
 
     public void Build(GameManager manager)
     {
@@ -87,6 +87,8 @@ public class MenuUI : MonoBehaviour
         BuildComplete();
         BuildPencil();
         BuildConfirm();
+        BuildTitle();
+        BuildSettings();
 
         flash = Panel(canvasRect, "Flash", new Color(1f, 1f, 1f, 0f));
         Stretch(flash.rectTransform);
@@ -106,6 +108,8 @@ public class MenuUI : MonoBehaviour
         completePanel.gameObject.SetActive(false);
         if (pencilPanel != null) pencilPanel.gameObject.SetActive(false);
         if (confirmPanel != null) confirmPanel.gameObject.SetActive(false);
+        if (titlePanel != null) titlePanel.gameObject.SetActive(false);
+        if (settingsPanel != null) settingsPanel.gameObject.SetActive(false);
     }
 
     // onDesk: خلفية الدفتر الكريمية (للقوائم برا اللعب)، وإلا تظلل اللعبة ورا
@@ -336,6 +340,230 @@ public class MenuUI : MonoBehaviour
         return root;
     }
 
+    // ---------- شاشة البداية: اسم اللعبة، زر اللعب، وأزرار الصوت والإعدادات ----------
+
+    RectTransform titlePanel, bigTitle, titlePencil;
+    IconToggle titleMusic, titleSound;
+
+    class IconToggle { public Image fill, slash; public Color on; }
+
+    public void ShowTitle()
+    {
+        RefreshIcons();
+        Open(titlePanel, true);
+    }
+
+    void BuildTitle()
+    {
+        titlePanel = Panel(canvasRect, "Title Screen", Color.clear).rectTransform;
+        Place(titlePanel, Vector2.zero, new Vector2(1920f, 1080f));
+        titlePanel.gameObject.AddComponent<CanvasGroup>();
+
+        // اسم اللعبة كبير بحروف وردية وحافة بيضا وظل
+        var title = Label(titlePanel, ArabicText.Fix("قلم رويدا"), 210, new Vector2(0f, 250f), new Vector2(1400f, 280f));
+        title.color = Pink;
+        var ol = title.gameObject.AddComponent<Outline>();
+        ol.effectColor = Color.white;
+        ol.effectDistance = new Vector2(8f, -8f);
+        var sh = title.gameObject.AddComponent<Shadow>();
+        sh.effectColor = new Color(0.86f, 0.33f, 0.45f, 0.65f);
+        sh.effectDistance = new Vector2(6f, -14f);
+        bigTitle = title.rectTransform;
+        titlePencil = MiniPencil(titlePanel, new Vector2(-470f, 330f));
+        titlePencil.localScale = Vector3.one * 4.2f;
+
+        // شريط ورقي تحت الاسم
+        var ribbon = Framed(titlePanel, "Ribbon", new Vector2(0f, 80f), new Vector2(760f, 80f), new Color(1f, 0.97f, 0.88f), YellowDark, 5f, 1.5f);
+        Label(ribbon, ArabicText.Fix("مغامرة في دفتر الرسم"), 44, new Vector2(0f, 2f), new Vector2(740f, 70f)).color = Navy;
+
+        MakeButton(titlePanel, "هيّا نلعب!", new Vector2(0f, -110f), new Vector2(600f, 160f), Pink, ShowMain, 78);
+
+        // أزرار مدورة: الموسيقى، الأصوات، الإعدادات
+        titleMusic = IconButton(titlePanel, new Vector2(170f, -300f), SkyBlue, DrawNote, () => { GameSettings.MusicOn = !GameSettings.MusicOn; RefreshIcons(); });
+        titleSound = IconButton(titlePanel, new Vector2(0f, -300f), MintC, DrawSpeaker, () => { GameSettings.EffectsOn = !GameSettings.EffectsOn; RefreshIcons(); });
+        IconButton(titlePanel, new Vector2(-170f, -300f), Lilac, DrawGear, () => ShowSettings(titlePanel));
+        Label(titlePanel, ArabicText.Fix("الموسيقى"), 28, new Vector2(170f, -385f), new Vector2(200f, 40f)).color = Navy;
+        Label(titlePanel, ArabicText.Fix("الأصوات"), 28, new Vector2(0f, -385f), new Vector2(200f, 40f)).color = Navy;
+        Label(titlePanel, ArabicText.Fix("الإعدادات"), 28, new Vector2(-170f, -385f), new Vector2(200f, 40f)).color = Navy;
+    }
+
+    // زر دايري بأيقونة، ولو انطفى يصير رمادي وعليه خط
+    IconToggle IconButton(RectTransform parent, Vector2 pos, Color color, Action<RectTransform> draw, Action onClick, float size = 120f)
+    {
+        var outer = Panel(parent, "Icon Button", Color.Lerp(color, Color.black, 0.25f));
+        outer.sprite = circle;
+        outer.raycastTarget = true;
+        Place(outer.rectTransform, pos, new Vector2(size, size));
+        var fill = Panel(outer.rectTransform, "Fill", color);
+        fill.sprite = circle;
+        Place(fill.rectTransform, new Vector2(0f, 4f), new Vector2(size - 12f, size - 12f));
+        var shine = Panel(fill.rectTransform, "Shine", new Color(1f, 1f, 1f, 0.3f));
+        shine.sprite = circle;
+        Place(shine.rectTransform, new Vector2(-size * 0.16f, size * 0.2f), new Vector2(size * 0.3f, size * 0.18f));
+        var icon = new GameObject("Icon", typeof(RectTransform)).GetComponent<RectTransform>();
+        icon.SetParent(fill.rectTransform, false);
+        Place(icon, Vector2.zero, new Vector2(80f, 80f));
+        icon.localScale = Vector3.one * (size / 120f);
+        draw(icon);
+        var slash = Panel(fill.rectTransform, "Slash", new Color(0.85f, 0.2f, 0.3f));
+        slash.sprite = rounded;
+        slash.type = Image.Type.Sliced;
+        slash.pixelsPerUnitMultiplier = 6f;
+        Place(slash.rectTransform, Vector2.zero, new Vector2(12f, size * 0.8f));
+        slash.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        slash.gameObject.SetActive(false);
+        var button = outer.gameObject.AddComponent<Button>();
+        button.transition = Selectable.Transition.None;
+        button.onClick.AddListener(() => onClick());
+        outer.gameObject.AddComponent<ButtonJuice>().Init(gm, clickClip);
+        return new IconToggle { fill = fill, slash = slash, on = color };
+    }
+
+    void SetIcon(IconToggle icon, bool on)
+    {
+        if (icon == null) return;
+        icon.fill.color = on ? icon.on : new Color(0.72f, 0.72f, 0.75f);
+        icon.slash.gameObject.SetActive(!on);
+    }
+
+    void RefreshIcons()
+    {
+        SetIcon(titleMusic, GameSettings.MusicOn);
+        SetIcon(titleSound, GameSettings.EffectsOn);
+        SetIcon(setMusicIcon, GameSettings.MusicOn);
+        SetIcon(setSoundIcon, GameSettings.EffectsOn);
+        if (musicSlider != null) musicSlider.SetValueWithoutNotify(GameSettings.Music);
+        if (soundSlider != null) soundSlider.SetValueWithoutNotify(GameSettings.Effects);
+        if (voiceLabel != null) voiceLabel.text = ArabicText.Fix(GameSettings.NarrationOn ? "يعمل" : "متوقف");
+        if (voiceFill != null) voiceFill.color = GameSettings.NarrationOn ? MintC : new Color(0.72f, 0.72f, 0.75f);
+    }
+
+    // ---- أيقونات مرسومة ----
+
+    void DrawNote(RectTransform p)
+    {
+        Color c = Color.white;
+        var head = Panel(p, "Head", c); head.sprite = circle;
+        Place(head.rectTransform, new Vector2(-10f, -18f), new Vector2(30f, 24f));
+        head.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 20f);
+        var stem = Panel(p, "Stem", c);
+        Place(stem.rectTransform, new Vector2(3f, 6f), new Vector2(7f, 50f));
+        var flag = Panel(p, "Flag", c); flag.sprite = rounded; flag.type = Image.Type.Sliced; flag.pixelsPerUnitMultiplier = 8f;
+        Place(flag.rectTransform, new Vector2(14f, 22f), new Vector2(26f, 10f));
+        flag.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -35f);
+    }
+
+    void DrawSpeaker(RectTransform p)
+    {
+        Color c = Color.white;
+        var box = Panel(p, "Box", c);
+        Place(box.rectTransform, new Vector2(-18f, 0f), new Vector2(16f, 22f));
+        var cone = Panel(p, "Cone", c); cone.sprite = triangle;
+        Place(cone.rectTransform, new Vector2(-4f, 0f), new Vector2(40f, 30f));
+        cone.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        for (int k = 0; k < 2; k++)
+        {
+            var wave = Panel(p, "Wave", c); wave.sprite = rounded; wave.type = Image.Type.Sliced; wave.pixelsPerUnitMultiplier = 8f;
+            Place(wave.rectTransform, new Vector2(16f + k * 11f, 0f), new Vector2(7f, 18f + k * 14f));
+        }
+    }
+
+    void DrawGear(RectTransform p)
+    {
+        Color c = Color.white;
+        for (int k = 0; k < 4; k++)
+        {
+            var tooth = Panel(p, "Tooth", c);
+            Place(tooth.rectTransform, Vector2.zero, new Vector2(16f, 66f));
+            tooth.rectTransform.localRotation = Quaternion.Euler(0f, 0f, k * 45f);
+        }
+        var ring = Panel(p, "Ring", c); ring.sprite = circle;
+        Place(ring.rectTransform, Vector2.zero, new Vector2(46f, 46f));
+        var hole = Panel(p, "Hole", Lilac); hole.sprite = circle;
+        Place(hole.rectTransform, Vector2.zero, new Vector2(20f, 20f));
+    }
+
+    // ---------- الإعدادات: الموسيقى والأصوات (مستوى وكتم) وصوت رويدا ----------
+
+    RectTransform settingsPanel, settingsBack;
+    Slider musicSlider, soundSlider;
+    IconToggle setMusicIcon, setSoundIcon;
+    Text voiceLabel;
+    Image voiceFill;
+    bool settingsInGame;
+
+    public void ShowSettings(RectTransform from)
+    {
+        settingsBack = from;
+        settingsInGame = from == pausePanel;
+        RefreshIcons();
+        Open(settingsPanel, !settingsInGame);
+    }
+
+    void BuildSettings()
+    {
+        settingsPanel = NotebookCard(canvasRect, "Settings", new Vector2(980f, 820f), 0.8f);
+        Label(settingsPanel, ArabicText.Fix("الإعدادات"), 80, new Vector2(0f, 300f), new Vector2(800f, 110f));
+
+        // سطر: الاسم يمين، المستوى بالنص، زر الكتم يسار
+        Label(settingsPanel, ArabicText.Fix("الموسيقى"), 44, new Vector2(300f, 150f), new Vector2(260f, 70f));
+        musicSlider = MakeSlider(settingsPanel, new Vector2(-50f, 150f), SkyBlue, v => { GameSettings.Music = v; if (v > 0.01f && !GameSettings.MusicOn) { GameSettings.MusicOn = true; RefreshIcons(); } });
+        setMusicIcon = IconButton(settingsPanel, new Vector2(-340f, 150f), SkyBlue, DrawNote, () => { GameSettings.MusicOn = !GameSettings.MusicOn; RefreshIcons(); }, 100f);
+
+        Label(settingsPanel, ArabicText.Fix("الأصوات"), 44, new Vector2(300f, 10f), new Vector2(260f, 70f));
+        soundSlider = MakeSlider(settingsPanel, new Vector2(-50f, 10f), MintC, v => { GameSettings.Effects = v; if (v > 0.01f && !GameSettings.EffectsOn) { GameSettings.EffectsOn = true; RefreshIcons(); } });
+        setSoundIcon = IconButton(settingsPanel, new Vector2(-340f, 10f), MintC, DrawSpeaker, () => { GameSettings.EffectsOn = !GameSettings.EffectsOn; RefreshIcons(); }, 100f);
+
+        Label(settingsPanel, ArabicText.Fix("صوت رويدا"), 44, new Vector2(300f, -130f), new Vector2(260f, 70f));
+        Label(settingsPanel, ArabicText.Fix("(حين تروي القصة)"), 26, new Vector2(300f, -180f), new Vector2(300f, 40f)).color = Grey;
+        voiceLabel = MakeButton(settingsPanel, "يعمل", new Vector2(-150f, -130f), new Vector2(260f, 90f), MintC, () => { GameSettings.NarrationOn = !GameSettings.NarrationOn; RefreshIcons(); }, 40);
+        voiceFill = voiceLabel.transform.parent.GetChild(0).GetComponent<Image>();
+
+        PrimaryButton(settingsPanel, "رجوع", new Vector2(0f, -300f), new Vector2(360f, 100f), () =>
+        {
+            if (settingsBack == pausePanel) ShowPause();
+            else if (settingsBack == mainPanel) ShowMain();
+            else ShowTitle();
+        }, 44);
+    }
+
+    // شريط مستوى: خلفية رمادية، تعبئة ملونة، ومقبض دايري
+    Slider MakeSlider(RectTransform parent, Vector2 pos, Color color, Action<float> onChange)
+    {
+        var root = new GameObject("Slider", typeof(RectTransform), typeof(Slider)).GetComponent<RectTransform>();
+        root.SetParent(parent, false);
+        Place(root, pos, new Vector2(420f, 60f));
+        var bg = Panel(root, "Track", new Color(0.86f, 0.88f, 0.92f));
+        bg.sprite = rounded; bg.type = Image.Type.Sliced; bg.pixelsPerUnitMultiplier = 3f;
+        bg.raycastTarget = true;
+        Place(bg.rectTransform, Vector2.zero, new Vector2(420f, 26f));
+        var fillArea = new GameObject("Fill Area", typeof(RectTransform)).GetComponent<RectTransform>();
+        fillArea.SetParent(root, false);
+        Place(fillArea, Vector2.zero, new Vector2(400f, 26f));
+        var fill = Panel(fillArea, "Fill", color);
+        fill.sprite = rounded; fill.type = Image.Type.Sliced; fill.pixelsPerUnitMultiplier = 3f;
+        Stretch(fill.rectTransform);
+        var handleArea = new GameObject("Handle Area", typeof(RectTransform)).GetComponent<RectTransform>();
+        handleArea.SetParent(root, false);
+        Place(handleArea, Vector2.zero, new Vector2(380f, 60f));
+        var handle = Panel(handleArea, "Handle", Color.Lerp(color, Color.black, 0.2f));
+        handle.sprite = circle;
+        handle.raycastTarget = true;
+        handle.rectTransform.sizeDelta = new Vector2(56f, -4f);
+        var knob = Panel(handle.rectTransform, "Knob", Color.white);
+        knob.sprite = circle;
+        Place(knob.rectTransform, Vector2.zero, new Vector2(40f, 40f));
+        var s = root.GetComponent<Slider>();
+        s.fillRect = fill.rectTransform;
+        s.handleRect = handle.rectTransform;
+        s.targetGraphic = handle;
+        s.direction = Slider.Direction.LeftToRight;
+        s.minValue = 0f; s.maxValue = 1f;
+        s.transition = Selectable.Transition.None;
+        s.onValueChanged.AddListener(v => onChange(v));
+        return s;
+    }
+
     // ---------- القائمة الرئيسية ----------
 
     Text playLabel, starsTotal;
@@ -359,8 +587,9 @@ public class MenuUI : MonoBehaviour
 
         playLabel = PrimaryButton(mainPanel, "", new Vector2(0f, 75f), new Vector2(560f, 120f), () => gm.PlayFromMenu(), 50);
         SecondaryButton(mainPanel, "خريطة المراحل", new Vector2(0f, -55f), new Vector2(560f, 100f), () => ShowLevels(false), 42, SkyBlue);
-        SecondaryButton(mainPanel, "صندوق الأقلام", new Vector2(140f, -170f), new Vector2(280f, 96f), ShowPencil, 36, Lilac);
-        SecondaryButton(mainPanel, "من جديد", new Vector2(-150f, -170f), new Vector2(260f, 96f), ShowConfirm, 36, Orange);
+        SecondaryButton(mainPanel, "صندوق الأقلام", new Vector2(190f, -170f), new Vector2(240f, 96f), ShowPencil, 30, Lilac);
+        SecondaryButton(mainPanel, "الإعدادات", new Vector2(-15f, -170f), new Vector2(160f, 96f), () => ShowSettings(mainPanel), 30, Teal);
+        SecondaryButton(mainPanel, "من جديد", new Vector2(-200f, -170f), new Vector2(170f, 96f), ShowConfirm, 30, Orange);
         SecondaryButton(mainPanel, "اطلعي من اللعبة", new Vector2(0f, -285f), new Vector2(560f, 90f), Application.Quit, 34, MintC);
 
         // عداد النجوم بشريط أصفر صغير
@@ -748,12 +977,13 @@ public class MenuUI : MonoBehaviour
             Place(bar.rectTransform, new Vector2(s * 22f, 0f), new Vector2(26f, 74f));
         }
         pauseIcon = icon.rectTransform;
-        PrimaryButton(pausePanel, "كمّلي اللعب", new Vector2(0f, 20f), new Vector2(460f, 104f), () => gm.Resume(), 44);
-        SecondaryButton(pausePanel, "أعيدي المرحلة", new Vector2(0f, -100f), new Vector2(460f, 92f), () => gm.RestartLevel(), 36, MintC);
-        SecondaryButton(pausePanel, "خريطة المراحل", new Vector2(0f, -205f), new Vector2(460f, 92f), () => ShowLevels(true), 36, SkyBlue);
-        SecondaryButton(pausePanel, "القائمة الرئيسية", new Vector2(0f, -310f), new Vector2(460f, 92f), () => gm.GoToMainMenu(), 36, Lilac);
-        Label(pausePanel, ArabicText.Fix("دفترك ينتظرك"), 28, new Vector2(-10f, -395f), new Vector2(400f, 44f)).color = Grey;
-        MiniPencil(pausePanel, new Vector2(120f, -395f));
+        PrimaryButton(pausePanel, "كمّلي اللعب", new Vector2(0f, 45f), new Vector2(460f, 100f), () => gm.Resume(), 44);
+        SecondaryButton(pausePanel, "أعيدي المرحلة", new Vector2(0f, -60f), new Vector2(460f, 84f), () => gm.RestartLevel(), 34, MintC);
+        SecondaryButton(pausePanel, "خريطة المراحل", new Vector2(0f, -152f), new Vector2(460f, 84f), () => ShowLevels(true), 34, SkyBlue);
+        SecondaryButton(pausePanel, "الإعدادات", new Vector2(0f, -244f), new Vector2(460f, 84f), () => ShowSettings(pausePanel), 34, Teal);
+        SecondaryButton(pausePanel, "القائمة الرئيسية", new Vector2(0f, -336f), new Vector2(460f, 84f), () => gm.GoToMainMenu(), 34, Lilac);
+        Label(pausePanel, ArabicText.Fix("دفترك ينتظرك"), 28, new Vector2(-10f, -410f), new Vector2(400f, 44f)).color = Grey;
+        MiniPencil(pausePanel, new Vector2(120f, -410f));
     }
 
     // قلم صغير مرسوم (بدل الإيموجي)
@@ -871,6 +1101,13 @@ public class MenuUI : MonoBehaviour
     {
         if (mainPanel == null || completePanel == null) return;   // القوائم انحذفت (وقفنا اللعب)
         float t = Time.unscaledTime;
+        // شاشة البداية: الاسم يتمايل والقلم كأنه يكتب
+        if (titlePanel != null && titlePanel.gameObject.activeSelf)
+        {
+            bigTitle.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 1.2f) * 2.5f);
+            bigTitle.localScale = Vector3.one * (1f + Mathf.Sin(t * 2f) * 0.03f);
+            titlePencil.anchoredPosition = new Vector2(-470f + Mathf.Sin(t * 5f) * 18f, 330f + Mathf.Abs(Mathf.Sin(t * 10f)) * 10f);
+        }
         // العنوان يتمايل بهدوء
         if (mainPanel.gameObject.activeSelf)
         {
@@ -1082,6 +1319,7 @@ public class MenuUI : MonoBehaviour
     // نقسم النص العربي لسطور (من البداية)، وبعدين نقلب كل سطر لحاله عشان ما ينعكس ترتيب السطور
     static string WrapFix(string text, int maxChars)
     {
+        if (string.IsNullOrEmpty(text)) return "";
         var lines = new List<string>();
         string line = "";
         foreach (string w in text.Split(' '))
@@ -1129,7 +1367,7 @@ public class MenuUI : MonoBehaviour
     // ---------- رسومات ----------
 
     // مستطيل بزوايا دائرية ناعمة (يتمدد بدون ما تخرب الزوايا، و pixelsPerUnitMultiplier يتحكم بكبر الزاوية)
-    static Sprite RoundedSprite()
+    public static Sprite RoundedSprite()
     {
         const int s = 128;
         const float r = 40f;

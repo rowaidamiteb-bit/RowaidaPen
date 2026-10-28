@@ -2239,6 +2239,7 @@ public static class Levels
         return new LevelData
         {
             title = "الصفحات الأولى",
+            subtitle = "أول صفحة في الدفتر... ارسمي جسر فوق الحفرة عشان تعدي رويدا",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(33f, 0f, 0f),
             ink = 16f,
