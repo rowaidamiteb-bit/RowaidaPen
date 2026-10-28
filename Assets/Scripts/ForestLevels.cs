@@ -688,18 +688,26 @@ public class ForestScenery : MonoBehaviour
             ? new[] { new Color(0.45f, 0.35f, 0.75f), new Color(0.3f, 0.5f, 0.7f), new Color(0.6f, 0.4f, 0.8f) }
             : new[] { new Color(0.3f, 0.62f, 0.32f), new Color(0.42f, 0.7f, 0.36f), new Color(0.26f, 0.52f, 0.32f), new Color(0.55f, 0.72f, 0.3f) };
 
-        // شجر بعيد كبير (طبقتين)
+        // جزر خضرا طايرة بالسما (طبقتين): فوقها شجر وشجيرات وورد، وتحتها صخر وجذور، وبعضها فيها شلال
         for (int layer = 0; layer < 2; layer++)
         {
-            float z = layer == 0 ? 20f : 11f;
-            float scale = layer == 0 ? 1.7f : 1.15f;
-            for (float x = s.minX - 14f; x < s.maxX + 14f; x += R(5f, 9f) * scale)
+            float z = layer == 0 ? 25f : 13f;
+            for (float x = s.minX - 18f; x < s.maxX + 18f; x += layer == 0 ? R(11f, 16f) : R(9f, 13f))
             {
-                Vector3 tp = new Vector3(x, -6f, z + R(-1.5f, 1.5f));
-                var tree = s.magic && layer == 1 && rng.Next(3) > 0
-                    ? MakeGiantShroom(go.transform, tp, scale * R(0.8f, 1.2f), gm, rng)
-                    : MakeTree(go.transform, tp, scale * R(0.8f, 1.2f), bark, gm.Mat("Forest Leaf " + layer + rng.Next(3), leafCols[rng.Next(leafCols.Length)] * (layer == 0 ? 0.85f : 1f), 0.3f), rng, layer == 0);
-                s.sway.Add(tree);
+                float radius = layer == 0 ? R(3f, 4.4f) : R(2.2f, 3.2f);
+                Vector3 c = new Vector3(x, layer == 0 ? R(0.5f, 5f) : R(-0.8f, 2.4f), z + R(-1.5f, 1.5f));
+                var island = s.MakeIsland(go.transform, c, radius, gm, rng, layer == 0);
+                // فوقها: شجر (أو فطر عملاق بالبستان)
+                int trees = 1 + rng.Next(layer == 0 ? 3 : 2);
+                for (int k = 0; k < trees; k++)
+                {
+                    Vector3 tp = c + new Vector3(R(-radius * 0.6f, radius * 0.6f), 0.15f, R(-radius * 0.25f, radius * 0.35f));
+                    float sc = (layer == 0 ? 0.55f : 0.42f) * R(0.8f, 1.2f);
+                    var tree = s.magic && rng.Next(3) > 0
+                        ? MakeIslandShroom(island, tp, sc * 2.2f, gm, rng)
+                        : MakeIslandTree(island, tp, sc * 2.2f, bark, gm.Mat("Forest Leaf " + layer + rng.Next(3), leafCols[rng.Next(leafCols.Length)] * (layer == 0 ? 0.9f : 1f), 0.3f), rng, layer == 0);
+                    s.sway.Add(tree);
+                }
             }
         }
         // شجيرات وسراخس ورا الصفحات مباشرة
@@ -799,6 +807,142 @@ public class ForestScenery : MonoBehaviour
         }
     }
 
+    // جزيرة طايرة: سطح عشب أخضر بحافة متموجة، تحته طبقات تراب وصخر تصغر لتحت، جذور وكروم معلقة، ورد وشجيرات، وأحيانا شلال
+    readonly List<Transform> islands = new List<Transform>();
+    readonly List<Vector3> islandHome = new List<Vector3>();
+    readonly List<Material> falls = new List<Material>();
+
+    Transform MakeIsland(Transform parent, Vector3 c, float r, GameManager gm, System.Random rng, bool far)
+    {
+        float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
+        var t = new GameObject("Floating Island").transform;
+        t.SetParent(parent, false);
+        t.position = c;
+        Material grass = gm.Mat(magic ? "Island Grass Magic" : "Island Grass", magic ? new Color(0.42f, 0.5f, 0.8f) : new Color(0.42f, 0.75f, 0.32f), 0.25f);
+        Material grassDark = gm.Mat(magic ? "Island Grass Dark Magic" : "Island Grass Dark", magic ? new Color(0.32f, 0.38f, 0.65f) : new Color(0.3f, 0.6f, 0.25f), 0.25f);
+        Material dirt = gm.Mat("Island Dirt", new Color(0.58f, 0.4f, 0.27f), 0.2f);
+        Material dirtDark = gm.Mat("Island Dirt Dark", new Color(0.45f, 0.3f, 0.2f), 0.2f);
+        Material rock = gm.Mat("Island Rock", new Color(0.62f, 0.6f, 0.66f), 0.3f);
+        Material root = gm.Mat("Island Root", new Color(0.4f, 0.28f, 0.18f), 0.2f);
+        bool shadows = !far;
+        // السطح
+        LevelBuilder.Visual("Island Top", PrimitiveType.Cylinder, t, Vector3.zero, new Vector3(r * 2f, 0.22f, r * 1.25f), grass, shadows);
+        LevelBuilder.Visual("Island Lip", PrimitiveType.Cylinder, t, new Vector3(0f, -0.22f, 0f), new Vector3(r * 2.08f, 0.16f, r * 1.3f), grassDark, false);
+        // حافة عشب متموجة تتدلى شوي
+        int lumps = Mathf.RoundToInt(r * 5f);
+        for (int k = 0; k < lumps; k++)
+        {
+            float a = k / (float)lumps * Mathf.PI * 2f;
+            LevelBuilder.Visual("Grass Lump", PrimitiveType.Sphere, t, new Vector3(Mathf.Cos(a) * r, -0.2f, Mathf.Sin(a) * r * 0.62f), new Vector3(0.6f, 0.45f, 0.5f) * R(0.8f, 1.2f), k % 2 == 0 ? grass : grassDark, false);
+        }
+        // تحتها صخر وتراب ناعم يدبب لتحت (كرات متداخلة كثير عشان ما يطلع طبقات)
+        float y = -0.35f;
+        for (int k = 0; k < 7; k++)
+        {
+            float f = 1f - k * 0.135f;
+            float sway = Mathf.Sin(k * 1.7f) * 0.08f * r;
+            LevelBuilder.Visual("Island Earth", PrimitiveType.Sphere, t, new Vector3(sway, y - 0.28f * r * f, 0f), new Vector3(r * 1.95f * f, r * 0.62f * f, r * 1.2f * f), k < 2 ? dirt : k < 5 ? dirtDark : rock, shadows && k < 3);
+            y -= 0.26f * r * f;
+        }
+        LevelBuilder.Visual("Island Tip", PrimitiveType.Sphere, t, new Vector3(0f, y - 0.15f * r, 0f), new Vector3(0.45f, 0.9f, 0.45f) * r * 0.5f, rock, false);
+        for (int k = 0; k < 4; k++)
+            LevelBuilder.Visual("Island Stone", PrimitiveType.Sphere, t, new Vector3(R(-0.7f, 0.7f) * r, R(-1.6f, -0.6f) * r * 0.6f, -r * 0.55f), Vector3.one * R(0.25f, 0.5f), rock, false);
+        // جذور وكروم معلقة
+        int roots = 3 + rng.Next(4);
+        for (int k = 0; k < roots; k++)
+        {
+            float rx = R(-0.75f, 0.75f) * r, len = R(0.6f, 1.6f) * r * 0.6f;
+            bool vine = rng.Next(2) == 0;
+            var rt = LevelBuilder.Visual(vine ? "Vine" : "Root", PrimitiveType.Cylinder, t, new Vector3(rx, -0.7f * r * 0.6f - len * 0.5f, -r * 0.45f), new Vector3(0.07f, len * 0.5f, 0.07f), vine ? grassDark : root, false).transform;
+            rt.localRotation = Quaternion.Euler(0f, 0f, R(-12f, 12f));
+            if (vine) for (int l = 0; l < 3; l++) LevelBuilder.Visual("Vine Leaf", PrimitiveType.Sphere, t, rt.localPosition + new Vector3(0.08f, -len * 0.3f + l * len * 0.3f, -0.05f), new Vector3(0.22f, 0.12f, 0.06f), grass, false);
+        }
+        // فوق: شجيرات وورد وصخرة
+        int bushes = 2 + rng.Next(3);
+        for (int k = 0; k < bushes; k++)
+            LevelBuilder.Visual("Island Bush", PrimitiveType.Sphere, t, new Vector3(R(-0.8f, 0.8f) * r, 0.25f, R(-0.5f, 0.3f) * r * 0.6f), new Vector3(1f, 0.7f, 0.8f) * R(0.5f, 0.9f), k % 2 == 0 ? grassDark : grass, shadows);
+        Color[] petals = magic ? new[] { new Color(1.2f, 0.6f, 1.4f), new Color(0.6f, 1.2f, 1.5f) } : new[] { new Color(1f, 0.45f, 0.55f), new Color(1f, 0.85f, 0.3f), new Color(0.95f, 0.95f, 1f), new Color(0.75f, 0.5f, 1f) };
+        int flowers = 3 + rng.Next(5);
+        for (int k = 0; k < flowers; k++)
+        {
+            Vector3 fp = new Vector3(R(-0.85f, 0.85f) * r, 0.2f, R(-0.6f, -0.1f) * r * 0.62f);
+            LevelBuilder.Visual("Flower Stem", PrimitiveType.Cylinder, t, fp, new Vector3(0.03f, 0.12f, 0.03f), grassDark, false);
+            LevelBuilder.Visual("Flower", PrimitiveType.Sphere, t, fp + new Vector3(0f, 0.15f, 0f), Vector3.one * 0.16f, gm.Mat("Island Flower " + k % petals.Length + (magic ? "M" : ""), petals[k % petals.Length], 0.4f), false);
+        }
+        if (rng.Next(3) == 0) LevelBuilder.Visual("Island Boulder", PrimitiveType.Sphere, t, new Vector3(R(-0.6f, 0.6f) * r, 0.3f, 0.2f), new Vector3(0.8f, 0.6f, 0.7f), rock, shadows);
+        // شلال صغير ينزل من الحافة
+        if (!magic && rng.Next(3) == 0)
+        {
+            var tex = new Texture2D(8, 32, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Repeat };
+            for (int py = 0; py < 32; py++)
+                for (int px = 0; px < 8; px++)
+                {
+                    float streak = 0.55f + 0.45f * Mathf.Sin(px * 1.7f + py * 0.4f);
+                    tex.SetPixel(px, py, new Color(0.8f + streak * 0.2f, 0.92f, 1f, 0.55f + streak * 0.35f));
+                }
+            tex.Apply();
+            var mat = NightSky.Transparent("Island Waterfall", tex, new Color(0.85f, 0.95f, 1f, 0.85f));
+            float fallX = R(-0.4f, 0.4f) * r, fallLen = R(4f, 7f);
+            var fall = LevelBuilder.Visual("Waterfall", PrimitiveType.Quad, t, new Vector3(fallX, -fallLen * 0.5f - 0.1f, -r * 0.64f), new Vector3(R(0.5f, 0.9f), fallLen, 1f), mat, false).transform;
+            fall.localRotation = Quaternion.identity;
+            LevelBuilder.Visual("Water Pool", PrimitiveType.Cylinder, t, new Vector3(fallX, 0.13f, -r * 0.5f), new Vector3(0.9f, 0.02f, 0.5f), gm.Mat("Island Water", new Color(0.45f, 0.75f, 1f), 0.9f), false);
+            falls.Add(mat);
+        }
+        islands.Add(t);
+        islandHome.Add(c);
+        return t;
+    }
+
+    // شجرة الجزيرة: جذع قصير وعريض وتاج كبير مدور (مثل ألعاب الكرتون)
+    static Transform MakeIslandTree(Transform parent, Vector3 basePos, float scale, Material bark, Material leaf, System.Random rng, bool far)
+    {
+        float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
+        var t = new GameObject("Tree").transform;
+        t.SetParent(parent, false);
+        t.position = basePos;
+        float h = R(1.3f, 1.9f) * scale;
+        LevelBuilder.Visual("Trunk", PrimitiveType.Cylinder, t, new Vector3(0f, h * 0.5f, 0f), new Vector3(0.32f * scale, h * 0.5f, 0.32f * scale), bark, !far);
+        LevelBuilder.Visual("Trunk Base", PrimitiveType.Sphere, t, new Vector3(0f, 0.08f * scale, 0f), new Vector3(0.6f, 0.3f, 0.6f) * scale, bark, false);
+        int puffs = 4 + rng.Next(3);
+        for (int i = 0; i < puffs; i++)
+        {
+            float a = i / (float)puffs * Mathf.PI * 2f;
+            LevelBuilder.Visual("Leaves", PrimitiveType.Sphere, t, new Vector3(Mathf.Cos(a) * 0.65f * scale, h + 0.25f * scale + Mathf.Sin(a) * 0.35f * scale, Mathf.Sin(a) * 0.3f * scale), Vector3.one * R(1.1f, 1.45f) * scale, leaf, !far);
+        }
+        LevelBuilder.Visual("Top", PrimitiveType.Sphere, t, new Vector3(0f, h + 0.8f * scale, 0f), Vector3.one * 1.4f * scale, leaf, !far);
+        // ثمار صغيرة ملونة أحيانا
+        if (rng.Next(2) == 0)
+            for (int i = 0; i < 4; i++)
+            {
+                float a = R(0f, Mathf.PI * 2f);
+                LevelBuilder.Visual("Fruit", PrimitiveType.Sphere, t, new Vector3(Mathf.Cos(a) * 0.7f * scale, h + 0.2f * scale + Mathf.Sin(a) * 0.3f * scale, -0.62f * scale), Vector3.one * 0.18f * scale, GameManager.Instance.Mat("Tree Fruit", new Color(1f, 0.35f, 0.35f), 0.5f), false);
+            }
+        return t;
+    }
+
+    // فطرة الجزيرة: ساق قصير ممتلئ وراس كبير منقط يضوي
+    static Transform MakeIslandShroom(Transform parent, Vector3 basePos, float scale, GameManager gm, System.Random rng)
+    {
+        Color[] caps = { new Color(1.2f, 0.45f, 0.7f), new Color(0.5f, 0.8f, 1.4f), new Color(0.8f, 0.55f, 1.3f), new Color(1.3f, 0.75f, 0.35f) };
+        var t = new GameObject("Tree").transform;
+        t.SetParent(parent, false);
+        t.position = basePos;
+        float h = (1.1f + (float)rng.NextDouble() * 0.5f) * scale;
+        Material stem = gm.Mat("Giant Shroom Stem", new Color(0.95f, 0.9f, 0.85f), 0.3f);
+        Material cap = gm.Mat("Giant Shroom Cap " + rng.Next(4), caps[rng.Next(caps.Length)], 0.5f);
+        Material dot = gm.Mat("Giant Shroom Dot", new Color(1.3f, 1.25f, 1.1f), 0.4f);
+        LevelBuilder.Visual("Stem", PrimitiveType.Cylinder, t, new Vector3(0f, h * 0.5f, 0f), new Vector3(0.45f * scale, h * 0.5f, 0.45f * scale), stem, false);
+        LevelBuilder.Visual("Stem Base", PrimitiveType.Sphere, t, new Vector3(0f, 0.1f * scale, 0f), new Vector3(0.75f, 0.35f, 0.75f) * scale, stem, false);
+        LevelBuilder.Visual("Cap", PrimitiveType.Sphere, t, new Vector3(0f, h, 0f), new Vector3(2.2f, 1.1f, 2.2f) * scale, cap, false);
+        LevelBuilder.Visual("Cap Under", PrimitiveType.Cylinder, t, new Vector3(0f, h - 0.15f * scale, 0f), new Vector3(1.9f, 0.04f, 1.9f) * scale, stem, false);
+        for (int i = 0; i < 6; i++)
+        {
+            float a = i / 6f * Mathf.PI * 2f;
+            LevelBuilder.Visual("Dot", PrimitiveType.Sphere, t, new Vector3(Mathf.Cos(a) * 0.65f * scale, h + 0.35f * scale, Mathf.Sin(a) * 0.65f * scale - 0.25f * scale), new Vector3(0.32f, 0.14f, 0.32f) * scale, dot, false);
+        }
+        return t;
+    }
+
     static Transform MakeTree(Transform parent, Vector3 basePos, float scale, Material bark, Material leaf, System.Random rng, bool far)
     {
         var t = new GameObject("Tree").transform;
@@ -885,6 +1029,13 @@ public class ForestScenery : MonoBehaviour
     {
         float t = Time.time, dt = Time.deltaTime;
         for (int i = 0; i < sway.Count; i++) sway[i].localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 0.9f + i * 0.7f) * (sway[i].name == "Tree" ? 1f : 6f));
+        // الجزر تطفو وتتمايل بهدوء، والشلالات تجري
+        for (int i = 0; i < islands.Count; i++)
+        {
+            islands[i].position = islandHome[i] + new Vector3(0f, Mathf.Sin(t * 0.5f + i * 1.3f) * 0.25f, 0f);
+            islands[i].localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 0.35f + i) * 1.5f);
+        }
+        foreach (Material m in falls) m.SetTextureOffset("_BaseMap", new Vector2(0f, t * 1.4f));
         for (int i = 0; i < butterflies.Count; i++)
         {
             Vector3 h = butterflyHome[i];
