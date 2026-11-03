@@ -117,8 +117,11 @@ public class GameManager : MonoBehaviour
 
     public void StartLevelFromMenu(int index)
     {
+        spokenLevel = -1;   // من القائمة: نسمع تعليمات المرحلة من جديد
         menu.Transition(() => LoadLevel(index));
     }
+
+    int spokenLevel = -1;
 
     void StartIntro()
     {
@@ -384,7 +387,12 @@ public class GameManager : MonoBehaviour
             Rowaida.enabled = false;   // تنزل على الأرض وتوقف بدون ما تمشي
             return;
         }
-        ui.ShowMessage(data.title, data.subtitle != null ? 4f : 1.5f, data.subtitle);
+        // تعليمات المرحلة بصوت رويدا (مرة وحدة، ما تنعاد كل ما نعيد المرحلة)
+        string voice = "level_" + (index + 1).ToString("00");
+        float voiceLen = index != spokenLevel ? Narration.Length(voice) : 0f;
+        if (voiceLen > 0f) Narration.Say(voice);
+        spokenLevel = index;
+        ui.ShowMessage(data.title, data.subtitle != null ? Mathf.Max(4f, voiceLen + 1f) : 1.5f, data.subtitle);
     }
 
     // شكل المرحلة: ألوان القلم والحلقات، السما، الإضاءة، والأشياء الطايرة

@@ -245,6 +245,12 @@ public static class ClaudeCapture
                         if (mk.closed) line += " boat=" + mk.GetComponent<MeshRenderer>().bounds.ToString();
                     File.AppendAllText(Path.Combine(OutDir, "probe.txt"), line);
                     break;
+                case "subs":
+                    // كل المراحل: رقمها واسمها وجملتها
+                    var sb = new System.Text.StringBuilder();
+                    for (int li = 0; li < Levels.All.Count; li++) sb.Append(li + 1).Append('|').Append(Levels.All[li].title).Append('|').Append(Levels.All[li].subtitle).Append('\n');
+                    File.WriteAllText(Path.Combine(OutDir, "subs.txt"), sb.ToString());
+                    break;
                 case "narr":
                     // طول كل جملة مسجلة بصوت رويدا
                     string nl = "";

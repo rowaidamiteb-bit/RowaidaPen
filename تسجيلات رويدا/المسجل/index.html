@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مسجل صوت رويدا</title>
+<style>
+  :root { --pink: #e0607e; --ink: #2d2240; --paper: #fffaf3; --line: #d9e4f5; --green: #52b788; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: #bfe3f5; font-family: "Traditional Arabic", "Segoe UI", Tahoma, sans-serif; color: var(--ink); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .page { width: min(1000px, 100%); background: var(--paper); border-radius: 22px; padding: 28px 36px 30px; box-shadow: 0 10px 0 #9cc7dc, 0 20px 40px #0002;
+    background-image: repeating-linear-gradient(var(--paper) 0 47px, var(--line) 47px 49px); }
+  .top { display: flex; justify-content: space-between; align-items: center; font-size: 26px; }
+  .num { color: var(--pink); font-weight: bold; font-size: 34px; }
+  .sentence { font-size: clamp(30px, 4.4vw, 50px); line-height: 1.9; text-align: center; min-height: 250px; display: flex; align-items: center; justify-content: center; padding: 10px 0; font-weight: bold; }
+  .controls { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  button { font-family: inherit; font-size: 26px; border: 0; border-radius: 40px; padding: 12px 30px; cursor: pointer; color: white; background: #4a90d9; box-shadow: 0 5px 0 #2f6eb0; }
+  button:active { transform: translateY(3px); box-shadow: 0 2px 0 #2f6eb0; }
+  button:disabled { opacity: .4; cursor: default; }
+  #rec { background: var(--pink); box-shadow: 0 5px 0 #b13e5a; font-size: 32px; padding: 14px 44px; }
+  #rec.on { background: #d62839; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { transform: scale(1.06); } }
+  .hint { text-align: center; font-size: 22px; color: #6b5d80; margin-top: 16px; }
+  .meter { height: 12px; background: #e8e1f0; border-radius: 6px; margin: 16px auto 0; width: 60%; overflow: hidden; }
+  .meter div { height: 100%; width: 0; background: var(--green); transition: width .05s; }
+  .dots { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 22px; direction: rtl; }
+  .dot { width: 30px; height: 30px; border-radius: 50%; background: #e3dcea; font-size: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-family: Tahoma, sans-serif; }
+  .dot.done { background: var(--green); color: white; }
+  .dot.cur { outline: 3px solid var(--pink); }
+  .msg { text-align: center; font-size: 24px; min-height: 34px; color: var(--green); margin-top: 8px; }
+  @media (max-width: 600px) { .page { padding: 18px 16px; } button { font-size: 22px; padding: 10px 20px; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top"><span>مسجل صوت رويدا</span><span class="num" id="num"></span></div>
+  <div class="sentence" id="sentence">...</div>
+  <div class="controls">
+    <button id="prev">→ السابقة</button>
+    <button id="rec">● سجلي</button>
+    <button id="play" disabled>▶ اسمعي</button>
+    <button id="next">التالية ←</button>
+  </div>
+  <div class="meter"><div id="lvl"></div></div>
+  <div class="msg" id="msg"></div>
+  <div class="hint">زر المسافة: تبدئين التسجيل، ومرة ثانية توقفينه ويتحفظ وينقلك للجملة اللي بعدها<br>إذا ما عجبتك جملة ارجعي لها (من الدوائر تحت أو "السابقة") وسجليها مرة ثانية</div>
+  <div class="dots" id="dots"></div>
+</div>
+<script>
+let lines = [], done = [], cur = 0, stream, ctx, proc, src, chunks = [], recording = false, player = new Audio();
+const $ = id => document.getElementById(id);
+
+async function load() {
+  const r = await (await fetch("/lines")).json();
+  lines = r.lines; done = r.done;
+  cur = Math.max(0, done.indexOf(false));
+  show();
+}
+
+function show() {
+  $("num").textContent = "المرحلة " + (cur + 1) + " من " + lines.length;
+  $("sentence").textContent = lines[cur];
+  $("play").disabled = !done[cur];
+  $("prev").disabled = cur === 0;
+  $("next").disabled = cur === lines.length - 1;
+  $("dots").innerHTML = "";
+  lines.forEach((_, i) => {
+    const d = document.createElement("div");
+    d.className = "dot" + (done[i] ? " done" : "") + (i === cur ? " cur" : "");
+    d.textContent = i + 1;
+    d.onclick = () => { if (!recording) { cur = i; show(); } };
+    $("dots").appendChild(d);
+  });
+}
+
+async function start() {
+  if (!stream) {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: false, channelCount: 1 } });
+    ctx = new AudioContext();
+    src = ctx.createMediaStreamSource(stream);
+  }
+  if (ctx.state === "suspended") await ctx.resume();
+  player.pause();
+  chunks = [];
+  proc = ctx.createScriptProcessor(4096, 1, 1);
+  proc.onaudioprocess = e => {
+    const d = e.inputBuffer.getChannelData(0);
+    chunks.push(new Float32Array(d));
+    let p = 0; for (const v of d) p = Math.max(p, Math.abs(v));
+    $("lvl").style.width = Math.min(100, p * 140) + "%";
+  };
+  src.connect(proc); proc.connect(ctx.destination);
+  recording = true;
+  $("rec").classList.add("on"); $("rec").textContent = "■ وقفي";
+  $("msg").textContent = "";
+}
+
+async function stop() {
+  recording = false;
+  src.disconnect(); proc.disconnect();
+  $("rec").classList.remove("on"); $("rec").textContent = "● سجلي";
+  $("lvl").style.width = "0";
+  const n = chunks.reduce((a, c) => a + c.length, 0);
+  if (n < ctx.sampleRate * 0.4) { $("msg").textContent = "قصير مرة، جربي مرة ثانية"; return; }
+  const wav = new DataView(new ArrayBuffer(44 + n * 2));
+  const w = (o, s) => [...s].forEach((c, i) => wav.setUint8(o + i, c.charCodeAt(0)));
+  w(0, "RIFF"); wav.setUint32(4, 36 + n * 2, true); w(8, "WAVEfmt "); wav.setUint32(16, 16, true); wav.setUint16(20, 1, true); wav.setUint16(22, 1, true);
+  wav.setUint32(24, ctx.sampleRate, true); wav.setUint32(28, ctx.sampleRate * 2, true); wav.setUint16(32, 2, true); wav.setUint16(34, 16, true); w(36, "data"); wav.setUint32(40, n * 2, true);
+  let o = 44; for (const c of chunks) for (const v of c) { wav.setInt16(o, Math.max(-1, Math.min(1, v)) * 32767, true); o += 2; }
+  await fetch("/audio/" + (cur + 1), { method: "POST", body: wav.buffer });
+  done[cur] = true;
+  $("msg").textContent = "✓ انحفظت جملة المرحلة " + (cur + 1);
+  const left = done.indexOf(false);
+  if (left === -1) { $("msg").textContent = "خلصتي كل الجمل! 🎉 ارجعي لـ Claude وقولي له خلصت"; show(); return; }
+  if (cur < lines.length - 1) cur++;
+  show();
+}
+
+$("rec").onclick = () => recording ? stop() : start().catch(e => $("msg").textContent = "ما قدرت أفتح المايك: " + e.message);
+$("play").onclick = () => { player.src = "/audio/" + (cur + 1) + "?t=" + Date.now(); player.play(); };
+$("prev").onclick = () => { if (!recording && cur > 0) { cur--; show(); } };
+$("next").onclick = () => { if (!recording && cur < lines.length - 1) { cur++; show(); } };
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") { e.preventDefault(); if (!e.repeat) $("rec").click(); }
+  if (e.code === "ArrowRight") $("prev").click();
+  if (e.code === "ArrowLeft") $("next").click();
+});
+document.addEventListener("keyup", e => { if (e.code === "Space") e.preventDefault(); });
+document.querySelectorAll("button").forEach(b => b.addEventListener("click", () => b.blur()));
+load();
+</script>
+</body>
+</html>
