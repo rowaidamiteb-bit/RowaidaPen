@@ -245,6 +245,13 @@ public static class ClaudeCapture
                         if (mk.closed) line += " boat=" + mk.GetComponent<MeshRenderer>().bounds.ToString();
                     File.AppendAllText(Path.Combine(OutDir, "probe.txt"), line);
                     break;
+                case "narr":
+                    // طول كل جملة مسجلة بصوت رويدا
+                    string nl = "";
+                    foreach (string nn in new[] { "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "ending_0", "ending_1", "ending_2", "ending_3", "ending_4", "ending_5" })
+                        nl += "\n" + nn + " " + Narration.Length(nn).ToString("0.00") + " clip=" + (Narration.Clip(nn) != null) + " on=" + GameSettings.NarrationOn;
+                    File.AppendAllText(Path.Combine(OutDir, "probe.txt"), nl);
+                    break;
                 case "tp":
                     GameManager.Instance.Rowaida.Respawn(new Vector3(float.Parse(arg, System.Globalization.CultureInfo.InvariantCulture), 1.5f, 0f));
                     break;

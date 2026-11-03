@@ -92,7 +92,7 @@ public static class Narration
                 for (int i = data.Length - 1; i >= 0; i -= 32)
                     if (Mathf.Abs(data[i]) > 0.03f) { len = (float)i / c.channels / c.frequency; break; }
         }
-        speech[name] = len;
+        if (c != null) speech[name] = len;   // ما نحفظ "ما فيه صوت" عشان لو انضاف الملف بعدين
         return len;
     }
 
