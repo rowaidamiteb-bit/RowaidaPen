@@ -75,6 +75,9 @@ public static class Narration
         if (source != null) source.volume = GameSettings.NarrationOn ? 1f : 0f;
     }
 
+    // هل رويدا تتكلم الحين (عشان نوطي الموسيقى)
+    public static bool Speaking => source != null && source.isPlaying && GameSettings.NarrationOn;
+
     public static AudioClip Clip(string name) => Resources.Load<AudioClip>("Narration/" + name);
 
     // طول الكلام نفسه (بدون السكوت اللي بآخر الملف). صفر لو الراوي طافي

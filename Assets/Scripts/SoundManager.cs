@@ -15,7 +15,7 @@ public class SoundManager : MonoBehaviour
     public AudioClip[] StepClips { get; private set; }
 
     AudioSource music, pencil, steps, effects;
-    float duckTimer;
+    float duckTimer, speakHold;
     float pencilLevel;
     int lastStep = -1;
 
@@ -54,10 +54,12 @@ public class SoundManager : MonoBehaviour
 
     void Update()
     {
-        // نخفض الموسيقى شوي وقت صوت الفوز أو الخسارة
+        // نخفض الموسيقى شوي وقت صوت الفوز أو الخسارة، وكثير وقت ما رويدا تحكي
         duckTimer -= Time.deltaTime;
-        float targetMusic = (duckTimer > 0f ? musicVolume * 0.35f : musicVolume) * GameSettings.MusicLevel;
-        music.volume = Mathf.MoveTowards(music.volume, targetMusic, Time.deltaTime * 0.6f);
+        if (Narration.Speaking) speakHold = 0.6f; else speakHold -= Time.deltaTime;
+        float duck = speakHold > 0f ? 0.18f : duckTimer > 0f ? 0.35f : 1f;
+        float targetMusic = musicVolume * duck * GameSettings.MusicLevel;
+        music.volume = Mathf.MoveTowards(music.volume, targetMusic, Time.deltaTime * (targetMusic < music.volume ? 1.2f : 0.4f));
     }
 
     // speed: سرعة الرسم بالمتر في الثانية (0 = القلم واقف)
