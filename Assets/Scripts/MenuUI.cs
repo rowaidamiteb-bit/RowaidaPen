@@ -1406,7 +1406,7 @@ public class MenuUI : MonoBehaviour
     }
 
     // مثلث رأسه فوق (رأس القلم)
-    static Sprite TriangleSprite()
+    public static Sprite TriangleSprite()
     {
         const int s = 64;
         var tex = new Texture2D(s, s, TextureFormat.RGBA32, true) { name = "Triangle", wrapMode = TextureWrapMode.Clamp };

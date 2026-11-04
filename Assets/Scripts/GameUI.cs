@@ -35,14 +35,61 @@ public class GameUI : MonoBehaviour
 
         // شريط الحبر
         // حافة بيضا عشان الكلام الأسود يبان حتى في المراحل الغامقة
-        Label(root, ArabicText.Fix("الحبر"), 32, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(40f, -40f), new Vector2(100f, 44f)).gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.85f);
-        Image frame = Panel(root, "Ink Bar", Color.black);
-        Place(frame.rectTransform, new Vector2(0f, 1f), new Vector2(120f, -40f), new Vector2(420f, 44f));
-        Image inner = Panel(frame.transform, "Inner", Color.white);
-        Stretch(inner.rectTransform, 4f);
-        Image area = Panel(inner.transform, "Fill Area", Color.clear);
-        Stretch(area.rectTransform, 4f);
+        Label(root, ArabicText.Fix("الحبر"), 32, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(36f, -38f), new Vector2(90f, 44f)).gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.85f);
+        // شريط الحبر على شكل قلم رصاص: ممحاة وردية، حلقة معدن، جسم فيه الحبر، ورأس خشب ورصاص
+        Sprite round = MenuUI.RoundedSprite(), tri = MenuUI.TriangleSprite();
+        Image frame = Panel(root, "Ink Pencil", Color.clear);
+        Place(frame.rectTransform, new Vector2(0f, 1f), new Vector2(130f, -38f), new Vector2(430f, 46f));
+        Color outline = new Color(0.22f, 0.16f, 0.24f);
+        Image Piece(string n, Color c, Sprite sp, Vector2 min, Vector2 max)
+        {
+            Image im = Panel(frame.transform, n, c);
+            im.sprite = sp;
+            if (sp == round) im.type = Image.Type.Sliced;
+            im.rectTransform.anchorMin = im.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            im.rectTransform.pivot = new Vector2(0f, 0.5f);
+            im.rectTransform.anchoredPosition = new Vector2(min.x, (min.y + max.y) * 0.5f);
+            im.rectTransform.sizeDelta = new Vector2(max.x - min.x, max.y - min.y);
+            return im;
+        }
+        // الرأس (مثلث خشب) وطرف الرصاص
+        var tipWood = Piece("Tip Outline", outline, tri, new Vector2(372f, -25f), new Vector2(432f, 25f));
+        tipWood.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f);
+        tipWood.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        tipWood.rectTransform.anchoredPosition = new Vector2(404f, 0f);
+        tipWood.rectTransform.sizeDelta = new Vector2(48f, 56f);   // بعد التدوير: 48 طول و 56 عرض
+        var wood = Piece("Tip Wood", new Color(0.98f, 0.82f, 0.6f), tri, new Vector2(0f, 0f), new Vector2(50f, 40f));
+        wood.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        wood.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f);
+        wood.rectTransform.anchoredPosition = new Vector2(400f, 0f);
+        wood.rectTransform.sizeDelta = new Vector2(38f, 44f);
+        var lead = Piece("Tip Lead", outline, tri, new Vector2(0f, 0f), new Vector2(16f, 14f));
+        lead.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        lead.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f);
+        lead.rectTransform.anchoredPosition = new Vector2(418f, 0f);
+        lead.rectTransform.sizeDelta = new Vector2(13f, 15f);
+        // الجسم: حدود غامقة ثم ورق فاتح (المكان الفاضي) ثم الحبر
+        Piece("Body Outline", outline, round, new Vector2(34f, -23f), new Vector2(384f, 23f));
+        Piece("Body Paper", new Color(1f, 0.97f, 0.9f), round, new Vector2(38f, -19f), new Vector2(380f, 19f));
+        // الممحاة والحلقة المعدن
+        Piece("Eraser Outline", outline, round, new Vector2(0f, -23f), new Vector2(48f, 23f));
+        Piece("Eraser", new Color(1f, 0.62f, 0.7f), round, new Vector2(4f, -19f), new Vector2(46f, 19f));
+        Piece("Ferrule", new Color(0.78f, 0.8f, 0.84f), null, new Vector2(30f, -21f), new Vector2(52f, 21f));
+        for (int k = 0; k < 3; k++) Piece("Ferrule Line", new Color(0.55f, 0.57f, 0.62f), null, new Vector2(34f + k * 6f, -21f), new Vector2(36f + k * 6f, 21f));
+        Image area = Panel(frame.transform, "Fill Area", Color.clear);
+        area.rectTransform.anchorMin = area.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+        area.rectTransform.pivot = new Vector2(0f, 0.5f);
+        area.rectTransform.anchoredPosition = new Vector2(54f, 0f);
+        area.rectTransform.sizeDelta = new Vector2(322f, 30f);
+        area.gameObject.AddComponent<RectMask2D>();
         Image fill = Panel(area.transform, "Fill", Color.black);
+        fill.sprite = round;
+        fill.type = Image.Type.Sliced;
+        // لمعة فوق الحبر
+        Image shine = Panel(fill.transform, "Shine", new Color(1f, 1f, 1f, 0.22f));
+        shine.rectTransform.anchorMin = new Vector2(0.02f, 0.62f);
+        shine.rectTransform.anchorMax = new Vector2(0.98f, 0.82f);
+        shine.rectTransform.offsetMin = shine.rectTransform.offsetMax = Vector2.zero;
         inkFillImage = fill;
         inkFrame = frame.rectTransform;
         inkFill = fill.rectTransform;
@@ -120,7 +167,7 @@ public class GameUI : MonoBehaviour
         inkFill.anchorMax = new Vector2(shownInk, 1f);
         bool low = fraction < 0.2f;
         float pulse = low ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f) : 0f;
-        inkFillImage.color = low ? Color.Lerp(new Color(0.55f, 0.08f, 0.12f), new Color(0.9f, 0.2f, 0.25f), pulse) : Color.black;
+        inkFillImage.color = low ? Color.Lerp(new Color(0.55f, 0.08f, 0.12f), new Color(0.9f, 0.2f, 0.25f), pulse) : new Color(0.2f, 0.19f, 0.28f);
         inkFrame.localScale = Vector3.one * (1f + pulse * 0.03f);
     }
 
