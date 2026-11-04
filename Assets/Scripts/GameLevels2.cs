@@ -345,15 +345,15 @@ public class VirusBoss : MonoBehaviour
             LevelBuilder.Visual("Spike Ball", PrimitiveType.Sphere, sp, new Vector3(0f, 0.65f, 0f), Vector3.one * 0.38f, glow, false);
             v.spikes.Add(sp);
         }
-        // وجه غاضب
-        for (int e = -1; e <= 1; e += 2)
-        {
-            LevelBuilder.Visual("Eye White", PrimitiveType.Sphere, go.transform, new Vector3(0.75f, 0.5f, e * 0.55f - 1.6f), new Vector3(0.7f, 0.8f, 0.3f), gm.Mat("Badge White", Color.white, 0.4f), false);
-            var pupil = LevelBuilder.Visual("Pupil", PrimitiveType.Sphere, go.transform, new Vector3(0.85f, 0.45f, e * 0.55f - 1.75f), new Vector3(0.3f, 0.35f, 0.15f), gm.Mat("Lamp Red", new Color(1.6f, 0.2f, 0.2f), 0.5f), false).transform;
-            if (e < 0) v.eyeL = pupil; else v.eyeR = pupil;
-            LevelBuilder.Visual("Brow", PrimitiveType.Cube, go.transform, new Vector3(0.8f, 1f, e * 0.55f - 1.65f), new Vector3(0.7f, 0.12f, 0.1f), gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f), false).transform.localRotation = Quaternion.Euler(0f, 0f, e * 20f);
-        }
-        for (int k = 0; k < 5; k++) LevelBuilder.Visual("Tooth", PrimitiveType.Cube, go.transform, new Vector3(0.9f - k * 0.05f, -0.5f, -1.3f - k * 0.18f + 0.35f), new Vector3(0.18f, k % 2 == 0 ? 0.3f : 0.2f, 0.12f), gm.Mat("Badge White", Color.white, 0.4f), false).transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        // وجه غاضب مرسوم يطالع لقدام (ناحية رويدا والكاميرا): عيون حمرا وحواجب وفم بأنياب
+        v.body.GetComponent<Renderer>().enabled = false;
+        var faceHolder = new GameObject("Virus Face").transform;
+        faceHolder.SetParent(v.body, false);
+        faceHolder.localRotation = Quaternion.Euler(0f, -32f, 0f);
+        Shapes.Add(faceHolder, "Face", Shapes.Sphere(), Vector3.zero, Vector3.one * 0.5f, Shapes.Face(new Color(0.75f, 0.15f, 0.55f), Shapes.Eyes.Angry, Shapes.Mouth.Fangs, null, new Color(0.95f, 0.15f, 0.2f), false, 1.3f, 1f, 0.05f), new Vector3(0f, 180f, 0f));
+        // عيون مخفية (الكود القديم يحركها)
+        v.eyeL = new GameObject("Eye L").transform; v.eyeL.SetParent(go.transform, false);
+        v.eyeR = new GameObject("Eye R").transform; v.eyeR.SetParent(go.transform, false);
         for (int k = 0; k < 10; k++) v.orbit.Add(GameFeatures.Px("Glitch Bit", go.transform, Vector3.zero, Vector3.one * 0.3f, k % 2 == 0 ? new Color(1f, 0.2f, 0.5f) : new Color(0.3f, 0.9f, 1f)).transform);
         gm.Respawned += v.OnRespawned;
     }

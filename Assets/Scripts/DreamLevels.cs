@@ -442,11 +442,13 @@ public class MoonFog : MonoBehaviour
         var f = go.AddComponent<MoonFog>();
         f.x0 = s.x; f.x1 = s.y; f.top = s.z;
         f.moon = new Vector3(s.w, f.top + 6.2f, 0f);
-        Material dark = gm.Mat("Dream Dark", new Color(0.04f, 0.03f, 0.08f), 0.2f);
+        // غيمة نوم بنفسجية غامقة متكتلة (بدل الكور السودا)، فيها كتل أفتح شوي
+        Material dark = gm.Mat("Dream Night Cloud", new Color(0.17f, 0.12f, 0.32f), 0.15f);
+        Material darkLight = gm.Mat("Dream Night Cloud Light", new Color(0.3f, 0.22f, 0.5f), 0.15f);
         for (int k = 0; k < 40; k++)
         {
             Vector3 p = new Vector3(Random.Range(f.x0, f.x1), f.top + Random.Range(0f, 4.5f), Random.Range(-1.6f, 1.2f));
-            var b = LevelBuilder.Visual("Darkness", PrimitiveType.Sphere, go.transform, p, Vector3.one * Random.Range(1.4f, 2.4f), dark, false).transform;
+            var b = Shapes.Add(go.transform, "Darkness", Shapes.Blob(k % 6 + 40, 0.3f), p, Vector3.one * Random.Range(0.7f, 1.2f), k % 4 == 0 ? darkLight : dark, default, false).transform;
             f.fog.Add(b); f.fogHome.Add(p);
         }
         // عيون صغيرة تلمع بالظلام (تخوف)
@@ -504,7 +506,7 @@ public class MoonFog : MonoBehaviour
             for (int i = 0; i < fog.Count; i++)
             {
                 fog[i].position = fogHome[i] + (fogHome[i] - moon).normalized * wakeT * 4f;
-                fog[i].localScale = Vector3.one * Mathf.Max(0f, 1f - wakeT) * (i < 40 ? 1.9f : 0.12f);
+                fog[i].localScale = Vector3.one * Mathf.Max(0f, 1f - wakeT) * (i < 40 ? 0.95f : 0.12f);
             }
             if (Random.value < 0.6f) Fx.Sparkle(new Vector3(Random.Range(x0, x1), top + Random.Range(0f, 4f), -0.5f), new Color(1f, 0.95f, 0.6f), 2);
             if (wakeT >= 1f) foreach (Transform fo in fog) fo.gameObject.SetActive(false);
