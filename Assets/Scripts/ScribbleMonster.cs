@@ -280,8 +280,10 @@ public class ScribbleMonster : MonoBehaviour
         // عيون فحم (تتحرك وتطالع) وأنف جزر وابتسامة نقاط
         for (int s = -1; s <= 1; s += 2)
             pupils.Add(Part(PrimitiveType.Sphere, new Vector3(s * 0.1f, 1.17f, 0.22f), Vector3.one * 0.08f, coal));
-        var nose = Part(PrimitiveType.Capsule, new Vector3(0f, 1.09f, 0.33f), new Vector3(0.07f, 0.14f, 0.07f), carrot);
-        nose.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        Shapes.Add(visual, "Carrot Nose", Shapes.Cone(0.15f), new Vector3(0f, 1.09f, 0.22f), new Vector3(0.1f, 0.3f, 0.1f), carrot, new Vector3(90f, 0f, 0f));
+        // خدود وردية
+        for (int s = -1; s <= 1; s += 2)
+            Part(PrimitiveType.Sphere, new Vector3(s * 0.15f, 1.05f, 0.2f), new Vector3(0.08f, 0.05f, 0.03f), gm.Mat("Blush", new Color(1f, 0.6f, 0.7f), 0.3f));
         for (int i = -2; i <= 2; i++)
             Part(PrimitiveType.Sphere, new Vector3(i * 0.055f, 0.99f - (2 - Mathf.Abs(i)) * 0.02f, 0.23f), Vector3.one * 0.04f, coal);
         mouth = Part(PrimitiveType.Sphere, new Vector3(0f, 0.97f, 0.2f), new Vector3(0.12f, 0.02f, 0.02f), coal);

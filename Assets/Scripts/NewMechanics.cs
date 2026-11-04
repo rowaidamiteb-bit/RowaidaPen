@@ -1496,6 +1496,16 @@ public class ShadowCreature : MonoBehaviour
             s.wisps.Add(LevelBuilder.Visual("Wisp", PrimitiveType.Sphere, s.body, new Vector3(-0.3f + i * 0.2f, -0.55f, 0f), Vector3.one * 0.3f, dark, false).transform);
         for (int e = -1; e <= 1; e += 2)
             s.eyes.Add(LevelBuilder.Visual("Eye", PrimitiveType.Sphere, s.body, new Vector3(e * 0.16f, 0.32f, -0.36f), new Vector3(0.14f, 0.09f, 0.05f), eyeMat, false).transform);
+        // ابتسامة مضيئة متعرجة، وقرنين صغار، وأطراف دخانية تتمايل
+        for (int k = 0; k < 5; k++)
+        {
+            float u = (k - 2) / 2f;
+            var tooth = Shapes.Add(s.body, "Grin", Shapes.Cone(), new Vector3(u * 0.13f, 0.12f - (1f - u * u) * 0.04f, -0.38f), new Vector3(0.05f, 0.07f, 0.02f), eyeMat, new Vector3(0f, 0f, k % 2 == 0 ? 180f : 0f), false);
+        }
+        for (int e = -1; e <= 1; e += 2)
+            Shapes.Add(s.body, "Horn", Shapes.Cone(-0.4f * e), new Vector3(e * 0.2f, 0.7f, 0f), new Vector3(0.1f, 0.22f, 0.1f), dark, new Vector3(0f, 0f, -e * 20f), false);
+        for (int i = 0; i < 6; i++)
+            Shapes.Add(s.body, "Smoke", Shapes.Blob(60 + i, 0.4f), new Vector3(Mathf.Cos(i) * 0.45f, -0.2f + Mathf.Sin(i * 2f) * 0.25f, 0.1f), Vector3.one * 0.22f, dark, default, false);
         gm.Respawned += s.OnRespawned;
     }
 
