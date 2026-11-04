@@ -254,7 +254,12 @@ public static class ClaudeCapture
                 case "narr":
                     // طول كل جملة مسجلة بصوت رويدا
                     string nl = "";
-                    foreach (string nn in new[] { "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "ending_0", "ending_1", "ending_2", "ending_3", "ending_4", "ending_5" })
+                    nl += "\nlisteners=" + Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None).Length + " muted=" + EditorUtility.audioMasterMute;
+                    nl += "\nrate=" + AudioSettings.outputSampleRate + " speakers=" + AudioSettings.driverCapabilities + " dsp=" + AudioSettings.dspTime.ToString("0.0");
+                    nl += "\nspeaking=" + Narration.Speaking + " listener=" + AudioListener.volume + " pause=" + AudioListener.pause + " music=" + GameSettings.MusicLevel + " fx=" + GameSettings.EffectsOn;
+                    foreach (var asrc in Object.FindObjectsByType<AudioSource>(FindObjectsSortMode.None))
+                        nl +="\n  playing " + asrc.name + " vol=" + asrc.volume.ToString("0.00") + " clip=" + (asrc.clip != null ? asrc.clip.name : "-") + " mute=" + asrc.mute + " play=" + asrc.isPlaying + " t=" + asrc.time.ToString("0.00") + " loop=" + asrc.loop;
+                    foreach (string nn in new[] { "level_01", "level_36", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "ending_0", "ending_1", "ending_2", "ending_3", "ending_4", "ending_5" })
                         nl += "\n" + nn + " " + Narration.Length(nn).ToString("0.00") + " clip=" + (Narration.Clip(nn) != null) + " on=" + GameSettings.NarrationOn;
                     File.AppendAllText(Path.Combine(OutDir, "probe.txt"), nl);
                     break;

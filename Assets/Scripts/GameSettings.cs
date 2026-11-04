@@ -44,6 +44,25 @@ public static class GameSettings
         AudioListener.volume = EffectsOn ? Effects : 0f;
         Narration.ApplyVolume();
     }
+
+    // لو تغيرت السماعة (سماعة بلوتوث، شاشة، ...) يونتي يوقف كل الأصوات، فنرجع نشغل اللي كان شغال
+    [RuntimeInitializeOnLoadMethod]
+    static void WatchDevice()
+    {
+        AudioSettings.OnAudioConfigurationChanged -= DeviceChanged;
+        AudioSettings.OnAudioConfigurationChanged += DeviceChanged;
+    }
+
+    static void DeviceChanged(bool deviceWasChanged)
+    {
+        foreach (var s in Object.FindObjectsByType<AudioSource>(FindObjectsSortMode.None))
+            if (s.clip != null && s.isActiveAndEnabled && (s.loop || s.name == "Narrator") && !s.isPlaying && s.time > 0f)
+            {
+                float t = s.time;
+                s.Play();
+                s.time = Mathf.Min(t, s.clip.length - 0.01f);
+            }
+    }
 }
 
 // صوت الراوي بالمشهد الأول والأخير: ملفات مسجلة بـ Resources/Narration
