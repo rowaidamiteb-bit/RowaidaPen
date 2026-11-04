@@ -558,11 +558,7 @@ public class FriendsParade : MonoBehaviour
 
     static string Cat(Transform t, GameManager gm)
     {
-        Material fur = M(gm, "Cute Fur", new Color(0.75f, 0.6f, 0.95f), 0.3f);
-        LevelBuilder.Visual("Cat", PrimitiveType.Sphere, t, new Vector3(0f, 0.5f, 0f), new Vector3(0.8f, 0.9f, 0.7f), fur, true);
-        for (int e = -1; e <= 1; e += 2) LevelBuilder.Visual("Cat Ear", PrimitiveType.Cube, t, new Vector3(e * 0.25f, 1f, 0f), new Vector3(0.22f, 0.22f, 0.15f), fur, false).transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-        LevelBuilder.Visual("Tail", PrimitiveType.Cylinder, t, new Vector3(0.45f, 0.5f, 0.2f), new Vector3(0.1f, 0.35f, 0.1f), fur, false).transform.localRotation = Quaternion.Euler(0f, 0f, -40f);
-        Eyes(t, new Vector3(0f, 0.65f, -0.33f), 1.3f, gm);
+        CuteCat.Build(t, t.position, 0.42f, new Color(0.78f, 0.64f, 0.98f), new Color(0.58f, 0.44f, 0.85f), false);
         return "meow";
     }
 

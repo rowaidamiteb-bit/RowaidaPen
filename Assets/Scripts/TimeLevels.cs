@@ -442,6 +442,7 @@ public class AlarmSleeper : MonoBehaviour
     float sleeperX, ringT = -1f, nextZ;
     Vector3 alarmPos;
     Transform cat, alarm, button, catBody;
+    CuteCat kitty;
     BoxCollider catCol;
     Material zMat;
     bool holding;
@@ -455,32 +456,12 @@ public class AlarmSleeper : MonoBehaviour
         var a = go.AddComponent<AlarmSleeper>();
         a.sleeperX = spec.x;
         a.alarmPos = new Vector3(spec.y, spec.z, 0f);
-        a.zMat = gm.Mat("Sleep Z", new Color(0.95f, 0.95f, 1f), 0.3f);
+        a.zMat = gm.Mat("Sleep Z Blue", new Color(0.42f, 0.45f, 0.95f), 0.3f);
 
-        // القطوة النايمة (كورة كبيرة دايرة على نفسها)
-        Material fur = gm.Mat("Cat Fur", new Color(1f, 0.7f, 0.35f), 0.3f);
-        Material stripe = gm.Mat("Cat Stripe", new Color(0.85f, 0.5f, 0.2f), 0.3f);
-        Material pink = gm.Mat("Cat Pink", new Color(1f, 0.65f, 0.7f), 0.3f);
-        Material black = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
-        a.cat = new GameObject("Cat").transform;
-        a.cat.SetParent(go.transform, false);
-        a.cat.position = new Vector3(spec.x, 0f, 0f);
-        a.catBody = new GameObject("Body").transform;
-        a.catBody.SetParent(a.cat, false);
-        LevelBuilder.Visual("Body", PrimitiveType.Sphere, a.catBody, new Vector3(0f, 0.95f, 0f), new Vector3(2.4f, 1.9f, 1.8f), fur);
-        for (int i = 0; i < 3; i++)
-            LevelBuilder.Visual("Stripe", PrimitiveType.Cube, a.catBody, new Vector3(-0.4f + i * 0.4f, 1.85f, -0.1f), new Vector3(0.15f, 0.12f, 1.2f), stripe, false);
-        LevelBuilder.Visual("Head", PrimitiveType.Sphere, a.catBody, new Vector3(-1f, 0.75f, -0.35f), new Vector3(1.1f, 1f, 1f), fur);
-        for (int s = -1; s <= 1; s += 2)
-        {
-            var ear = LevelBuilder.Visual("Ear", PrimitiveType.Cube, a.catBody, new Vector3(-1f + s * 0.3f, 1.25f, -0.35f), new Vector3(0.3f, 0.3f, 0.2f), fur).transform;
-            ear.localRotation = Quaternion.Euler(0f, 0f, 45f);
-            // عيون مسكرة (خط)
-            LevelBuilder.Visual("Closed Eye", PrimitiveType.Cube, a.catBody, new Vector3(-1f + s * 0.22f, 0.82f, -0.85f), new Vector3(0.2f, 0.04f, 0.02f), black, false);
-        }
-        LevelBuilder.Visual("Nose", PrimitiveType.Sphere, a.catBody, new Vector3(-1f, 0.66f, -0.86f), Vector3.one * 0.1f, pink, false);
-        var tail = LevelBuilder.Visual("Tail", PrimitiveType.Capsule, a.catBody, new Vector3(1.1f, 0.4f, -0.4f), new Vector3(0.25f, 0.7f, 0.25f), stripe).transform;
-        tail.localRotation = Quaternion.Euler(0f, 0f, 70f);
+        // القطوة النايمة: ملفوفة على نفسها وذيلها قدامها
+        a.kitty = CuteCat.Build(go.transform, new Vector3(spec.x, 0f, 0f), 1.05f, new Color(1f, 0.68f, 0.33f), new Color(0.86f, 0.45f, 0.16f), true);
+        a.cat = a.kitty.root;
+        a.catBody = a.kitty.body;
         a.catCol = a.cat.gameObject.AddComponent<BoxCollider>();
         a.catCol.center = new Vector3(0f, 1f, 0f);
         a.catCol.size = new Vector3(2.4f, 2f, 2f);
@@ -499,6 +480,18 @@ public class AlarmSleeper : MonoBehaviour
         bodyT.localRotation = Quaternion.Euler(90f, 0f, 0f);
         var faceT = LevelBuilder.Visual("Face", PrimitiveType.Cylinder, a.alarm, new Vector3(0f, 0.55f, -0.31f), new Vector3(0.8f, 0.02f, 0.8f), face, false).transform;
         faceT.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        // عقارب ونقاط الساعات
+        Material ink = gm.Mat("Clock Ink", new Color(0.18f, 0.12f, 0.14f), 0.4f);
+        Vector3 fc = new Vector3(0f, 0.55f, -0.335f);
+        for (int k = 0; k < 12; k++)
+        {
+            float ang = k * 30f * Mathf.Deg2Rad;
+            float big = k % 3 == 0 ? 1f : 0.55f;
+            LevelBuilder.Visual("Tick", PrimitiveType.Cube, a.alarm, fc + new Vector3(Mathf.Sin(ang), Mathf.Cos(ang), 0f) * 0.31f, new Vector3(0.035f, 0.07f, 0.01f) * big, ink, false).transform.localRotation = Quaternion.Euler(0f, 0f, -k * 30f);
+        }
+        LevelBuilder.Visual("Minute Hand", PrimitiveType.Cube, a.alarm, fc + new Vector3(0f, 0.12f, 0f), new Vector3(0.035f, 0.24f, 0.012f), ink, false);
+        LevelBuilder.Visual("Hour Hand", PrimitiveType.Cube, a.alarm, fc + new Vector3(0.075f, 0.045f, 0f), new Vector3(0.045f, 0.17f, 0.012f), ink, false).transform.localRotation = Quaternion.Euler(0f, 0f, -60f);
+        LevelBuilder.Visual("Pin", PrimitiveType.Sphere, a.alarm, fc, Vector3.one * 0.06f, red, false);
         for (int s = -1; s <= 1; s += 2)
         {
             LevelBuilder.Visual("Bell", PrimitiveType.Sphere, a.alarm, new Vector3(s * 0.38f, 1.1f, 0f), new Vector3(0.45f, 0.35f, 0.45f), bell);
@@ -521,7 +514,7 @@ public class AlarmSleeper : MonoBehaviour
             {
                 nextZ = t + 0.9f;
                 if (gm.Rowaida != null && Mathf.Abs(gm.Rowaida.transform.position.x - sleeperX) < 10f && Random.value < 0.4f) LevelSfx.Play("snore", 0.5f);
-                var z = LevelBuilder.Visual("Z", PrimitiveType.Cube, null, cat.position + new Vector3(-1.3f, 1.6f, -0.6f), new Vector3(0.3f, 0.06f, 0.02f), zMat, false);
+                var z = CuteCat.SleepZ(cat.position + new Vector3(-1.25f + Random.Range(-0.1f, 0.1f), 1.75f, -0.75f), zMat);
                 var fx = z.AddComponent<FxParticle>();
                 fx.velocity = new Vector3(-0.2f, 0.7f, 0f);
                 fx.grow = 0.8f;
@@ -534,6 +527,7 @@ public class AlarmSleeper : MonoBehaviour
                 Vector3 c = mark.transform.position;
                 if (Mathf.Abs(c.x - alarmPos.x) > 1.5f || c.y < alarmPos.y || c.y > alarmPos.y + 2.2f) continue;
                 ringT = 0f;
+                kitty.SetAwake(true);
                 Destroy(mark.gameObject, 0.6f);   // الكورة تنستخدم مرة وحدة
                 LevelSfx.Play("alarm"); LevelSfx.Play("meow", 0.8f);
                 gm.UI.ShowMessage("", 1.8f, "رررن! استيقظت القطة");
@@ -548,6 +542,7 @@ public class AlarmSleeper : MonoBehaviour
             if (ringT > 7f && rx < sleeperX - 2f)
             {
                 ringT = -1f;
+                kitty.SetAwake(false);
                 cat.position = new Vector3(sleeperX, 0f, 0f);
                 catCol.enabled = true;
                 alarm.localRotation = Quaternion.identity;

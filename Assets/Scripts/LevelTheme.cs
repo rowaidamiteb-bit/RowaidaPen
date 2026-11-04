@@ -471,8 +471,9 @@ public class LevelTheme
         name = "Pixel",
         paper = new Color(0.98f, 0.97f, 0.92f), pattern = PaperPattern.Grid, patternColor = new Color(0.95f, 0.6f, 0.3f), colorfulDoodles = true,
         pageEdge = new Color(0.85f, 0.55f, 0.3f), pencil = new Color(0.45f, 0.25f, 0.15f), doodleColor = new Color(0.9f, 0.4f, 0.2f),
-        skyTop = new Color(0.3f, 0.55f, 1f), skyMid = new Color(0.45f, 0.7f, 1f), skyBottom = new Color(0.65f, 0.85f, 1f),
-        sun = true, moonColor = new Color(2.6f, 2.6f, 2f), stars = 0f, cloudTint = new Color(1.15f, 1.15f, 1.15f), cloudAlpha = 0.8f,
+        // سما زرقا صافية زي ألعاب زمان: بدون غيوم ناعمة ولا شمس مرسومة (الغيوم والشمس بكسل)
+        skyTop = new Color(0.33f, 0.55f, 0.98f), skyMid = new Color(0.4f, 0.62f, 1f), skyBottom = new Color(0.58f, 0.78f, 1f),
+        sun = false, showMoon = false, moonColor = new Color(2.6f, 2.6f, 2f), stars = 0f, cloudTint = new Color(1.15f, 1.15f, 1.15f), cloudAlpha = 0f,
         sunLight = new Color(1f, 0.97f, 0.9f), sunIntensity = 1.5f, sunAngles = new Vector3(50f, -30f, 0f),
         ambientSky = new Color(0.85f, 0.9f, 1f), ambientEquator = new Color(0.7f, 0.72f, 0.7f), ambientGround = new Color(0.35f, 0.3f, 0.25f),
         fog = new Color(0.7f, 0.85f, 1f), props = PropSet.Crayons, floating = FloatKind.Sparkles,

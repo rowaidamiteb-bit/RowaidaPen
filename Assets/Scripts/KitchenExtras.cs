@@ -13,6 +13,8 @@ public class KitchenExtras : MonoBehaviour
     readonly List<Vector3> balloonHome = new List<Vector3>();
     readonly List<Transform> sway = new List<Transform>();
     Transform cat, catTail, catHead;
+    CuteCat kitty;
+    bool catAwake;
     Vector3 catPos;
     float nextMeow;
     Material fall;
@@ -129,30 +131,10 @@ public class KitchenExtras : MonoBehaviour
         float cx = (minX + maxX) * 0.5f + 6f;
         LevelBuilder.Visual("Cat Shelf", PrimitiveType.Cube, p, new Vector3(cx, 5.6f, 7.6f), new Vector3(3f, 0.18f, 1.2f), wood, false);
         catPos = new Vector3(cx, 5.69f, 7.5f);
-        cat = new GameObject("Kitchen Cat").transform;
-        cat.SetParent(p, false);
-        cat.position = catPos;
-        Material fur = gm.Mat("Cat Fur", new Color(1f, 0.72f, 0.4f), 0.35f);
-        Material stripe = gm.Mat("Cat Stripe", new Color(0.85f, 0.5f, 0.22f), 0.35f);
-        Material pink = gm.Mat("Bunny Pink", new Color(1f, 0.7f, 0.75f), 0.3f);
-        Material dark = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
-        LevelBuilder.Visual("Body", PrimitiveType.Sphere, cat, new Vector3(0f, 0.3f, 0f), new Vector3(1.3f, 0.6f, 0.8f), fur, false);
-        for (int s = 0; s < 3; s++) LevelBuilder.Visual("Stripe", PrimitiveType.Cube, cat, new Vector3(-0.3f + s * 0.3f, 0.58f, 0f), new Vector3(0.1f, 0.05f, 0.7f), stripe, false);
-        catHead = new GameObject("Head").transform;
-        catHead.SetParent(cat, false);
-        catHead.localPosition = new Vector3(0.65f, 0.35f, -0.05f);
-        LevelBuilder.Visual("Head", PrimitiveType.Sphere, catHead, Vector3.zero, new Vector3(0.6f, 0.5f, 0.55f), fur, false);
-        for (int s = -1; s <= 1; s += 2)
-        {
-            var ear = LevelBuilder.Visual("Ear", PrimitiveType.Cube, catHead, new Vector3(0.05f, 0.25f, s * 0.15f), new Vector3(0.15f, 0.18f, 0.06f), fur, false).transform;
-            ear.localRotation = Quaternion.Euler(0f, 0f, 45f);
-            LevelBuilder.Visual("Eye Closed", PrimitiveType.Cube, catHead, new Vector3(0.22f, 0.04f, s * 0.12f), new Vector3(0.02f, 0.02f, 0.1f), dark, false);
-        }
-        LevelBuilder.Visual("Nose", PrimitiveType.Sphere, catHead, new Vector3(0.28f, -0.04f, 0f), Vector3.one * 0.06f, pink, false);
-        catTail = new GameObject("Tail").transform;
-        catTail.SetParent(cat, false);
-        catTail.localPosition = new Vector3(-0.6f, 0.25f, 0f);
-        for (int i = 0; i < 5; i++) LevelBuilder.Visual("Tail Seg", PrimitiveType.Sphere, catTail, new Vector3(-i * 0.15f, -i * 0.12f, 0f), Vector3.one * 0.16f, i % 2 == 0 ? fur : stripe, false);
+        kitty = CuteCat.Build(p, catPos, 0.5f, new Color(1f, 0.7f, 0.38f), new Color(0.86f, 0.47f, 0.18f), true);
+        cat = kitty.root;
+        catHead = kitty.head;
+        catTail = kitty.tail;
     }
 
     // ---------- أرض الحلويات ----------
@@ -265,11 +247,12 @@ public class KitchenExtras : MonoBehaviour
         // القطوة: تتنفس ويتحرك ذيلها، وإذا قربت رويدا ترفع راسها وتماوي
         if (cat != null)
         {
-            cat.localScale = new Vector3(1f, 1f + Mathf.Sin(t * 1.6f) * 0.05f, 1f);
-            catTail.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 1.2f) * 20f);
+            kitty.body.localScale = new Vector3(1f, 1f + Mathf.Sin(t * 1.6f) * 0.04f, 1f);
+            catTail.localRotation = Quaternion.Euler(0f, Mathf.Sin(t * 1.2f) * 8f, 0f);
             GameManager gm = GameManager.Instance;
             bool near = gm != null && gm.Rowaida != null && Mathf.Abs(gm.Rowaida.transform.position.x - catPos.x) < 3f;
-            catHead.localRotation = Quaternion.Slerp(catHead.localRotation, Quaternion.Euler(0f, near ? -30f : 0f, near ? 15f : -10f), dt * 3f);
+            catHead.localRotation = Quaternion.Slerp(catHead.localRotation, Quaternion.Euler(near ? -10f : 0f, near ? -20f : 0f, near ? -6f : 7f), dt * 3f);
+            if (near != catAwake) { catAwake = near; kitty.SetAwake(near); }
             if (near && t > nextMeow) { nextMeow = t + 6f; LevelSfx.Play("meow", 0.5f, 1.1f); }
         }
     }

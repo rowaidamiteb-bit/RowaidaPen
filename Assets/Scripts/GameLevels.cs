@@ -24,11 +24,12 @@ public static class GameFeatures
     }
 
     // مكعب بكسل بلون
-    public static GameObject Px(string name, Transform parent, Vector3 pos, Vector3 scale, Color c, bool shadows = false)
+    public static GameObject Px(string name, Transform parent, Vector3 pos, Vector3 scale, Color c, bool shadows = false, string pattern = "bevel", float tile = PixelArt.Tile)
     {
         GameManager gm = GameManager.Instance;
-        // عالم البكسل يظل مكعبات حادة
-        LevelBuilder.SharpCubes = gm.CurrentLevel != null && gm.CurrentLevel.pixelInk;
+        // عالم البكسل: بلوكات مرسومة بكسل بكسل
+        if (gm.CurrentLevel != null && gm.CurrentLevel.pixelInk) return PixelArt.Block(name, parent, pos, scale, c, shadows, pattern, tile);
+        LevelBuilder.SharpCubes = false;
         var go = LevelBuilder.Visual(name, PrimitiveType.Cube, parent, pos, scale, gm.Mat("Px " + ColorUtility.ToHtmlStringRGB(c), c, 0.15f), shadows);
         LevelBuilder.SharpCubes = false;
         return go;
@@ -226,9 +227,7 @@ public class CoinGate : MonoBehaviour
             var c = new GameObject("Coin").transform;
             c.SetParent(go.transform, false);
             c.position = p;
-            GameFeatures.Px("Coin Face", c, Vector3.zero, new Vector3(0.6f, 0.75f, 0.15f), gold);
-            GameFeatures.Px("Coin Edge", c, new Vector3(0f, 0f, 0.01f), new Vector3(0.75f, 0.55f, 0.13f), gold);
-            GameFeatures.Px("Coin Mark", c, new Vector3(0f, 0f, -0.08f), new Vector3(0.14f, 0.42f, 0.03f), goldDark);
+            GameFeatures.Px("Coin", c, Vector3.zero, new Vector3(0.66f, 0.82f, 0.14f), gold, false, "coin", 0.9f);
             g.coins.Add(c); g.home.Add(p);
         }
         // جدار طوب و"؟" فوقه
@@ -240,14 +239,13 @@ public class CoinGate : MonoBehaviour
             for (int k = 0; k < 2; k++)
             {
                 float off = row % 2 == 0 ? 0f : 0.2f;
-                var b = GameFeatures.Px("Brick", wall.transform, Vector3.zero, new Vector3(0.42f, 0.42f, 1.8f), (row + k) % 2 == 0 ? brick : mortar, true).transform;
+                var b = GameFeatures.Px("Brick", wall.transform, Vector3.zero, new Vector3(0.42f, 0.42f, 1.8f), (row + k) % 2 == 0 ? brick : brick * 0.92f, true, "brick", 0.42f).transform;
                 b.localPosition = new Vector3(-0.22f + k * 0.44f + off * 0f, 0.23f + row * 0.45f, 0f);
                 g.bricks.Add(b);
             }
-        var q = GameFeatures.Px("Question Block", wall.transform, Vector3.zero, new Vector3(0.9f, 0.9f, 0.9f), gold, true).transform;
+        var q = GameFeatures.Px("Question Block", wall.transform, Vector3.zero, new Vector3(0.9f, 0.9f, 0.9f), gold, true, "question", 0.9f).transform;
         q.localPosition = new Vector3(0f, 3.65f, 0f);
         g.bricks.Add(q);
-        GameFeatures.Text(q, q.position + new Vector3(0f, 0.02f, -0.47f), "?", 0.12f, new Color(0.6f, 0.3f, 0.05f));
         g.col = wall.AddComponent<BoxCollider>();
         g.col.center = new Vector3(0f, 1.6f, 0f);
         g.col.size = new Vector3(0.9f, 3.2f, 2f);

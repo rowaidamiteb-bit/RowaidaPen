@@ -266,6 +266,24 @@ public static class ClaudeCapture
                 case "tp":
                     GameManager.Instance.Rowaida.Respawn(new Vector3(float.Parse(arg, System.Globalization.CultureInfo.InvariantCulture), 1.5f, 0f));
                     break;
+                case "cam":
+                    var cv = System.Array.ConvertAll(arg.Split(';'), v => float.Parse(v, System.Globalization.CultureInfo.InvariantCulture));
+                    viewPos = new Vector3(cv[0], cv[1], cv[2]);
+                    viewTarget = new Vector3(cv[3], cv[4], cv[5]);
+                    viewFov = cv.Length > 6 ? cv[6] : 35f;
+                    break;
+                case "camobj":
+                    // كاميرا على شي بالاسم: camobj:الاسم;المسافة
+                    var co = arg.Split(';');
+                    var target = GameObject.Find(co[0]);
+                    if (target != null)
+                    {
+                        float dist = co.Length > 1 ? float.Parse(co[1], System.Globalization.CultureInfo.InvariantCulture) : 4f;
+                        viewTarget = target.transform.position + Vector3.up * dist * 0.12f;
+                        viewPos = viewTarget + new Vector3(dist * 0.25f, dist * 0.2f, -dist);
+                        viewFov = 35f;
+                    }
+                    break;
                 case "hideui":
                     GameManager.Instance.UI.SetVisible(false);
                     break;
@@ -352,6 +370,9 @@ public static class ClaudeCapture
         }
     }
 
+    static Vector3 viewPos = new Vector3(0f, 3f, -8f), viewTarget = Vector3.zero;
+    static float viewFov = 35f;
+
     static void Capture(string kind, int index)
     {
         Camera main = Camera.main;
@@ -369,6 +390,18 @@ public static class ClaudeCapture
             cam.transform.position = new Vector3(14.5f, 9f, -27f);
             cam.transform.LookAt(new Vector3(14.5f, -0.5f, 0f));
             cam.fieldOfView = 42f;
+        }
+        else if (kind == "view")
+        {
+            // كاميرا حرة: cam:x;y;z;هدفx;هدفy;هدفz;زاوية
+            temp = Object.Instantiate(main.gameObject);
+            foreach (var c in temp.GetComponents<MonoBehaviour>()) Object.DestroyImmediate(c);
+            var listener = temp.GetComponent<AudioListener>();
+            if (listener != null) Object.DestroyImmediate(listener);
+            cam = temp.GetComponent<Camera>();
+            cam.transform.position = viewPos;
+            cam.transform.LookAt(viewTarget);
+            cam.fieldOfView = viewFov;
         }
         else if (kind == "close" || kind == "face")
         {

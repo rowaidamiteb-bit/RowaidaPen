@@ -673,13 +673,27 @@ public class GameScenery : MonoBehaviour
 
     void Bob(Transform t) { bob.Add(t); bobHome.Add(t.position); }
 
-    // عالم البكسل: غيوم وتلال وأنابيب خضرا ومربعات "؟" وشجر وقلعة
+
+    // عالم البكسل: جبال بعيدة، غيوم بكسل، تلال وأشجار بأوراق، أنابيب، مربعات "؟"، شمس، وقلعة طوب
     void Pixel(Transform p, LevelData data, GameManager gm, System.Func<float, float, float> R)
     {
-        Color white = new Color(0.97f, 0.97f, 1f), green = new Color(0.3f, 0.75f, 0.3f), dgreen = new Color(0.15f, 0.5f, 0.2f), pipe = new Color(0.2f, 0.75f, 0.3f);
+        Color white = new Color(0.97f, 0.97f, 1f), cloudShade = new Color(0.72f, 0.84f, 1f);
+        Color green = new Color(0.32f, 0.78f, 0.3f), dgreen = new Color(0.18f, 0.55f, 0.22f), pipe = new Color(0.2f, 0.72f, 0.28f);
+        // جبال بعيدة (طبقتين، كل ما بعدت فتحت وزرقت)
+        for (int layer = 0; layer < 2; layer++)
+        {
+            float z = layer == 0 ? 26f : 19f, tile = layer == 0 ? 1.2f : 0.9f;
+            Color m = layer == 0 ? new Color(0.56f, 0.72f, 0.97f) : new Color(0.5f, 0.74f, 0.82f);
+            for (float x = minX - 30f; x < maxX + 30f; x += R(12f, 20f))
+            {
+                int steps = Random.Range(3, 6);
+                for (int k = 0; k < steps; k++)
+                    GameFeatures.Px("Far Hill", p, new Vector3(x, -1.5f + k * tile + tile * 0.5f, z), new Vector3((steps - k) * tile * 2f, tile, tile), m, false, "flat", 100f);
+            }
+        }
         for (float x = minX - 10f; x < maxX + 12f; x += R(6f, 9f))
         {
-            // غيمة بكسل
+            // غيمة بكسل (بيضا وتحتها ظل سماوي)
             Vector3 c = new Vector3(x, R(7f, 10f), R(9f, 13f));
             var cloud = new GameObject("Pixel Cloud").transform;
             cloud.SetParent(p, false);
@@ -687,30 +701,31 @@ public class GameScenery : MonoBehaviour
             int[] w = { 2, 4, 5 };
             for (int row = 0; row < 3; row++)
                 for (int k = 0; k < w[row]; k++)
-                    GameFeatures.Px("Cloud", cloud, new Vector3((k - (w[row] - 1) * 0.5f) * 0.6f, -row * 0.6f + 1.2f, 0f), new Vector3(0.6f, 0.6f, 0.6f), white);
+                    GameFeatures.Px("Cloud", cloud, new Vector3((k - (w[row] - 1) * 0.5f) * 0.6f, -row * 0.6f + 1.2f, 0f), new Vector3(0.6f, 0.6f, 0.6f), row == 2 ? cloudShade : white);
             Bob(cloud);
-            // تلة بكسل
+            // تلة بكسل بعيون
             float hx = x + R(1f, 4f), hz = R(9f, 12f);
             int steps = Random.Range(3, 6);
             for (int k = 0; k < steps; k++)
-                GameFeatures.Px("Hill", p, new Vector3(hx, -1.5f + k * 0.6f + 0.3f, hz), new Vector3((steps - k) * 1.2f, 0.6f, 1.5f), k % 2 == 0 ? green : dgreen);
-            GameFeatures.Px("Hill Eye", p, new Vector3(hx - 0.3f, -1.5f + steps * 0.6f - 0.4f, hz - 0.78f), new Vector3(0.12f, 0.35f, 0.05f), Color.black);
+                GameFeatures.Px("Hill", p, new Vector3(hx, -1.5f + k * 0.6f + 0.3f, hz), new Vector3((steps - k) * 1.2f, 0.6f, 1.5f), k == steps - 1 ? green * 1.1f : green, false, "leaf");
+            for (int e = 0; e < 2; e++)
+                GameFeatures.Px("Hill Eye", p, new Vector3(hx - 0.35f + e * 0.5f, -1.5f + steps * 0.6f - 0.4f, hz - 0.78f), new Vector3(0.14f, 0.3f, 0.05f), new Color(0.08f, 0.15f, 0.08f));
         }
         for (float x = minX - 4f; x < maxX + 4f; x += R(7f, 11f))
         {
             // أنبوب أخضر
-            float h = R(1f, 2.4f);
+            float h = R(1.1f, 2.4f);
             Vector3 b = new Vector3(x, h * 0.5f - 0.2f, R(3f, 5f));
-            GameFeatures.Px("Pipe", p, b, new Vector3(1.1f, h, 1.1f), pipe, true);
-            GameFeatures.Px("Pipe Rim", p, b + new Vector3(0f, h * 0.5f + 0.15f, 0f), new Vector3(1.4f, 0.35f, 1.4f), pipe * 1.1f, true);
-            GameFeatures.Px("Pipe Shine", p, b + new Vector3(-0.3f, 0f, -0.56f), new Vector3(0.15f, h, 0.02f), new Color(0.6f, 1f, 0.6f));
-            // شجرة بكسل
+            GameFeatures.Px("Pipe", p, b, new Vector3(1.1f, h, 1.1f), pipe, true, "pipe", 1.1f);
+            GameFeatures.Px("Pipe Rim", p, b + new Vector3(0f, h * 0.5f + 0.2f, 0f), new Vector3(1.4f, 0.45f, 1.4f), pipe, true, "pipe", 1.4f);
+            // شجرة بكسل: جذع وأوراق مدورة
             Vector3 tr = new Vector3(x + R(2f, 4f), 0f, R(4f, 6f));
-            GameFeatures.Px("Trunk", p, tr + new Vector3(0f, 0.6f, 0f), new Vector3(0.4f, 1.2f, 0.4f), new Color(0.55f, 0.35f, 0.2f), true);
-            for (int k = 0; k < 3; k++) GameFeatures.Px("Leaves", p, tr + new Vector3(0f, 1.5f + k * 0.45f, 0f), new Vector3(1.6f - k * 0.45f, 0.45f, 1.2f), k % 2 == 0 ? green : dgreen, true);
+            GameFeatures.Px("Trunk", p, tr + new Vector3(0f, 0.7f, 0f), new Vector3(0.4f, 1.4f, 0.4f), new Color(0.55f, 0.33f, 0.18f), true, "bevel", 0.4f);
+            float[] lw = { 1.2f, 1.8f, 1.8f, 1.2f };
+            for (int k = 0; k < lw.Length; k++)
+                GameFeatures.Px("Leaves", p, tr + new Vector3(0f, 1.5f + k * 0.45f, 0f), new Vector3(lw[k], 0.45f, 1.2f), k == lw.Length - 1 ? green * 1.1f : k % 2 == 0 ? green : dgreen, true, "leaf", 0.45f);
             // مربع "؟" طاير
-            var q = GameFeatures.Px("Question", p, new Vector3(x + R(-1f, 1f), R(5.5f, 7f), R(1.5f, 3f)), Vector3.one * 0.8f, new Color(1f, 0.75f, 0.15f), true).transform;
-            GameFeatures.Text(q, q.position + new Vector3(0f, 0f, -0.42f), "?", 0.1f, new Color(0.6f, 0.3f, 0.05f));
+            var q = GameFeatures.Px("Question", p, new Vector3(x + R(-1f, 1f), R(5.5f, 7f), R(1.5f, 3f)), Vector3.one * 0.8f, Color.white, true, "question", 0.8f).transform;
             Bob(q);
         }
         // شمس بكسل
@@ -719,18 +734,18 @@ public class GameScenery : MonoBehaviour
         sun.position = new Vector3((minX + maxX) * 0.5f + 6f, 12f, 14f);
         for (int y = -2; y <= 2; y++)
             for (int x = -2; x <= 2; x++)
-                if (Mathf.Abs(x) + Mathf.Abs(y) < 4) GameFeatures.Px("Sun", sun, new Vector3(x * 0.7f, y * 0.7f, 0f), Vector3.one * 0.7f, (x + y) % 2 == 0 ? new Color(1.6f, 1.3f, 0.3f) : new Color(1.5f, 1f, 0.2f));
+                if (Mathf.Abs(x) + Mathf.Abs(y) < 4) GameFeatures.Px("Sun", sun, new Vector3(x * 0.7f, y * 0.7f, 0f), Vector3.one * 0.7f, Mathf.Abs(x) + Mathf.Abs(y) == 3 ? new Color(1.3f, 0.75f, 0.15f) : new Color(1.5f, 1.2f, 0.3f));
         spin.Add(sun);
-        // قلعة عند الباب
+        // قلعة طوب عند الباب
         Vector3 cs = new Vector3(data.door.x + 4f, data.door.y, 4f);
-        Color stone = new Color(0.7f, 0.68f, 0.72f), stoneD = new Color(0.5f, 0.48f, 0.52f);
-        for (int row = 0; row < 6; row++)
-            for (int k = 0; k < 6; k++)
-                GameFeatures.Px("Castle", p, cs + new Vector3(-1.5f + k * 0.6f, 0.3f + row * 0.6f, 0f), Vector3.one * 0.6f, (row + k) % 2 == 0 ? stone : stoneD, true);
-        for (int k = 0; k < 6; k += 2) GameFeatures.Px("Battlement", p, cs + new Vector3(-1.5f + k * 0.6f, 3.9f, 0f), Vector3.one * 0.6f, stone, true);
-        GameFeatures.Px("Castle Door", p, cs + new Vector3(0f, 0.9f, -0.31f), new Vector3(1f, 1.8f, 0.05f), new Color(0.15f, 0.1f, 0.1f));
-        GameFeatures.Px("Flag Pole", p, cs + new Vector3(1.2f, 5f, 0f), new Vector3(0.1f, 2.2f, 0.1f), new Color(0.3f, 0.3f, 0.3f));
-        var flag = GameFeatures.Px("Flag", p, cs + new Vector3(1.65f, 5.7f, 0f), new Vector3(0.8f, 0.5f, 0.05f), new Color(0.95f, 0.25f, 0.3f)).transform;
+        Color stone = new Color(0.72f, 0.7f, 0.76f);
+        GameFeatures.Px("Castle", p, cs + new Vector3(0f, 1.8f, 0f), new Vector3(3.6f, 3.6f, 1.2f), stone, true, "brick", 0.6f);
+        for (int k = 0; k < 3; k++) GameFeatures.Px("Battlement", p, cs + new Vector3(-1.5f + k * 1.5f, 3.9f, 0f), new Vector3(0.6f, 0.6f, 1.2f), stone, true, "brick", 0.6f);
+        GameFeatures.Px("Castle Door", p, cs + new Vector3(0f, 0.9f, -0.61f), new Vector3(1f, 1.8f, 0.05f), new Color(0.15f, 0.1f, 0.1f));
+        GameFeatures.Px("Castle Window", p, cs + new Vector3(-0.9f, 2.6f, -0.61f), new Vector3(0.45f, 0.6f, 0.05f), new Color(0.15f, 0.1f, 0.1f));
+        GameFeatures.Px("Castle Window", p, cs + new Vector3(0.9f, 2.6f, -0.61f), new Vector3(0.45f, 0.6f, 0.05f), new Color(0.15f, 0.1f, 0.1f));
+        GameFeatures.Px("Flag Pole", p, cs + new Vector3(1.2f, 5.3f, 0f), new Vector3(0.12f, 2.2f, 0.12f), new Color(0.4f, 0.4f, 0.42f));
+        var flag = GameFeatures.Px("Flag", p, cs + new Vector3(1.65f, 6f, 0f), new Vector3(0.8f, 0.5f, 0.05f), new Color(0.95f, 0.25f, 0.3f)).transform;
         Bob(flag);
         GameFeatures.Text(p, new Vector3((minX + maxX) * 0.5f, 11f, 10f), "SCORE 000500     WORLD 3-1     TIME 300", 0.12f, Color.white);
     }
