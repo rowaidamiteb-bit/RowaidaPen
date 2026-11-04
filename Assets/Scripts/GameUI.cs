@@ -106,6 +106,33 @@ public class GameUI : MonoBehaviour
         timerText = Label(root, "", 38, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0f, -45f), new Vector2(400f, 50f));
         timerText.gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.8f);
         BuildAirBar(root);
+        // لافتة ورق ملصوقة بشريط لاصق ورا عنوان المرحلة
+        banner = new GameObject("Title Banner", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
+        banner.SetParent(root, false);
+        Place(banner, new Vector2(0.5f, 0.5f), new Vector2(0f, 152f), new Vector2(700f, 128f));
+        banner.pivot = new Vector2(0.5f, 0.5f);
+        banner.localRotation = Quaternion.Euler(0f, 0f, -1.5f);
+        bannerGroup = banner.GetComponent<CanvasGroup>();
+        bannerGroup.blocksRaycasts = false;
+        Sprite roundSp = MenuUI.RoundedSprite();
+        Image bShadow = Panel(banner, "Shadow", new Color(0.1f, 0.05f, 0.15f, 0.28f));
+        bShadow.sprite = roundSp; bShadow.type = Image.Type.Sliced;
+        Stretch(bShadow.rectTransform, 0f); bShadow.rectTransform.anchoredPosition = new Vector2(8f, -8f);
+        Image bPaper = Panel(banner, "Paper", new Color(1f, 0.98f, 0.92f));
+        bPaper.sprite = roundSp; bPaper.type = Image.Type.Sliced;
+        Stretch(bPaper.rectTransform, 0f);
+        Image bLine = Panel(banner, "Margin Line", new Color(0.95f, 0.55f, 0.6f, 0.6f));
+        bLine.rectTransform.anchorMin = new Vector2(0.06f, 0.12f); bLine.rectTransform.anchorMax = new Vector2(0.94f, 0.12f);
+        bLine.rectTransform.sizeDelta = new Vector2(0f, 3f);
+        for (int k = -1; k <= 1; k += 2)
+        {
+            Image tape = Panel(banner, "Tape", new Color(1f, 0.92f, 0.55f, 0.75f));
+            tape.rectTransform.anchorMin = tape.rectTransform.anchorMax = new Vector2(k < 0 ? 0f : 1f, 1f);
+            tape.rectTransform.sizeDelta = new Vector2(110f, 34f);
+            tape.rectTransform.anchoredPosition = new Vector2(-k * 18f, -6f);
+            tape.rectTransform.localRotation = Quaternion.Euler(0f, 0f, k * -28f);
+        }
+        banner.gameObject.SetActive(false);
         messageText = Label(root, "", 80, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
         subtitleText = Label(root, "", 40, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1700f, 70f));
         subtitleText.color = Color.white;
@@ -180,6 +207,11 @@ public class GameUI : MonoBehaviour
     {
         messageText.text = ArabicText.Fix(message);
         messageText.enabled = true;
+        if (banner != null)
+        {
+            banner.gameObject.SetActive(!string.IsNullOrEmpty(message));
+            banner.sizeDelta = new Vector2(Mathf.Clamp(messageText.preferredWidth + 140f, 420f, 1500f), 128f);
+        }
         subtitleText.text = ArabicText.Fix(subtitle ?? "");
         subtitleText.enabled = true;
         messageTimer = duration;
@@ -188,6 +220,8 @@ public class GameUI : MonoBehaviour
     }
 
     float messageAge, messageLength;
+    RectTransform banner;
+    CanvasGroup bannerGroup;
 
     // العنوان ينط لداخل ويختفي بهدوء
     void AnimateMessage()
@@ -198,6 +232,7 @@ public class GameUI : MonoBehaviour
         float pop = t < 1f ? Mathf.LerpUnclamped(0.7f, 1f, 1f - Mathf.Pow(1f - t, 3f) + Mathf.Sin(t * Mathf.PI) * 0.12f) : 1f;
         float fade = Mathf.Clamp01(messageTimer / 0.4f) * Mathf.Clamp01(messageAge / 0.2f);
         messageText.rectTransform.localScale = Vector3.one * pop;
+        if (banner != null) { banner.localScale = Vector3.one * pop; bannerGroup.alpha = fade; }
         Color c = messageText.color; c.a = fade; messageText.color = c;
         Color s = subtitleText.color; s.a = Mathf.Clamp01(messageTimer / 0.4f) * Mathf.Clamp01((messageAge - 0.15f) / 0.3f); subtitleText.color = s;
         subtitleText.rectTransform.anchoredPosition = new Vector2(0f, 60f - (1f - Mathf.Clamp01((messageAge - 0.15f) / 0.3f)) * 20f);
@@ -494,7 +529,7 @@ public class GameUI : MonoBehaviour
         AnimateMessage();
         if (messageTimer <= 0f) return;
         messageTimer -= Time.deltaTime;
-        if (messageTimer <= 0f) messageText.enabled = subtitleText.enabled = false;
+        if (messageTimer <= 0f) { messageText.enabled = subtitleText.enabled = false; if (banner != null) banner.gameObject.SetActive(false); }
     }
 
     static Image Panel(Transform parent, string name, Color color)
