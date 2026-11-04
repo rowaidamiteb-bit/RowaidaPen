@@ -423,7 +423,7 @@ public static class Levels
         {
             title = "الصفحة المقلوبة",
             theme = LevelTheme.Cosmic(),
-            subtitle = "انقلبت الجاذبية! لنرسم طرقًا تتخطى البروزات... ونمسح الوحوش",
+            subtitle = "انقلبت الجاذبية! لنرسم طرقًا تتخطى العقبات... ونمسح الوحوش",
             spawn = new Vector3(-5f, -1f, 0f),
             door = new Vector3(43f, 0f, 0f),
             ink = 28f,
@@ -497,7 +497,7 @@ public static class Levels
         {
             title = "زيزو",
             theme = LevelTheme.SnowMorning(),
-            subtitle = "القفز بزر المسافة! الجليد يتكسر، والكرات تطير، والانهيار في الخلف",
+            subtitle = "هيا لنقفز! الجليد يتكسر، والكرات تطير، والانهيار في الخلف",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(66f, -3.5f, 0f),
             ink = 18f,
@@ -1333,7 +1333,7 @@ public static class Levels
             hazards = { new HazardSpec("pinecone", 30f, 1.6f, 3.8f) },
             title = "بستان الفطر",
             theme = LevelTheme.MagicForest(),
-            subtitle = "لنوقف القنفذ، ونطيل الكرمة ونتأرجح، ونحذر من البومة، ونوقظ الفطرة!",
+            subtitle = "لنوقف القنفذ، ونتأرجح على الأغصان، ونحذر من البومة، ونوقظ الفطرة!",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(44f, 0f, 0f),
             ink = 12f,
