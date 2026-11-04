@@ -201,7 +201,7 @@ public static class Shapes
 
     // ---------- وجوه مرسومة ----------
 
-    public enum Eyes { Cute, Sleepy, Angry, Happy, Scared, Dots }
+    public enum Eyes { Cute, Sleepy, Angry, Happy, Scared, Dots, None }
     public enum Mouth { Smile, Cat, Fangs, Open, Flat, Frown, None }
 
     // كورة (رادياس 1) عليها وجه ناحية -z (الكاميرا)، ولونها base، وتحت الوجه بوز فاتح لو muzzle
@@ -293,6 +293,8 @@ public static class Shapes
                         float cx = s * 0.3f * eyeGap, cy = 0.02f, rx = 0.11f * eyeSize, ry = 0.14f * eyeSize;
                         switch (eyes)
                         {
+                            case Eyes.None:
+                                break;
                             case Eyes.Sleepy:
                             {
                                 float ex = (fx - cx) / (0.13f * eyeSize);

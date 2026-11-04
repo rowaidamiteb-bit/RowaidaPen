@@ -208,22 +208,26 @@ public class Crab : MonoBehaviour
         Material black = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
         c.body = new GameObject("Body").transform;
         c.body.SetParent(go.transform, false);
-        LevelBuilder.Visual("Shell", PrimitiveType.Sphere, c.body, Vector3.zero, new Vector3(0.75f, 0.4f, 0.55f), shell);
+        // صدفة بوجه مبتسم وخدود، عيون على أعواد فيها لمعة، كلابات مدببة، وأرجل مثنية
+        Shapes.FaceBall(c.body, "Shell", Vector3.zero, new Vector3(0.38f, 0.21f, 0.28f), Shapes.Face(new Color(1f, 0.42f, 0.25f), Shapes.Eyes.None, Shapes.Mouth.Smile, null, null, true, 1f, 1.2f, 0.25f));
+        for (int k = 0; k < 3; k++)
+            Shapes.Add(c.body, "Shell Spot", Shapes.Sphere(), new Vector3(-0.15f + k * 0.15f, 0.17f, 0.05f), new Vector3(0.045f, 0.02f, 0.045f), dark, default, false);
         for (int s = -1; s <= 1; s += 2)
         {
             LevelBuilder.Visual("Stalk", PrimitiveType.Cylinder, c.body, new Vector3(s * 0.12f, 0.25f, -0.15f), new Vector3(0.04f, 0.1f, 0.04f), dark, false);
             LevelBuilder.Visual("Eye", PrimitiveType.Sphere, c.body, new Vector3(s * 0.12f, 0.37f, -0.17f), Vector3.one * 0.13f, white, false);
-            LevelBuilder.Visual("Pupil", PrimitiveType.Sphere, c.body, new Vector3(s * 0.12f, 0.37f, -0.23f), Vector3.one * 0.06f, black, false);
+            var pupil = LevelBuilder.Visual("Pupil", PrimitiveType.Sphere, c.body, new Vector3(s * 0.12f, 0.37f, -0.23f), Vector3.one * 0.06f, black, false).transform;
+            LevelBuilder.Visual("Shine", PrimitiveType.Sphere, pupil, new Vector3(-0.25f, 0.3f, -0.45f), Vector3.one * 0.4f, white, false);
             var claw = new GameObject("Claw").transform;
             claw.SetParent(c.body, false);
             claw.localPosition = new Vector3(s * 0.45f, 0.08f, -0.2f);
-            LevelBuilder.Visual("Pincer A", PrimitiveType.Sphere, claw, new Vector3(0f, 0.06f, 0f), new Vector3(0.22f, 0.12f, 0.14f), shell);
-            LevelBuilder.Visual("Pincer B", PrimitiveType.Sphere, claw, new Vector3(0f, -0.06f, 0f), new Vector3(0.2f, 0.1f, 0.13f), dark);
+            Shapes.Add(claw, "Pincer A", Shapes.Cone(-0.35f * s), new Vector3(-s * 0.08f, 0.02f, 0f), new Vector3(0.18f, 0.3f, 0.13f), shell, new Vector3(0f, 0f, -s * 80f));
+            Shapes.Add(claw, "Pincer B", Shapes.Cone(0.3f * s), new Vector3(-s * 0.08f, -0.03f, 0f), new Vector3(0.12f, 0.22f, 0.1f), dark, new Vector3(0f, 0f, -s * 100f));
+            Shapes.Add(claw, "Arm", Shapes.Sphere(), new Vector3(-s * 0.12f, 0f, 0f), new Vector3(0.09f, 0.07f, 0.07f), shell);
             if (s < 0) c.clawL = claw; else c.clawR = claw;
             for (int k = 0; k < 3; k++)
             {
-                var leg = LevelBuilder.Visual("Leg", PrimitiveType.Cube, c.body, new Vector3(s * (0.3f + k * 0.04f), -0.15f, 0.05f + k * 0.08f), new Vector3(0.22f, 0.04f, 0.04f), dark, false).transform;
-                leg.localRotation = Quaternion.Euler(0f, 0f, s * -35f);
+                var leg = Shapes.Add(c.body, "Leg", Shapes.Tube(new List<Vector3> { Vector3.zero, new Vector3(s * 0.12f, 0.05f, 0f), new Vector3(s * 0.22f, -0.08f, 0f) }, 0.025f, 0.012f, 6), new Vector3(s * (0.26f + k * 0.04f), -0.1f, 0.05f + k * 0.08f), Vector3.one, dark, default, false).transform;
                 c.legs.Add(leg);
             }
         }
@@ -240,7 +244,8 @@ public class Crab : MonoBehaviour
         foreach (Renderer r in c.GetComponentsInChildren<Renderer>())
         {
             string n = r.gameObject.name;
-            if (n == "Shell" || n == "Pincer A") r.sharedMaterial = shell;
+            if (n == "Face") r.sharedMaterial = Shapes.Face(new Color(0.45f, 0.28f, 0.15f), Shapes.Eyes.None, Shapes.Mouth.Frown, null, null, false, 1f, 1.2f, 0.25f);
+            else if (n == "Shell" || n == "Pincer A" || n == "Arm") r.sharedMaterial = shell;
             else if (n == "Leg" || n == "Stalk" || n == "Pincer B") r.sharedMaterial = dark;
         }
         c.tail = new GameObject("Tail").transform;
@@ -566,10 +571,27 @@ public class Jellyfish : MonoBehaviour
         j.seed = spec.x;
         Material jelly = gm.Mat("Jelly", new Color(1f, 0.55f, 0.85f), 0.9f);
         Material glow = gm.Mat("Jelly Glow", new Color(1.6f, 0.9f, 1.6f), 0.9f);
-        j.bell = LevelBuilder.Visual("Bell", PrimitiveType.Sphere, go.transform, Vector3.zero, new Vector3(0.9f, 0.6f, 0.9f), jelly).transform;
-        LevelBuilder.Visual("Dot", PrimitiveType.Sphere, j.bell, new Vector3(0f, 0.1f, -0.42f), Vector3.one * 0.2f, glow, false);
+        // جرس بوجه مبسوط وخدود، وحافة متموجة، وذيول ناعمة متعرجة
+        j.bell = new GameObject("Bell").transform;
+        j.bell.SetParent(go.transform, false);
+        j.bell.localScale = new Vector3(0.9f, 0.6f, 0.9f);
+        Shapes.FaceBall(j.bell, "Bell Face", Vector3.zero, Vector3.one * 0.5f, Shapes.Face(new Color(1f, 0.62f, 0.88f), Shapes.Eyes.Happy, Shapes.Mouth.Smile, null, null, true, 1.4f, 1f, 0.15f));
+        for (int k = 0; k < 12; k++)
+        {
+            float ang = k * Mathf.PI * 2f / 12f;
+            Shapes.Add(j.bell, "Frill", Shapes.Sphere(), new Vector3(Mathf.Cos(ang) * 0.47f, -0.3f, Mathf.Sin(ang) * 0.47f), new Vector3(0.08f, 0.06f, 0.08f), jelly, default, false);
+        }
+        Shapes.Add(j.bell, "Glow Spot", Shapes.Sphere(), new Vector3(0.15f, 0.38f, -0.25f), new Vector3(0.08f, 0.05f, 0.06f), glow, default, false);
         for (int i = 0; i < 5; i++)
-            j.tentacles.Add(LevelBuilder.Visual("Tentacle", PrimitiveType.Capsule, go.transform, new Vector3(-0.3f + i * 0.15f, -0.55f, 0f), new Vector3(0.06f, 0.35f, 0.06f), jelly, false).transform);
+        {
+            var tent = new GameObject("Tentacle").transform;
+            tent.SetParent(go.transform, false);
+            tent.localPosition = new Vector3(-0.3f + i * 0.15f, -0.2f, (i % 2) * 0.1f - 0.05f);
+            var path = new List<Vector3>();
+            for (int k = 0; k <= 6; k++) path.Add(new Vector3(Mathf.Sin(k * 1.4f + i) * 0.06f, -k * 0.13f, 0f));
+            Shapes.Add(tent, "Tentacle Tube", Shapes.Tube(path, 0.035f, 0.012f, 6), Vector3.zero, Vector3.one, jelly, default, false);
+            j.tentacles.Add(tent);
+        }
     }
 
     void Update()
@@ -629,10 +651,35 @@ public class SeaDecor : MonoBehaviour
                 var pivot = new GameObject("Weed").transform;
                 pivot.SetParent(go.transform, false);
                 pivot.position = new Vector3(x, top, 0.9f + (float)rng.NextDouble() * 0.8f);
-                float h = 0.6f + (float)rng.NextDouble() * 0.9f;
-                for (int k = 0; k < 3; k++)
-                    LevelBuilder.Visual("Leaf", PrimitiveType.Capsule, pivot, new Vector3(Mathf.Sin(k) * 0.06f, h * (k + 0.5f) * 0.5f, 0f), new Vector3(0.14f, h * 0.3f, 0.14f), k % 2 == 0 ? weed : weed2, false);
+                float h = 0.9f + (float)rng.NextDouble() * 1.2f;
+                // عشب بحر: شرايط متموجة بأوراق صغيرة، وأحيانا مرجان
+                int strands = 2 + rng.Next(2);
+                for (int k = 0; k < strands; k++)
+                {
+                    var path = new List<Vector3>();
+                    float ph = (float)rng.NextDouble() * 6f, hh = h * (0.7f + k * 0.2f);
+                    for (int i = 0; i <= 6; i++) path.Add(new Vector3(Mathf.Sin(i * 1.1f + ph) * 0.12f + (k - 1) * 0.08f, hh * i / 6f, 0f));
+                    Shapes.Add(pivot, "Strand", Shapes.Tube(path, 0.07f, 0.025f, 6), Vector3.zero, Vector3.one, k % 2 == 0 ? weed : weed2, default, false);
+                    for (int i = 1; i < 6; i += 2)
+                        Shapes.Add(pivot, "Leaf", Shapes.Sphere(), path[i] + new Vector3((i % 4 == 1 ? 0.1f : -0.1f), 0f, 0f), new Vector3(0.12f, 0.05f, 0.04f), weed2, new Vector3(0f, 0f, i % 4 == 1 ? 30f : -30f), false);
+                }
                 d.weeds.Add(pivot);
+                if (rng.Next(3) == 0)
+                {
+                    // مرجان متفرع
+                    Color[] cc = { new Color(1f, 0.45f, 0.55f), new Color(1f, 0.6f, 0.3f), new Color(0.75f, 0.45f, 1f) };
+                    Material coral = gm.Mat("Coral " + rng.Next(3), cc[rng.Next(3)], 0.4f);
+                    var c = new GameObject("Coral").transform;
+                    c.SetParent(go.transform, false);
+                    c.position = new Vector3(x + 0.5f, top, 1.2f + (float)rng.NextDouble() * 0.5f);
+                    for (int br = 0; br < 5; br++)
+                    {
+                        float ang = (br - 2) * 0.35f;
+                        var bp = new List<Vector3> { Vector3.zero, new Vector3(Mathf.Sin(ang) * 0.2f, 0.25f, 0f), new Vector3(Mathf.Sin(ang) * 0.45f, 0.5f + (br % 2) * 0.15f, 0f) };
+                        Shapes.Add(c, "Branch", Shapes.Tube(bp, 0.07f, 0.04f, 6), Vector3.zero, Vector3.one, coral, default, false);
+                        Shapes.Add(c, "Tip", Shapes.Sphere(), bp[2], Vector3.one * 0.06f, coral, default, false);
+                    }
+                }
             }
         }
         Color[] fishColors = { new Color(1f, 0.6f, 0.2f), new Color(1f, 0.85f, 0.3f), new Color(0.4f, 0.8f, 1f) };
@@ -642,9 +689,13 @@ public class SeaDecor : MonoBehaviour
             var f = new GameObject("Fish").transform;
             f.SetParent(go.transform, false);
             f.position = new Vector3(-10f + (float)rng.NextDouble() * 70f, 1.5f + (float)rng.NextDouble() * 5f, 4f + (float)rng.NextDouble() * 5f);
-            LevelBuilder.Visual("Body", PrimitiveType.Sphere, f, Vector3.zero, new Vector3(0.6f, 0.35f, 0.2f), m, false);
-            var tail = LevelBuilder.Visual("Tail", PrimitiveType.Cube, f, new Vector3(-0.35f, 0f, 0f), new Vector3(0.2f, 0.25f, 0.04f), m, false);
-            tail.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            // سمكة: جسم ناعم بخط، ذيل وزعنفة مثلثات، وعين لامعة
+            Shapes.Add(f, "Body", Shapes.Sphere(), Vector3.zero, new Vector3(0.32f, 0.19f, 0.11f), m, default, false);
+            Shapes.Add(f, "Stripe", Shapes.Sphere(), new Vector3(-0.02f, 0f, 0f), new Vector3(0.06f, 0.19f, 0.115f), gm.Mat("Fish Stripe", new Color(0.98f, 0.97f, 0.95f), 0.5f), default, false);
+            Shapes.Add(f, "Tail", Shapes.Facets(new[] { new Vector3(-0.28f, 0f, 0f), new Vector3(-0.5f, 0.17f, 0f), new Vector3(-0.44f, 0f, 0f), new Vector3(-0.5f, -0.17f, 0f) }, new[] { 0, 1, 2, 0, 2, 3 }), Vector3.zero, Vector3.one, m, default, false);
+            Shapes.Add(f, "Fin", Shapes.Facets(new[] { new Vector3(0.08f, 0.15f, 0f), new Vector3(-0.15f, 0.15f, 0f), new Vector3(-0.12f, 0.28f, 0f) }, new[] { 0, 1, 2 }), Vector3.zero, Vector3.one, m, default, false);
+            Shapes.Add(f, "Eye", Shapes.Sphere(), new Vector3(0.18f, 0.04f, -0.08f), Vector3.one * 0.05f, gm.Mat("Monster Eye", Color.white, 0.7f), default, false);
+            Shapes.Add(f, "Pupil", Shapes.Sphere(), new Vector3(0.19f, 0.04f, -0.11f), Vector3.one * 0.028f, gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f), default, false);
             d.fish.Add(f);
             d.fishSpeed.Add(0.6f + (float)rng.NextDouble() * 0.8f);
         }
@@ -712,7 +763,9 @@ public class Tentacle : MonoBehaviour
             for (int i = 0; i < arm.Length; i++)
                 arm[i] = LevelBuilder.Visual("Small Arm", PrimitiveType.Sphere, go.transform, Vector3.zero, Vector3.one * (0.22f + 0.38f * (1f - i / 8f)), skin, false).transform;
             t.extraArms.Add(arm);
+            TubeFollower.Attach(go.transform, arm, skin);
         }
+        TubeFollower.Attach(go.transform, t.segs, skin);
         // عيون صغيرة على طرف الذراع (عشان تبان إنها تطالع وتنتظر)
         Transform tip = t.segs[t.segs.Count - 1];
         for (int e = -1; e <= 1; e += 2)
@@ -897,7 +950,9 @@ public class GiantOctopus : MonoBehaviour
         for (int s = -1; s <= 1; s += 2)
         {
             LevelBuilder.Visual("Eye", PrimitiveType.Sphere, o.head, new Vector3(s * 0.18f, -0.05f, -0.42f), new Vector3(0.22f, 0.26f, 0.12f), white, false);
-            o.pupils.Add(LevelBuilder.Visual("Pupil", PrimitiveType.Sphere, o.head, new Vector3(s * 0.18f, -0.07f, -0.48f), new Vector3(0.1f, 0.14f, 0.06f), black, false).transform);
+            var pupil = LevelBuilder.Visual("Pupil", PrimitiveType.Sphere, o.head, new Vector3(s * 0.18f, -0.07f, -0.48f), new Vector3(0.1f, 0.14f, 0.06f), black, false).transform;
+            o.pupils.Add(pupil);
+            LevelBuilder.Visual("Shine", PrimitiveType.Sphere, pupil, new Vector3(-0.25f, 0.28f, -0.5f), Vector3.one * 0.35f, white, false);
         }
         // ثمان رجول تتلوى بالمويه حول الراس
         Material sucker = gm.Mat("Octopus Sucker", new Color(1f, 0.75f, 0.8f), 0.4f);
@@ -911,6 +966,7 @@ public class GiantOctopus : MonoBehaviour
                 if (i % 2 == 0) LevelBuilder.Visual("Sucker", PrimitiveType.Sphere, arm[i], new Vector3(0f, 0f, -0.45f), Vector3.one * 0.4f, sucker, false);
             }
             o.arms.Add(arm);
+            TubeFollower.Attach(go.transform, arm, skin);
         }
     }
 
@@ -1326,9 +1382,25 @@ public class Shark : MonoBehaviour
         Material grey = gm.Mat("Shark", new Color(0.6f, 0.66f, 0.75f), 0.6f);
         s.fin = new GameObject("Fin").transform;
         s.fin.SetParent(go.transform, false);
-        var f = LevelBuilder.Visual("Fin", PrimitiveType.Cube, s.fin, new Vector3(0f, 0.5f, 0f), new Vector3(0.8f, 0.8f, 0.1f), grey, false).transform;
-        f.localRotation = Quaternion.Euler(0f, 0f, 45f);
-        LevelBuilder.Visual("Back", PrimitiveType.Sphere, s.fin, new Vector3(0f, -0.05f, 0f), new Vector3(1.6f, 0.35f, 0.5f), grey, false);
+        // زعنفة قرش مقوسة (حافة أمامية منحنية وطرف لورا) وظهر يبان فوق المويه
+        var fv = new List<Vector3> { new Vector3(-0.05f, 0f, 0f) };
+        for (int k = 0; k <= 8; k++)
+        {
+            float u = k / 8f;
+            fv.Add(new Vector3(Mathf.Lerp(0.55f, -0.35f, u) - Mathf.Sin(u * Mathf.PI) * -0.12f, Mathf.Sin(u * Mathf.PI * 0.5f) * 1.05f, 0f));
+        }
+        for (int k = 1; k <= 5; k++)
+        {
+            float u = k / 5f;
+            fv.Add(new Vector3(Mathf.Lerp(-0.35f, -0.5f, u) + Mathf.Sin(u * Mathf.PI) * 0.12f, Mathf.Lerp(1.05f, 0f, u), 0f));
+        }
+        var ft = new List<int>();
+        for (int k = 1; k < fv.Count - 1; k++) { ft.Add(0); ft.Add(k); ft.Add(k + 1); }
+        Material belly = gm.Mat("Shark Belly", new Color(0.88f, 0.9f, 0.95f), 0.5f);
+        Shapes.Add(s.fin, "Fin", Shapes.Facets(fv.ToArray(), ft.ToArray()), new Vector3(0f, 0.02f, 0f), new Vector3(1f, 1f, 1f), grey, default, false);
+        Shapes.Add(s.fin, "Fin Edge", Shapes.Facets(fv.ToArray(), ft.ToArray()), new Vector3(0.03f, 0f, 0.02f), new Vector3(0.94f, 0.92f, 1f), Shapes.Glow("Shark Edge", new Color(0.3f, 0.36f, 0.45f)), default, false);
+        Shapes.Add(s.fin, "Back", Shapes.Sphere(), new Vector3(0f, -0.08f, 0f), new Vector3(0.95f, 0.18f, 0.3f), grey, default, false);
+        Shapes.Add(s.fin, "Back Light", Shapes.Sphere(), new Vector3(0f, -0.14f, -0.06f), new Vector3(0.85f, 0.12f, 0.25f), belly, default, false);
     }
 
     void Update()
