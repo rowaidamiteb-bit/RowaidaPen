@@ -772,57 +772,81 @@ public class Dragon : MonoBehaviour
         Material black = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
         Material mouthIn = gm.Mat("Dragon Mouth", new Color(0.35f, 0.05f, 0.08f), 0.4f);
 
-        // الصخرة الطايرة (مع حصى تحتها)
-        Part("Rock", PrimitiveType.Sphere, transform, new Vector3(0.3f, -0.45f, 0.3f), new Vector3(3.4f, 1.1f, 2f), rock);
-        Part("Rock Bottom", PrimitiveType.Sphere, transform, new Vector3(0.4f, -0.95f, 0.3f), new Vector3(2f, 1f, 1.5f), rockDark);
-        Part("Rock Tip", PrimitiveType.Sphere, transform, new Vector3(0.5f, -1.45f, 0.3f), new Vector3(0.8f, 0.7f, 0.7f), rockDark);
+        // الصخرة الطايرة: صخرة متعرجة فيها شقوق حمم تضوي، وحصى تطفو تحتها
+        Material lava = Shapes.Glow("Dragon Lava", new Color(0.95f, 0.3f, 0.05f));
+        Shapes.Add(transform, "Rock", Shapes.Blob(11, 0.35f), new Vector3(0.3f, -0.5f, 0.3f), new Vector3(1.75f, 0.6f, 1.05f), rock);
+        Shapes.Add(transform, "Rock Bottom", Shapes.Blob(12, 0.45f), new Vector3(0.4f, -1.0f, 0.3f), new Vector3(1.05f, 0.6f, 0.8f), rockDark);
+        Shapes.Add(transform, "Rock Tip", Shapes.Blob(13, 0.5f), new Vector3(0.5f, -1.5f, 0.3f), new Vector3(0.45f, 0.45f, 0.4f), rockDark);
+        for (int i = 0; i < 7; i++)
+            Shapes.Add(transform, "Lava Crack", Shapes.Blob(20 + i, 0.6f), new Vector3(-0.9f + i * 0.4f, -0.55f - (i % 3) * 0.2f, -0.52f + (i % 2) * 0.04f), new Vector3(0.3f, 0.025f, 0.04f), lava, new Vector3(0f, 0f, -35f + i * 13f), false);
         for (int i = 0; i < 3; i++)
-            Part("Pebble", PrimitiveType.Sphere, transform, new Vector3(-0.5f + i * 0.75f, -1.55f - i * 0.15f, 0.3f), Vector3.one * (0.3f - i * 0.06f), rock).gameObject.AddComponent<Bob>();
+            Shapes.Add(transform, "Pebble", Shapes.Blob(30 + i, 0.5f), new Vector3(-0.5f + i * 0.75f, -1.6f - i * 0.15f, 0.3f), Vector3.one * (0.17f - i * 0.03f), rock).AddComponent<Bob>();
 
-        // الجسم والذيل والرجول
+        // الجسم: بطن بخطوط، أشواك على الظهر، رجول بمخالب
         var body = new GameObject("Body").transform;
         body.SetParent(transform, false);
-        Part("Torso", PrimitiveType.Sphere, body, new Vector3(0.45f, 0.6f, 0f), new Vector3(1.6f, 1.1f, 1f), skin);
-        Part("Belly", PrimitiveType.Sphere, body, new Vector3(0.25f, 0.45f, -0.3f), new Vector3(1.05f, 0.75f, 0.5f), belly);
+        Shapes.Add(body, "Torso", Shapes.Sphere(), new Vector3(0.45f, 0.62f, 0f), new Vector3(0.82f, 0.56f, 0.52f), skin);
+        Shapes.Add(body, "Belly", Shapes.Sphere(), new Vector3(0.25f, 0.48f, -0.22f), new Vector3(0.55f, 0.4f, 0.32f), Shapes.Banded("Dragon Belly", new Color(1f, 0.82f, 0.4f), new Color(0.9f, 0.62f, 0.28f), 7), new Vector3(0f, 0f, -18f));
         for (int s = 0; s < 2; s++)
-            Part("Leg", PrimitiveType.Capsule, body, new Vector3(-0.05f + s * 0.85f, 0.15f, -0.25f + s * 0.1f), new Vector3(0.32f, 0.3f, 0.32f), skin);
-        for (int i = 0; i < 4; i++)
-            Part("Back Spike", PrimitiveType.Cube, body, new Vector3(0.05f + i * 0.33f, 1.15f - Mathf.Abs(i - 1.2f) * 0.07f, 0f), Vector3.one * 0.2f, spike, 45f);
+        {
+            var leg = new GameObject("Leg").transform;
+            leg.SetParent(body, false);
+            leg.localPosition = new Vector3(-0.05f + s * 0.85f, 0.32f, -0.25f + s * 0.1f);
+            Shapes.Add(leg, "Thigh", Shapes.Sphere(), Vector3.zero, new Vector3(0.24f, 0.26f, 0.22f), skin);
+            Shapes.Add(leg, "Foot", Shapes.Sphere(), new Vector3(-0.08f, -0.24f, 0f), new Vector3(0.2f, 0.09f, 0.16f), skin);
+            for (int c = 0; c < 3; c++)
+                Shapes.Add(leg, "Claw", Shapes.Cone(-0.3f), new Vector3(-0.25f, -0.28f, -0.1f + c * 0.1f), new Vector3(0.06f, 0.12f, 0.06f), horn, new Vector3(0f, 0f, 100f));
+        }
+        for (int i = 0; i < 5; i++)
+        {
+            float u = i / 4f;
+            Shapes.Add(body, "Back Spike", Shapes.Cone(0.25f), new Vector3(-0.08f + u * 1.15f, 1.1f - Mathf.Pow(u - 0.35f, 2f) * 0.5f, 0f), new Vector3(0.2f, 0.3f - Mathf.Abs(u - 0.35f) * 0.15f, 0.12f), spike, new Vector3(0f, 0f, -15f - u * 25f));
+        }
         tail = new GameObject("Tail").transform;
         tail.SetParent(body, false);
-        tail.localPosition = new Vector3(1.15f, 0.5f, 0f);
-        Part("Tail 1", PrimitiveType.Capsule, tail, new Vector3(0.35f, -0.05f, 0f), new Vector3(0.3f, 0.45f, 0.3f), skin, 70f);
-        Part("Tail 2", PrimitiveType.Capsule, tail, new Vector3(0.8f, 0.12f, 0f), new Vector3(0.2f, 0.35f, 0.2f), skin, 120f);
-        Part("Tail Tip", PrimitiveType.Cube, tail, new Vector3(1.07f, 0.35f, 0f), new Vector3(0.28f, 0.28f, 0.08f), spike, 45f);
+        tail.localPosition = new Vector3(1.1f, 0.5f, 0f);
+        Shapes.Add(tail, "Tail Tube", Shapes.Tube(new List<Vector3> { Vector3.zero, new Vector3(0.4f, -0.15f, 0f), new Vector3(0.8f, 0f, 0f), new Vector3(1.05f, 0.35f, 0f) }, 0.2f, 0.06f), Vector3.zero, Vector3.one, skin);
+        Shapes.Add(tail, "Tail Spade", Shapes.Cone(), new Vector3(1.05f, 0.33f, 0f), new Vector3(0.36f, 0.32f, 0.08f), spike, new Vector3(0f, 0f, -35f));
+        for (int i = 0; i < 3; i++)
+            Shapes.Add(tail, "Tail Spike", Shapes.Cone(0.2f), new Vector3(0.25f + i * 0.28f, -0.02f + (i == 2 ? 0.1f : 0f) + 0.12f, 0f), new Vector3(0.1f, 0.16f, 0.07f), spike, new Vector3(0f, 0f, -20f));
 
-        // الجناحات تحت الجسم ورا (ترفرف)
+        // الجناحات: غشاء بين عظام (ترفرف)
         wings = new GameObject("Wings").transform;
         wings.SetParent(body, false);
         wings.localPosition = new Vector3(0.55f, 0.95f, 0.35f);
-        Part("Wing", PrimitiveType.Sphere, wings, new Vector3(0.2f, 0.55f, 0f), new Vector3(0.7f, 1.3f, 0.08f), wing, -25f);
-        Part("Wing Bone", PrimitiveType.Capsule, wings, new Vector3(0.05f, 0.65f, -0.05f), new Vector3(0.09f, 0.6f, 0.09f), spike, -25f);
+        var wingPivot = new GameObject("Wing").transform;
+        wingPivot.SetParent(wings, false);
+        wingPivot.localRotation = Quaternion.Euler(0f, 0f, 75f);
+        wingPivot.localScale = new Vector3(1.4f, 1.2f, 1f);
+        Shapes.Add(wingPivot, "Membrane", Shapes.WingMesh(3), Vector3.zero, Vector3.one, wing, default, false);
+        for (int k = 0; k <= 3; k++)
+            Shapes.Add(wingPivot, "Wing Bone", Shapes.Tube(new List<Vector3> { Vector3.zero, Shapes.WingTip(k) }, 0.045f, 0.015f, 8, true, false), new Vector3(0f, 0f, -0.02f), Vector3.one, spike);
 
-        // الرقبة والراس
-        Part("Neck", PrimitiveType.Capsule, body, new Vector3(-0.35f, 1.05f, 0f), new Vector3(0.48f, 0.6f, 0.48f), skin, 35f);
+        // الرقبة والراس: خطم، منخار، عين كبيرة لامعة، حاجب غاضب، قرون مقوسة، أسنان
+        Shapes.Add(body, "Neck", Shapes.Tube(new List<Vector3> { new Vector3(0.1f, 0.75f, 0f), new Vector3(-0.25f, 1.05f, 0f), new Vector3(-0.6f, 1.45f, 0f) }, 0.3f, 0.24f), Vector3.zero, Vector3.one, skin);
         head = new GameObject("Head").transform;
         head.SetParent(transform, false);
         head.localPosition = new Vector3(-0.7f, 1.55f, 0f);
-        Part("Skull", PrimitiveType.Sphere, head, new Vector3(0f, 0.05f, 0f), new Vector3(0.85f, 0.7f, 0.7f), skin);
-        Part("Snout", PrimitiveType.Capsule, head, new Vector3(-0.5f, 0.08f, 0f), new Vector3(0.42f, 0.38f, 0.45f), skin, 90f);
+        Shapes.Add(head, "Skull", Shapes.Sphere(), new Vector3(0f, 0.05f, 0f), new Vector3(0.44f, 0.36f, 0.36f), skin);
+        Shapes.Add(head, "Snout", Shapes.Sphere(), new Vector3(-0.48f, 0.04f, 0f), new Vector3(0.42f, 0.2f, 0.25f), skin);
         for (int s = -1; s <= 1; s += 2)
-            Part("Nostril", PrimitiveType.Sphere, head, new Vector3(-0.82f, 0.18f, s * 0.12f - 0.08f), Vector3.one * 0.08f, black);
-        Part("Eye", PrimitiveType.Sphere, head, new Vector3(-0.15f, 0.22f, -0.3f), new Vector3(0.28f, 0.3f, 0.12f), white);
-        Part("Pupil", PrimitiveType.Sphere, head, new Vector3(-0.2f, 0.2f, -0.36f), new Vector3(0.12f, 0.17f, 0.05f), black);
-        Part("Brow", PrimitiveType.Cube, head, new Vector3(-0.15f, 0.4f, -0.3f), new Vector3(0.32f, 0.07f, 0.06f), spike, -15f);
+            Shapes.Add(head, "Nostril", Shapes.Sphere(), new Vector3(-0.84f, 0.14f, s * 0.1f - 0.06f), new Vector3(0.04f, 0.03f, 0.04f), black);
+        Shapes.Add(head, "Eye", Shapes.Sphere(), new Vector3(-0.12f, 0.2f, -0.28f), new Vector3(0.16f, 0.17f, 0.08f), white);
+        Shapes.Add(head, "Pupil", Shapes.Sphere(), new Vector3(-0.17f, 0.18f, -0.34f), new Vector3(0.08f, 0.11f, 0.04f), black);
+        Shapes.Add(head, "Eye Shine", Shapes.Sphere(), new Vector3(-0.2f, 0.25f, -0.37f), Vector3.one * 0.03f, white, default, false);
+        Shapes.Add(head, "Brow", Shapes.Sphere(), new Vector3(-0.12f, 0.38f, -0.26f), new Vector3(0.2f, 0.05f, 0.06f), spike, new Vector3(0f, 0f, -18f));
         for (int s = 0; s < 2; s++)
-            Part("Horn", PrimitiveType.Capsule, head, new Vector3(0.2f + s * 0.15f, 0.45f, 0.1f - s * 0.2f), new Vector3(0.12f, 0.25f, 0.12f), horn, -40f);
+            Shapes.Add(head, "Horn", Shapes.Cone(0.45f), new Vector3(0.18f + s * 0.12f, 0.32f, 0.12f - s * 0.24f), new Vector3(0.14f, 0.5f, 0.14f), horn, new Vector3(0f, 0f, -55f));
+        for (int s = -1; s <= 1; s += 2)
+            Shapes.Add(head, "Cheek Fin", Shapes.Cone(0.2f), new Vector3(0.28f, -0.05f, s * 0.2f), new Vector3(0.14f, 0.3f, 0.06f), spike, new Vector3(0f, 0f, -110f));
         jaw = new GameObject("Jaw").transform;
         jaw.SetParent(head, false);
         jaw.localPosition = new Vector3(-0.05f, -0.12f, 0f);
-        Part("Jaw Inside", PrimitiveType.Sphere, jaw, new Vector3(-0.4f, 0.02f, -0.05f), new Vector3(0.6f, 0.15f, 0.35f), mouthIn);
-        Part("Jaw Skin", PrimitiveType.Capsule, jaw, new Vector3(-0.42f, -0.08f, 0f), new Vector3(0.24f, 0.36f, 0.36f), belly, 90f);
-        for (int t = 0; t < 3; t++)
-            Part("Tooth", PrimitiveType.Cube, head, new Vector3(-0.72f + t * 0.17f, -0.1f, -0.15f), Vector3.one * 0.07f, white, 45f);
+        Shapes.Add(jaw, "Jaw Inside", Shapes.Sphere(), new Vector3(-0.4f, 0.03f, -0.03f), new Vector3(0.3f, 0.07f, 0.17f), mouthIn);
+        Shapes.Add(jaw, "Jaw Skin", Shapes.Sphere(), new Vector3(-0.42f, -0.06f, 0f), new Vector3(0.36f, 0.11f, 0.2f), belly);
+        for (int t = 0; t < 4; t++)
+            Shapes.Add(head, "Tooth", Shapes.Cone(), new Vector3(-0.78f + t * 0.14f, -0.08f, -0.14f), new Vector3(0.06f, 0.1f, 0.06f), white, new Vector3(0f, 0f, 180f));
+
 
         // ضو بالفم
         mouthLight = new GameObject("Mouth Light").AddComponent<Light>();
@@ -1170,30 +1194,32 @@ public class PaperBird : MonoBehaviour
 
         model = new GameObject("Model").transform;
         model.SetParent(transform, false);
-        // الجسم: معيّن ورق
-        var body = LevelBuilder.Visual("Body", PrimitiveType.Cube, model, Vector3.zero, new Vector3(1.1f, 1.1f, 0.5f), paper).transform;
-        body.localRotation = Quaternion.Euler(0f, 0f, 45f);
-        body.localScale = new Vector3(1.3f, 0.7f, 0.5f);
-        LevelBuilder.Visual("Fold", PrimitiveType.Cube, model, new Vector3(0f, -0.05f, -0.26f), new Vector3(1.2f, 0.04f, 0.02f), fold, false);
-        // الرقبة والراس (لقدام فوق) والذيل (لورا فوق)
-        var neck = LevelBuilder.Visual("Neck", PrimitiveType.Cube, model, new Vector3(0.85f, 0.45f, 0f), new Vector3(1.1f, 0.18f, 0.2f), paper).transform;
-        neck.localRotation = Quaternion.Euler(0f, 0f, 40f);
-        var head = LevelBuilder.Visual("Head", PrimitiveType.Cube, model, new Vector3(1.38f, 0.82f, 0f), new Vector3(0.45f, 0.22f, 0.24f), paper).transform;
-        head.localRotation = Quaternion.Euler(0f, 0f, -20f);
-        var bk = LevelBuilder.Visual("Beak", PrimitiveType.Cube, model, new Vector3(1.7f, 0.7f, 0f), new Vector3(0.38f, 0.1f, 0.12f), beak).transform;
-        bk.localRotation = Quaternion.Euler(0f, 0f, -25f);
-        LevelBuilder.Visual("Eye", PrimitiveType.Sphere, model, new Vector3(1.4f, 0.86f, -0.13f), Vector3.one * 0.09f, black, false);
-        var tail = LevelBuilder.Visual("Tail", PrimitiveType.Cube, model, new Vector3(-0.95f, 0.4f, 0f), new Vector3(1.1f, 0.16f, 0.2f), paper).transform;
-        tail.localRotation = Quaternion.Euler(0f, 0f, -35f);
-        // الجناحات: مثلثات ورق ترفرف (واحد قدام، وواحد ورا)
-        wingL = Wing(model, paper, fold, -0.35f);
-        wingR = Wing(model, fold, paper, 0.35f);
+        // طير أوريغامي (كركي): جسم معيّن بوجوه مطوية، رقبة وذيل مثلثات طويلة، راس بمنقار، وجناحات بطية بالنص
+        Material crease = gm.Mat("Bird Crease", new Color(0.88f, 0.86f, 0.82f), 0.2f);
+        Shapes.Add(model, "Body", Shapes.Facets(new[] {
+                new Vector3(0.65f, 0.05f, 0f), new Vector3(-0.65f, 0.05f, 0f), new Vector3(0f, 0.42f, 0f), new Vector3(0f, -0.3f, 0f),
+                new Vector3(0f, 0.02f, -0.28f), new Vector3(0f, 0.02f, 0.28f) },
+            new[] { 0, 2, 4, 2, 1, 4, 0, 4, 3, 4, 1, 3, 0, 5, 2, 2, 5, 1, 0, 3, 5, 5, 3, 1 }), Vector3.zero, Vector3.one, paper);
+        // الرقبة لقدام فوق، وبآخرها الراس منحني والمنقار لتحت
+        Shapes.Add(model, "Neck", Shapes.Facets(new[] {
+                new Vector3(0.35f, 0.1f, -0.08f), new Vector3(0.35f, 0.1f, 0.08f), new Vector3(0.55f, -0.05f, 0f), new Vector3(1.35f, 0.95f, 0f) },
+            new[] { 0, 3, 2, 1, 2, 3, 0, 1, 3 }), Vector3.zero, Vector3.one, crease);
+        Shapes.Add(model, "Head", Shapes.Facets(new[] {
+                new Vector3(1.28f, 0.9f, -0.07f), new Vector3(1.28f, 0.9f, 0.07f), new Vector3(1.42f, 1.05f, 0f), new Vector3(1.75f, 0.72f, 0f) },
+            new[] { 0, 2, 3, 1, 3, 2, 0, 3, 1 }), Vector3.zero, Vector3.one, paper);
+        Shapes.Add(model, "Beak", Shapes.Cone(), new Vector3(1.66f, 0.77f, 0f), new Vector3(0.07f, 0.24f, 0.07f), beak, new Vector3(0f, 0f, -125f));
+        Shapes.Add(model, "Eye", Shapes.Sphere(), new Vector3(1.45f, 0.92f, -0.09f), Vector3.one * 0.045f, black, default, false);
+        Shapes.Add(model, "Eye Shine", Shapes.Sphere(), new Vector3(1.44f, 0.935f, -0.125f), Vector3.one * 0.014f, gm.Mat("Monster Eye", Color.white, 0.7f), default, false);
+        // الذيل لورا فوق
+        Shapes.Add(model, "Tail", Shapes.Facets(new[] {
+                new Vector3(-0.35f, 0.1f, -0.08f), new Vector3(-0.35f, 0.1f, 0.08f), new Vector3(-0.55f, -0.05f, 0f), new Vector3(-1.45f, 0.8f, 0f) },
+            new[] { 0, 2, 3, 1, 3, 2, 0, 3, 1 }), Vector3.zero, Vector3.one, crease);
+        // الجناحات: مثلثات ورق كبيرة بطية بالنص (ترفرف)
+        wingL = Wing(model, paper, crease, -0.3f);
+        wingR = Wing(model, crease, paper, 0.3f);
         // مخالب
         for (int i = 0; i < 2; i++)
-        {
-            var claw = LevelBuilder.Visual("Claw", PrimitiveType.Cube, model, new Vector3(-0.05f + i * 0.25f, -0.55f, 0f), new Vector3(0.06f, 0.4f, 0.06f), beak, false).transform;
-            claw.localRotation = Quaternion.Euler(0f, 0f, 15f);
-        }
+            Shapes.Add(model, "Claw", Shapes.Cone(-0.3f), new Vector3(-0.05f + i * 0.25f, -0.2f, 0f), new Vector3(0.05f, 0.35f, 0.05f), beak, new Vector3(0f, 0f, 165f));
         model.localScale = Vector3.one * 1.25f;
 
         // علامة تعجب حمرا فوق الحفرة قبل لا ينقض
@@ -1210,10 +1236,14 @@ public class PaperBird : MonoBehaviour
         var pivot = new GameObject("Wing").transform;
         pivot.SetParent(parent, false);
         pivot.localPosition = new Vector3(0f, 0.2f, z);
-        var w = LevelBuilder.Visual("Wing Sheet", PrimitiveType.Cube, pivot, new Vector3(0f, 0f, 0f), new Vector3(0.9f, 0.05f, 1.6f), a).transform;
-        w.localPosition = new Vector3(0f, 0f, Mathf.Sign(z) * 0.8f);
-        w.localRotation = Quaternion.Euler(0f, 35f, 0f);
-        LevelBuilder.Visual("Wing Fold", PrimitiveType.Cube, w, new Vector3(0f, 0.6f, 0f), new Vector3(0.05f, 1f, 0.9f), b, false);
+        float sz = Mathf.Sign(z);
+        // نصين بينهم طية: الأول من الكتف للطية، والثاني من الطية للطرف
+        Shapes.Add(pivot, "Wing Inner", Shapes.Facets(new[] { new Vector3(0.5f, 0f, 0f), new Vector3(-0.45f, 0f, 0f), new Vector3(0.05f, 0.15f, sz * 0.85f) },
+            new[] { 0, 1, 2 }), Vector3.zero, Vector3.one, a);
+        Shapes.Add(pivot, "Wing Outer", Shapes.Facets(new[] { new Vector3(0.5f, 0f, 0f), new Vector3(0.05f, 0.15f, sz * 0.85f), new Vector3(-0.35f, -0.05f, sz * 1.85f) },
+            new[] { 0, 1, 2 }), Vector3.zero, Vector3.one, b);
+        Shapes.Add(pivot, "Wing Back", Shapes.Facets(new[] { new Vector3(-0.45f, 0f, 0f), new Vector3(0.05f, 0.15f, sz * 0.85f), new Vector3(-0.35f, -0.05f, sz * 1.85f) },
+            new[] { 0, 1, 2 }), Vector3.zero, Vector3.one, a);
         return pivot;
     }
 

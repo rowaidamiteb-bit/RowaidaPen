@@ -203,11 +203,49 @@ public class BlackHole : MonoBehaviour
         glowA.SetColor("_BaseColor", new Color(3f, 1.3f, 0.4f));
         var glowB = new Material(unlit) { name = "Accretion Purple" };
         glowB.SetColor("_BaseColor", new Color(1.6f, 0.4f, 2.6f));
-        // الحلقة محورها x: نلفها عشان تصير أفقية ومايلة شوي (قرص حول الثقب)
-        h.disk = Ring(go.transform, 1.45f, 0.13f, glowA, Quaternion.Euler(-14f, 0f, 90f));
-        h.disk2 = Ring(go.transform, 1.95f, 0.07f, glowB, Quaternion.Euler(-22f, 0f, 80f));
+        // قرص مضي يلف حول الثقب (دوامة ألوان: أبيض وبرتقالي وبنفسجي)، وحلقة رفيعة
+        h.disk = SpiralDisk(go.transform, 6.4f, Quaternion.Euler(72f, 0f, 0f));
+        h.disk2 = Ring(go.transform, 1.95f, 0.04f, glowB, Quaternion.Euler(-22f, 0f, 80f));
+        // هالة ناعمة ورا الثقب تواجه الكاميرا
+        var halo = LevelBuilder.Visual("Halo", PrimitiveType.Quad, go.transform, new Vector3(0f, 0f, 0.6f), Vector3.one * 6.5f, NightSky.Transparent("Black Hole Halo", NightSky.DotTexture(), new Color(1.3f, 0.5f, 1.6f, 0.55f)), false);
+        halo.transform.localRotation = Quaternion.identity;
         Ring(go.transform, 0.98f, 0.045f, glowA, Quaternion.Euler(0f, 90f, 0f));   // هالة تواجه الكاميرا
         h.swirlMat = glowB;
+    }
+
+    static Texture2D spiralTex;
+    static Transform SpiralDisk(Transform parent, float size, Quaternion rot)
+    {
+        if (spiralTex == null)
+        {
+            const int n = 256;
+            spiralTex = new Texture2D(n, n, TextureFormat.RGBA32, true) { name = "Accretion Spiral", wrapMode = TextureWrapMode.Clamp };
+            var px = new Color[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float dx = (x + 0.5f) / n * 2f - 1f, dy = (y + 0.5f) / n * 2f - 1f;
+                    float r = Mathf.Sqrt(dx * dx + dy * dy), a = Mathf.Atan2(dy, dx);
+                    float ring = Mathf.Clamp01((r - 0.3f) / 0.08f) * Mathf.Clamp01((1f - r) / 0.35f);
+                    float arms = 0.55f + 0.45f * Mathf.Sin(a * 3f + r * 16f);
+                    float k = Mathf.InverseLerp(0.3f, 1f, r);
+                    Color c = k < 0.35f ? Color.Lerp(new Color(1f, 0.95f, 0.8f), new Color(1f, 0.55f, 0.15f), k / 0.35f) : Color.Lerp(new Color(1f, 0.55f, 0.15f), new Color(0.7f, 0.2f, 1f), (k - 0.35f) / 0.65f);
+                    c.a = ring * arms;
+                    px[y * n + x] = c;
+                }
+            spiralTex.SetPixels(px);
+            spiralTex.Apply();
+        }
+        var holder = new GameObject("Spiral Disk").transform;
+        holder.SetParent(parent, false);
+        holder.localRotation = rot;
+        Material m = NightSky.Transparent("Accretion Disk", spiralTex, new Color(2.2f, 1.6f, 1.8f, 1f));
+        for (int side = 0; side < 2; side++)
+        {
+            var q = LevelBuilder.Visual("Disk Face", PrimitiveType.Quad, holder, Vector3.zero, Vector3.one * size, m, false);
+            q.transform.localRotation = Quaternion.Euler(0f, side * 180f, 0f);
+        }
+        return holder;
     }
 
     static Transform Ring(Transform parent, float radius, float thickness, Material mat, Quaternion rot)
@@ -228,7 +266,7 @@ public class BlackHole : MonoBehaviour
 
     void Update()
     {
-        disk.Rotate(160f * Time.deltaTime, 0f, 0f, Space.Self);
+        disk.Rotate(0f, 0f, 90f * Time.deltaTime, Space.Self);
         disk2.Rotate(-90f * Time.deltaTime, 0f, 0f, Space.Self);
         transform.localScale = Vector3.one * (1f + Mathf.Sin(Time.time * 3f) * 0.04f);
 

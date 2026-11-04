@@ -428,7 +428,10 @@ public class ScribbleMonster : MonoBehaviour
         for (int s = -1; s <= 1; s += 2)
         {
             Part(PrimitiveType.Sphere, new Vector3(s * x, y, z), Vector3.one * size, white);
-            pupils.Add(Part(PrimitiveType.Sphere, new Vector3(s * x, y, z + size * 0.42f), Vector3.one * size * 0.45f, black));
+            Transform pupil = Part(PrimitiveType.Sphere, new Vector3(s * x, y, z + size * 0.42f), Vector3.one * size * 0.45f, black);
+            pupils.Add(pupil);
+            // لمعة بالعين (تخلي الوحش حي وكيوت)
+            LevelBuilder.Visual("Shine", PrimitiveType.Sphere, pupil, new Vector3(-0.22f, 0.25f, 0.42f), Vector3.one * 0.38f, white, false);
         }
     }
 

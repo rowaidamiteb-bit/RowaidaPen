@@ -41,15 +41,14 @@ public class GiantEraser : MonoBehaviour
         LevelBuilder.Visual("Worn Edge", PrimitiveType.Cube, body, new Vector3(0.9f, 0.35f, 0f), new Vector3(1.5f, 0.7f, 3.25f), worn);
         LevelBuilder.Visual("Sleeve", PrimitiveType.Cube, body, new Vector3(0f, 4f, 0f), new Vector3(3.3f, 2.6f, 3.3f), sleeve);
         LevelBuilder.Visual("Stripe", PrimitiveType.Cube, body, new Vector3(0f, 4.3f, 0f), new Vector3(3.34f, 0.35f, 3.34f), stripe);
-        // وجه زعلان على الغلاف
-        for (int s = -1; s <= 1; s += 2)
-        {
-            LevelBuilder.Visual("Eye", PrimitiveType.Sphere, body, new Vector3(0.75f + s * 0.45f, 3.65f, -1.68f), new Vector3(0.5f, 0.55f, 0.1f), white, false);
-            LevelBuilder.Visual("Pupil", PrimitiveType.Sphere, body, new Vector3(0.88f + s * 0.45f, 3.6f, -1.73f), new Vector3(0.22f, 0.26f, 0.06f), black, false);
-            var brow = LevelBuilder.Visual("Brow", PrimitiveType.Cube, body, new Vector3(0.75f + s * 0.45f, 4.05f, -1.72f), new Vector3(0.5f, 0.1f, 0.05f), black, false);
-            brow.transform.localRotation = Quaternion.Euler(0f, 0f, s * 18f);
-        }
-        LevelBuilder.Visual("Mouth", PrimitiveType.Cube, body, new Vector3(0.8f, 3.05f, -1.68f), new Vector3(0.7f, 0.12f, 0.05f), black, false);
+        LevelBuilder.Visual("Stripe 2", PrimitiveType.Cube, body, new Vector3(0f, 3.55f, 0f), new Vector3(3.34f, 0.12f, 3.34f), stripe);
+        // وجه زعلان مرسوم على الغلاف: عيون غاضبة وحواجب وفم بأنياب
+        Material face = Shapes.Face(new Color(0.98f, 0.96f, 0.9f), Shapes.Eyes.Angry, Shapes.Mouth.Fangs, null, new Color(0.15f, 0.12f, 0.2f), true, 1.5f, 1.05f, 0.05f);
+        Shapes.FaceBall(body, "Face", new Vector3(0.4f, 3.95f, -1.66f), new Vector3(1.05f, 0.85f, 0.05f), face);
+        // آثار رصاص على الطرف الممسوح
+        Material smudge = gm.Mat("Graphite Smudge", new Color(0.45f, 0.42f, 0.48f), 0.4f);
+        for (int i = 0; i < 4; i++)
+            LevelBuilder.Visual("Smudge", PrimitiveType.Sphere, body, new Vector3(1.2f + (i % 2) * 0.25f, 0.2f + i * 0.12f, -1.2f + i * 0.8f), new Vector3(0.6f, 0.12f, 0.5f), smudge, false);
     }
 
     void OnDestroy()

@@ -47,6 +47,7 @@ public static class LevelBuilder
         foreach (HazardSpec h in data.hazards) TimedHazard.Create(root.transform, h, gm);
         Part2Details.Build(root.transform, data, gm, rng);
         ConcertStage.Build(root.transform, data, gm);
+        Backdrop.Create(root.transform, data, gm, rng);
         LevelSfx.SetAmbience(data.ambience);
         return root;
     }
