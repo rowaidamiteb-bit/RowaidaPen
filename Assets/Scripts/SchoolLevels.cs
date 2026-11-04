@@ -327,7 +327,15 @@ public class CalcPuzzle : MonoBehaviour
         c.door.position = new Vector3(spec.gateX, 0f, 0f);
         LevelBuilder.Visual("Door", PrimitiveType.Cube, c.door, new Vector3(0f, 1.6f, 0f), new Vector3(0.6f, 3.2f, 2.3f), orange);
         for (int s = 0; s < 2; s++)
+        {
             LevelBuilder.Visual("Equals", PrimitiveType.Cube, c.door, new Vector3(-0.32f, 1.4f + s * 0.45f, 0f), new Vector3(0.04f, 0.15f, 1.2f), key, false);
+            LevelBuilder.Visual("Equals Front", PrimitiveType.Cube, c.door, new Vector3(0f, 1.4f + s * 0.45f, -1.16f), new Vector3(0.42f, 0.13f, 0.04f), key, false);
+        }
+        // لوحة شمسية ولمعة على الشاشة (شكل آلة حاسبة حقيقية)
+        Material solar = gm.Mat("Calc Solar", new Color(0.18f, 0.16f, 0.22f), 0.85f);
+        for (int k = 0; k < 4; k++)
+            LevelBuilder.Visual("Solar Cell", PrimitiveType.Cube, c.rig, new Vector3(cx - 0.75f + k * 0.5f, spec.panelY + 2.32f, 0.36f), new Vector3(0.42f, 0.22f, 0.32f), solar, false);
+        LevelBuilder.Visual("Screen Shine", PrimitiveType.Cube, c.rig, new Vector3(cx - 0.9f, spec.panelY + 1.8f, 0.19f), new Vector3(0.6f, 0.08f, 0.01f), gm.Mat("Calc Shine", new Color(0.88f, 0.96f, 0.82f), 0.8f), false).transform.localRotation = Quaternion.Euler(0f, 0f, 25f);
         c.doorCol = c.door.gameObject.AddComponent<BoxCollider>();
         c.doorCol.center = new Vector3(0f, 1.6f, 0f);
         c.doorCol.size = new Vector3(0.6f, 3.2f, 2.3f);

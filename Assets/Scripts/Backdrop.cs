@@ -11,8 +11,21 @@ public class Backdrop : MonoBehaviour
     readonly List<float> phase = new List<float>();
     static Mesh ringMesh;
 
+    // نوع الأغراض العملاقة: 0 أدوات رسم، 1 موسيقى، 2 ساعات وتروس، 3 صحرا
+    static int Style(LevelData data)
+    {
+        switch (data.ambience)
+        {
+            case "hall": case "crowd": return 1;
+            case "clock": case "factory": case "day": case "night": return 2;
+            case "desert": return 3;
+            case "classroom": return 0;
+        }
+        return string.IsNullOrEmpty(data.ambience) ? 0 : -1;
+    }
+
     public static bool Wants(LevelData data) =>
-        string.IsNullOrEmpty(data.ambience) && !data.sea && !data.underwater && !data.forest && data.kitchenScenery == 0 &&
+        Style(data) >= 0 && !data.sea && !data.underwater && !data.forest && data.kitchenScenery == 0 &&
         data.lab == 0 && data.gameStyle == 0 && data.dreamStyle == 0 && !data.finale && data.shadowChase.z <= 0f;
 
     public static void Create(Transform root, LevelData data, GameManager gm, System.Random rng)
@@ -50,7 +63,9 @@ public class Backdrop : MonoBehaviour
             giant.SetParent(go.transform, false);
             giant.position = new Vector3(x, flipped ? 44f : -44f, R(95f, 125f));
             giant.localScale = Vector3.one * R(8.5f, 12f);
-            b.Giant(giant, theme, gm, rng, R);
+            int style = Style(data);
+            if (style == 0) b.Giant(giant, theme, gm, rng, R);
+            else b.ThemedGiant(giant, style, gm, rng, R);
             if (flipped) giant.localRotation = Quaternion.Euler(180f, 0f, 0f) * giant.localRotation;
             Hazify(giant.gameObject, haze, 0.72f);
         }
@@ -181,6 +196,76 @@ public class Backdrop : MonoBehaviour
         }
     }
 
+    // أغراض عملاقة حسب الفصل: نوتات وبيانو، ساعات وتروس، صبار
+    void ThemedGiant(Transform t, int style, GameManager gm, System.Random rng, System.Func<float, float, float> R)
+    {
+        Color[] cols = { new Color(0.95f, 0.35f, 0.45f), new Color(0.35f, 0.55f, 1f), new Color(1f, 0.75f, 0.25f), new Color(0.45f, 0.8f, 0.5f), new Color(0.7f, 0.45f, 0.95f) };
+        Color col = cols[rng.Next(cols.Length)];
+        Material m = gm.Mat("Giant " + ColorUtility.ToHtmlStringRGB(col), col, 0.4f);
+        t.localPosition += Vector3.up * 2.4f * t.localScale.y;
+        if (style == 1)
+        {
+            if (rng.Next(3) > 0)
+            {
+                // نوتة موسيقية عملاقة
+                Shapes.Add(t, "Note Head", Shapes.Sphere(), new Vector3(0f, 0.3f, 0f), new Vector3(0.42f, 0.3f, 0.3f), m, new Vector3(0f, 0f, 25f), false);
+                LevelBuilder.Visual("Stem", PrimitiveType.Cube, t, new Vector3(0.36f, 1.5f, 0f), new Vector3(0.08f, 2.4f, 0.08f), m, false);
+                Shapes.Add(t, "Flag", Shapes.Tube(new List<Vector3> { new Vector3(0.36f, 2.7f, 0f), new Vector3(0.7f, 2.3f, 0f), new Vector3(0.75f, 1.8f, 0f) }, 0.08f, 0.04f, 8), Vector3.zero, Vector3.one, m, default, false);
+            }
+            else
+            {
+                // مفاتيح بيانو واقفة
+                Material white = gm.Mat("Giant Key White", new Color(0.97f, 0.96f, 0.93f), 0.5f), black = gm.Mat("Giant Key Black", new Color(0.12f, 0.11f, 0.15f), 0.5f);
+                for (int k = 0; k < 5; k++)
+                {
+                    LevelBuilder.Visual("Key", PrimitiveType.Cube, t, new Vector3(k * 0.42f - 0.84f, R(1.3f, 1.8f), 0f), new Vector3(0.4f, 3.4f, 0.3f), white, false);
+                    if (k < 4 && k != 2) LevelBuilder.Visual("Black Key", PrimitiveType.Cube, t, new Vector3(k * 0.42f - 0.63f, 2.3f, -0.12f), new Vector3(0.24f, 2.2f, 0.3f), black, false);
+                }
+            }
+        }
+        else if (style == 2)
+        {
+            if (rng.Next(2) == 0)
+            {
+                // ساعة حائط عملاقة على عمود
+                Material face = gm.Mat("Giant Clock Face", new Color(1f, 0.97f, 0.9f), 0.4f), ink = gm.Mat("Ruler Ink", new Color(0.25f, 0.2f, 0.15f), 0.3f);
+                LevelBuilder.Visual("Pole", PrimitiveType.Cylinder, t, new Vector3(0f, 0.8f, 0f), new Vector3(0.2f, 1.6f, 0.2f), m, false);
+                var rim = LevelBuilder.Visual("Rim", PrimitiveType.Cylinder, t, new Vector3(0f, 2.6f, 0f), new Vector3(1.6f, 0.12f, 1.6f), m, false).transform;
+                rim.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                var fc = LevelBuilder.Visual("Face", PrimitiveType.Cylinder, t, new Vector3(0f, 2.6f, -0.08f), new Vector3(1.4f, 0.06f, 1.4f), face, false).transform;
+                fc.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                LevelBuilder.Visual("Hand", PrimitiveType.Cube, t, new Vector3(0f, 2.85f, -0.16f), new Vector3(0.06f, 0.5f, 0.03f), ink, false);
+                LevelBuilder.Visual("Hand", PrimitiveType.Cube, t, new Vector3(0.15f, 2.62f, -0.16f), new Vector3(0.36f, 0.06f, 0.03f), ink, false);
+            }
+            else
+            {
+                // ترس عملاق
+                var g = new GameObject("Gear").transform;
+                g.SetParent(t, false);
+                g.localPosition = new Vector3(0f, 2.2f, 0f);
+                var disc = LevelBuilder.Visual("Disc", PrimitiveType.Cylinder, g, Vector3.zero, new Vector3(2.2f, 0.15f, 2.2f), m, false).transform;
+                disc.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                for (int k = 0; k < 12; k++)
+                {
+                    float a = k * 30f;
+                    var tooth = LevelBuilder.Visual("Tooth", PrimitiveType.Cube, g, Quaternion.Euler(0f, 0f, a) * new Vector3(0f, 1.2f, 0f), new Vector3(0.35f, 0.4f, 0.28f), m, false).transform;
+                    tooth.localRotation = Quaternion.Euler(0f, 0f, a);
+                }
+                spin.Add(g);
+            }
+        }
+        else
+        {
+            // صبار صحرا
+            Material cactus = gm.Mat("Giant Cactus", new Color(0.35f, 0.7f, 0.4f), 0.35f);
+            Shapes.Add(t, "Trunk", Shapes.Tube(new List<Vector3> { Vector3.zero, new Vector3(0f, 3.2f, 0f) }, 0.4f, 0.36f, 12), Vector3.zero, Vector3.one, cactus, default, false);
+            for (int sd = -1; sd <= 1; sd += 2)
+                Shapes.Add(t, "Arm", Shapes.Tube(new List<Vector3> { new Vector3(0f, 1.4f + sd * 0.3f, 0f), new Vector3(sd * 0.8f, 1.5f + sd * 0.3f, 0f), new Vector3(sd * 0.85f, 2.4f + sd * 0.3f, 0f) }, 0.24f, 0.22f, 10), Vector3.zero, Vector3.one, cactus, default, false);
+        }
+    }
+
+    readonly List<Transform> spin = new List<Transform>();
+
     // نخلي الشي ياخذ لون الجو (كأنه بعيد بالضباب): نسخة من مواده بلون مخلوط
     static readonly Dictionary<string, Material> hazeCache = new Dictionary<string, Material>();
     static void Hazify(GameObject go, Color haze, float k)
@@ -215,6 +300,7 @@ public class Backdrop : MonoBehaviour
     void Update()
     {
         float t = Time.time;
+        foreach (Transform g in spin) if (g != null) g.localRotation = Quaternion.Euler(0f, 0f, t * 8f);
         for (int i = 0; i < bob.Count; i++)
             if (bob[i] != null) bob[i].position = home[i] + new Vector3(0f, Mathf.Sin(t * 0.45f + phase[i]) * 0.35f, 0f);
     }
