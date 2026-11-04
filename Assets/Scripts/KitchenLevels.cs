@@ -270,6 +270,25 @@ public class FridgeWind : MonoBehaviour
         Material juice = gm.Mat("Juice", new Color(1f, 0.6f, 0.15f), 0.5f);
         Vector3 body = new Vector3(f.x + 1.3f, f.top, 1.7f);
         LevelBuilder.Visual("Fridge Body", PrimitiveType.Cube, go.transform, body + new Vector3(0.4f, 1.9f, 0.4f), new Vector3(1.8f, 3.8f, 2f), white);
+        // قدام الثلاجة: خط الفريزر، مقابض، مغناطيسات ملونة، ورسومات رويدا ملصوقة
+        Material gap = gm.Mat("Fridge Gap", new Color(0.55f, 0.6f, 0.66f), 0.5f);
+        Vector3 front = body + new Vector3(0.4f, 0f, 0.4f - 1.01f);
+        LevelBuilder.Visual("Freezer Line", PrimitiveType.Cube, go.transform, front + new Vector3(0f, 2.75f, 0f), new Vector3(1.75f, 0.05f, 0.02f), gap, false);
+        LevelBuilder.Visual("Freezer Handle", PrimitiveType.Cube, go.transform, front + new Vector3(0.62f, 3.15f, -0.06f), new Vector3(0.08f, 0.45f, 0.08f), steel, false);
+        LevelBuilder.Visual("Fridge Handle", PrimitiveType.Cube, go.transform, front + new Vector3(0.62f, 1.9f, -0.06f), new Vector3(0.08f, 0.9f, 0.08f), steel, false);
+        Color[] papers = { new Color(1f, 0.95f, 0.75f), new Color(0.85f, 0.95f, 1f) };
+        Color[] mags = { new Color(1f, 0.35f, 0.4f), new Color(0.35f, 0.7f, 1f), new Color(1f, 0.8f, 0.2f), new Color(0.5f, 0.85f, 0.45f) };
+        for (int k = 0; k < 2; k++)
+        {
+            var paper = LevelBuilder.Visual("Drawing", PrimitiveType.Cube, go.transform, front + new Vector3(-0.35f + k * 0.55f, 1.55f + k * 0.55f, -0.02f), new Vector3(0.6f, 0.75f, 0.01f), gm.Mat("Fridge Paper " + k, papers[k], 0.2f), false).transform;
+            paper.localRotation = Quaternion.Euler(0f, 0f, k == 0 ? 6f : -8f);
+            // شخبطة بسيطة: شمس وبيت
+            LevelBuilder.Visual("Doodle", PrimitiveType.Sphere, paper, new Vector3(0.2f, 0.25f, -0.8f), new Vector3(0.25f, 0.2f, 1f), gm.Mat("Doodle Sun", new Color(1f, 0.75f, 0.1f), 0.3f), false);
+            LevelBuilder.Visual("Doodle", PrimitiveType.Cube, paper, new Vector3(-0.1f, -0.2f, -0.8f), new Vector3(0.45f, 0.3f, 1f), gm.Mat("Doodle House", new Color(0.95f, 0.45f, 0.4f), 0.3f), false);
+            LevelBuilder.Visual("Magnet", PrimitiveType.Sphere, paper, new Vector3(0f, 0.48f, -1.5f), new Vector3(0.18f, 0.15f, 2.5f), gm.Mat("Magnet " + k, mags[k], 0.6f), false);
+        }
+        for (int k = 0; k < 3; k++)
+            LevelBuilder.Visual("Magnet", PrimitiveType.Sphere, go.transform, front + new Vector3(-0.55f + k * 0.35f, 3.25f - (k % 2) * 0.2f, -0.03f), new Vector3(0.14f, 0.14f, 0.05f), gm.Mat("Magnet " + (k + 2) % 4, mags[(k + 2) % 4], 0.6f), false);
         LevelBuilder.Visual("Fridge Inside", PrimitiveType.Cube, go.transform, body + new Vector3(-0.45f, 1.9f, 0.4f), new Vector3(0.1f, 3.5f, 1.7f), insideM, false);
         for (int i = 0; i < 3; i++)
             LevelBuilder.Visual("Shelf", PrimitiveType.Cube, go.transform, body + new Vector3(-0.3f, 0.9f + i * 1f, 0.4f), new Vector3(0.4f, 0.04f, 1.6f), steel, false);

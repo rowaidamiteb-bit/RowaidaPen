@@ -261,7 +261,13 @@ public class TimedHazard : MonoBehaviour
                 Material crust = gm.Mat("Toast Crust", new Color(0.7f, 0.45f, 0.2f), 0.3f);
                 Vector3 tp = new Vector3(spec.x + spec.width * 0.5f + 1.1f, 0.6f, 1.3f);
                 LevelBuilder.Visual("Toaster", PrimitiveType.Cube, transform, tp, new Vector3(1.4f, 1.2f, 0.9f), body);
-                LevelBuilder.Visual("Slot", PrimitiveType.Cube, transform, tp + new Vector3(0f, 0.6f, 0f), new Vector3(1f, 0.04f, 0.2f), black, false);
+                LevelBuilder.Visual("Slot", PrimitiveType.Cube, transform, tp + new Vector3(-0.2f, 0.6f, -0.18f), new Vector3(0.8f, 0.04f, 0.14f), black, false);
+                LevelBuilder.Visual("Slot", PrimitiveType.Cube, transform, tp + new Vector3(-0.2f, 0.6f, 0.18f), new Vector3(0.8f, 0.04f, 0.14f), black, false);
+                // وجه مبسوط على المحمصة، وأرجل صغيرة، وزر تحكم
+                Shapes.FaceBall(transform, "Toaster Face", tp + new Vector3(-0.05f, 0.05f, -0.45f), new Vector3(0.42f, 0.32f, 0.02f), Shapes.Face(new Color(0.86f, 0.89f, 0.93f), Shapes.Eyes.Happy, Shapes.Mouth.Open, null, null, true, 1.2f, 1f, 0.05f));
+                for (int k = 0; k < 4; k++)
+                    LevelBuilder.Visual("Foot", PrimitiveType.Sphere, transform, tp + new Vector3(k < 2 ? -0.55f : 0.55f, -0.62f, k % 2 == 0 ? -0.3f : 0.3f), new Vector3(0.15f, 0.08f, 0.15f), black, false);
+                LevelBuilder.Visual("Dial", PrimitiveType.Cylinder, transform, tp + new Vector3(0.72f, -0.2f, 0f), new Vector3(0.18f, 0.04f, 0.18f), black, false).transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
                 LevelBuilder.Visual("Lever", PrimitiveType.Cube, transform, tp + new Vector3(0.72f, 0.2f, 0f), new Vector3(0.12f, 0.12f, 0.25f), gm.Mat("Tower Red", new Color(0.85f, 0.2f, 0.22f), 0.35f), false);
                 Part(PrimitiveType.Cube, Vector3.zero, new Vector3(0.8f, 0.8f, 0.12f), crust);
                 Part(PrimitiveType.Cube, new Vector3(0f, 0f, -0.01f), new Vector3(0.68f, 0.68f, 0.13f), bread);
@@ -389,12 +395,16 @@ public class TimedHazard : MonoBehaviour
                 body.position = sq;
                 LevelBuilder.Visual("Body", PrimitiveType.Sphere, body, Vector3.zero, new Vector3(0.45f, 0.55f, 0.4f), fur);
                 LevelBuilder.Visual("Belly", PrimitiveType.Sphere, body, new Vector3(-0.1f, -0.02f, -0.1f), new Vector3(0.3f, 0.4f, 0.25f), belly, false);
-                LevelBuilder.Visual("Head", PrimitiveType.Sphere, body, new Vector3(-0.12f, 0.38f, 0f), Vector3.one * 0.32f, fur);
-                LevelBuilder.Visual("Eye", PrimitiveType.Sphere, body, new Vector3(-0.24f, 0.45f, -0.12f), Vector3.one * 0.07f, black, false);
+                // راس بوجه مرسوم (عيون لامعة وخدود وبوز فاتح)، أذان مدببة، وذيل كبير منفوش ملفوف
+                Shapes.FaceBall(body, "Head", new Vector3(-0.1f, 0.4f, -0.02f), new Vector3(0.19f, 0.17f, 0.17f), Shapes.Face(new Color(0.82f, 0.45f, 0.2f), Shapes.Eyes.Cute, Shapes.Mouth.Cat, new Color(1f, 0.88f, 0.72f), null, true, 1.1f, 1f, 0f));
                 for (int s = -1; s <= 1; s += 2)
-                    LevelBuilder.Visual("Ear", PrimitiveType.Sphere, body, new Vector3(-0.08f, 0.56f, s * 0.1f), new Vector3(0.08f, 0.14f, 0.06f), fur, false);
-                for (int i = 0; i < 4; i++)
-                    LevelBuilder.Visual("Tail", PrimitiveType.Sphere, body, new Vector3(0.3f + Mathf.Sin(i * 0.8f) * 0.15f, -0.1f + i * 0.22f, 0.05f), Vector3.one * (0.34f - i * 0.03f), fur, false);
+                {
+                    Shapes.Add(body, "Ear", Shapes.Cone(), new Vector3(-0.1f + s * 0.1f, 0.53f, 0f), new Vector3(0.09f, 0.14f, 0.05f), fur, new Vector3(0f, 0f, -s * 15f), false);
+                    Shapes.Add(body, "Ear Tuft", Shapes.Cone(), new Vector3(-0.1f + s * 0.1f, 0.62f, 0f), new Vector3(0.04f, 0.08f, 0.03f), gm.Mat("Squirrel Tuft", new Color(0.6f, 0.3f, 0.12f), 0.3f), new Vector3(0f, 0f, -s * 15f), false);
+                }
+                Shapes.Add(body, "Tail", Shapes.Tube(new List<Vector3> { new Vector3(0.15f, -0.2f, 0.08f), new Vector3(0.42f, -0.05f, 0.08f), new Vector3(0.48f, 0.35f, 0.08f), new Vector3(0.3f, 0.65f, 0.08f), new Vector3(0.42f, 0.8f, 0.08f) }, 0.12f, 0.2f, 12), Vector3.zero, Vector3.one, fur, default, false);
+                Shapes.Add(body, "Tail Tip", Shapes.Sphere(), new Vector3(0.42f, 0.8f, 0.08f), Vector3.one * 0.2f, fur, default, false);
+                Shapes.Add(body, "Tail Stripe", Shapes.Tube(new List<Vector3> { new Vector3(0.44f, 0.05f, 0.0f), new Vector3(0.47f, 0.35f, -0.02f), new Vector3(0.32f, 0.6f, -0.02f) }, 0.05f, 0.05f, 8), Vector3.zero, Vector3.one, belly, default, false);
                 Part(PrimitiveType.Sphere, Vector3.zero, new Vector3(0.32f, 0.38f, 0.32f), nut);
                 Part(PrimitiveType.Sphere, new Vector3(0f, 0.15f, 0f), new Vector3(0.36f, 0.16f, 0.36f), capM);
                 break;

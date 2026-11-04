@@ -216,17 +216,15 @@ public class SpiderWeb : MonoBehaviour
         s.spider = new GameObject("Spider").transform;
         s.spider.SetParent(go.transform, false);
         LevelBuilder.Visual("Body", PrimitiveType.Sphere, s.spider, Vector3.zero, new Vector3(0.4f, 0.36f, 0.36f), body);
-        LevelBuilder.Visual("Head", PrimitiveType.Sphere, s.spider, new Vector3(0f, -0.22f, 0f), Vector3.one * 0.24f, body);
-        for (int e = -1; e <= 1; e += 2)
-        {
-            LevelBuilder.Visual("Eye", PrimitiveType.Sphere, s.spider, new Vector3(e * 0.06f, -0.22f, -0.11f), Vector3.one * 0.08f, white, false);
-            LevelBuilder.Visual("Cheek", PrimitiveType.Sphere, s.spider, new Vector3(e * 0.1f, -0.3f, -0.08f), Vector3.one * 0.05f, pink, false);
-        }
+        // راس بوجه كيوت (عيون كبيرة لامعة، خدود، ابتسامة)، ونقطة لامعة على الظهر، وثمان أرجل مثنية
+        Shapes.FaceBall(s.spider, "Head", new Vector3(0f, -0.22f, -0.02f), new Vector3(0.14f, 0.13f, 0.13f), Shapes.Face(new Color(0.2f, 0.17f, 0.24f), Shapes.Eyes.Cute, Shapes.Mouth.Smile, null, new Color(0.5f, 0.3f, 0.6f), true, 1.3f, 1f, 0.05f));
         for (int i = 0; i < 8; i++)
         {
             int side = i < 4 ? -1 : 1;
-            var leg = LevelBuilder.Visual("Leg", PrimitiveType.Cube, s.spider, new Vector3(side * 0.25f, 0.05f - (i % 4) * 0.06f, 0f), new Vector3(0.35f, 0.03f, 0.03f), body, false).transform;
-            leg.localRotation = Quaternion.Euler(0f, 0f, side * (-30f + (i % 4) * 20f));
+            float k = (i % 4) / 3f;
+            var leg = Shapes.Add(s.spider, "Leg", Shapes.Tube(new List<Vector3> { Vector3.zero, new Vector3(side * 0.22f, 0.12f, 0f), new Vector3(side * 0.38f, -0.12f, 0f) }, 0.022f, 0.012f, 6, true, false),
+                new Vector3(side * 0.12f, 0.05f - (i % 4) * 0.06f, (k - 0.5f) * 0.15f), Vector3.one, body, default, false).transform;
+            leg.localRotation = Quaternion.Euler(0f, (k - 0.5f) * side * 50f, side * (-10f + (i % 4) * 12f));
         }
     }
 
@@ -327,6 +325,12 @@ public class OwlWatch : MonoBehaviour
         o.owl.position = new Vector3(o.x, o.top + 3.9f, 0.5f);
         LevelBuilder.Visual("Body", PrimitiveType.Sphere, o.owl, Vector3.zero, new Vector3(0.75f, 0.95f, 0.7f), feather);
         LevelBuilder.Visual("Belly", PrimitiveType.Sphere, o.owl, new Vector3(0f, -0.1f, -0.2f), new Vector3(0.5f, 0.65f, 0.4f), belly, false);
+        // نقوش ريش على البطن، ومخالب على الغصن
+        for (int k = 0; k < 6; k++)
+            Shapes.Add(o.owl, "Belly Mark", Shapes.Sphere(), new Vector3(-0.1f + (k % 3) * 0.1f, -0.02f - (k / 3) * 0.16f + (k % 3 == 1 ? -0.04f : 0f), -0.39f), new Vector3(0.035f, 0.018f, 0.01f), feather, new Vector3(0f, 0f, 0f), false);
+        for (int sd = -1; sd <= 1; sd += 2)
+            for (int c = 0; c < 3; c++)
+                Shapes.Add(o.owl, "Talon", Shapes.Cone(0.3f), new Vector3(sd * 0.12f + (c - 1) * 0.05f, -0.45f, -0.15f), new Vector3(0.045f, 0.1f, 0.045f), beak, new Vector3(-60f, 0f, 0f), false);
         for (int s = -1; s <= 1; s += 2)
             LevelBuilder.Visual("Wing", PrimitiveType.Sphere, o.owl, new Vector3(s * 0.36f, -0.05f, 0f), new Vector3(0.22f, 0.7f, 0.5f), feather, false);
         o.head = new GameObject("Head").transform;
@@ -335,13 +339,15 @@ public class OwlWatch : MonoBehaviour
         LevelBuilder.Visual("Head", PrimitiveType.Sphere, o.head, Vector3.zero, new Vector3(0.75f, 0.6f, 0.65f), feather);
         for (int s = -1; s <= 1; s += 2)
         {
-            var tuft = LevelBuilder.Visual("Tuft", PrimitiveType.Cube, o.head, new Vector3(s * 0.25f, 0.32f, 0f), new Vector3(0.12f, 0.25f, 0.08f), feather, false).transform;
-            tuft.localRotation = Quaternion.Euler(0f, 0f, s * -25f);
+            Shapes.Add(o.head, "Tuft", Shapes.Cone(-0.25f * s), new Vector3(s * 0.24f, 0.2f, 0f), new Vector3(0.16f, 0.32f, 0.1f), feather, new Vector3(0f, 0f, s * -20f), false);
             LevelBuilder.Visual("Eye Ring", PrimitiveType.Sphere, o.head, new Vector3(s * 0.16f, 0.02f, -0.27f), new Vector3(0.26f, 0.26f, 0.08f), belly, false);
             LevelBuilder.Visual("Eye", PrimitiveType.Sphere, o.head, new Vector3(s * 0.16f, 0.02f, -0.31f), Vector3.one * 0.15f, o.eyeOn, false);
-            LevelBuilder.Visual("Pupil", PrimitiveType.Sphere, o.head, new Vector3(s * 0.16f, 0.02f, -0.37f), Vector3.one * 0.07f, black, false);
+            var pupil = LevelBuilder.Visual("Pupil", PrimitiveType.Sphere, o.head, new Vector3(s * 0.16f, 0.02f, -0.37f), Vector3.one * 0.07f, black, false).transform;
+            LevelBuilder.Visual("Shine", PrimitiveType.Sphere, pupil, new Vector3(-0.25f, 0.28f, -0.45f), Vector3.one * 0.35f, gm.Mat("Monster Eye", Color.white, 0.7f), false);
         }
-        LevelBuilder.Visual("Beak", PrimitiveType.Cube, o.head, new Vector3(0f, -0.1f, -0.32f), new Vector3(0.08f, 0.12f, 0.06f), beak, false).transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        // قلب الوجه الفاتح ورا العيون
+        Shapes.Add(o.head, "Face Disc", Shapes.Sphere(), new Vector3(0f, -0.02f, -0.22f), new Vector3(0.32f, 0.24f, 0.08f), belly, default, false);
+        Shapes.Add(o.head, "Beak", Shapes.Cone(-0.2f), new Vector3(0f, -0.04f, -0.33f), new Vector3(0.09f, 0.15f, 0.07f), beak, new Vector3(-150f, 0f, 0f), false);
         // جفون (وهي نايمة)
         o.lids = new GameObject("Lids").transform;
         o.lids.SetParent(o.head, false);
@@ -608,17 +614,26 @@ public class Hedgehog : MonoBehaviour
         h.ball = new GameObject("Ball").transform;
         h.ball.SetParent(go.transform, false);
         LevelBuilder.Visual("Body", PrimitiveType.Sphere, h.ball, Vector3.zero, Vector3.one * 0.7f, body);
-        for (int i = 0; i < 26; i++)
+        // شوك مدبب موزع على الكورة كلها بلونين
+        Material spikeTip = gm.Mat("Hedgehog Spike Tip", new Color(0.32f, 0.22f, 0.15f), 0.3f);
+        const int count = 90;
+        for (int i = 0; i < count; i++)
         {
-            Vector3 d = Random.onUnitSphere;
-            var s = LevelBuilder.Visual("Spike", PrimitiveType.Capsule, h.ball, d * 0.38f, new Vector3(0.07f, 0.16f, 0.07f), spike, false).transform;
-            s.up = d;
+            float y = 1f - (i + 0.5f) / count * 2f, rr = Mathf.Sqrt(1f - y * y), a = i * 2.39996f;
+            Vector3 d = new Vector3(Mathf.Cos(a) * rr, y, Mathf.Sin(a) * rr);
+            var sp = Shapes.Add(h.ball, "Spike", Shapes.Cone(), d * 0.3f, new Vector3(0.1f, 0.22f, 0.1f), i % 3 == 0 ? spikeTip : spike, default, false).transform;
+            sp.up = d;
         }
         h.face = new GameObject("Face").transform;
         h.face.SetParent(go.transform, false);
         LevelBuilder.Visual("Snout", PrimitiveType.Sphere, h.face, new Vector3(0.35f, -0.08f, 0f), new Vector3(0.35f, 0.28f, 0.3f), faceM, false);
         LevelBuilder.Visual("Nose", PrimitiveType.Sphere, h.face, new Vector3(0.52f, -0.06f, 0f), Vector3.one * 0.09f, black, false);
-        LevelBuilder.Visual("Eye", PrimitiveType.Sphere, h.face, new Vector3(0.36f, 0.05f, -0.13f), Vector3.one * 0.07f, black, false);
+        LevelBuilder.Visual("Eye", PrimitiveType.Sphere, h.face, new Vector3(0.36f, 0.05f, -0.13f), Vector3.one * 0.08f, black, false);
+        LevelBuilder.Visual("Eye Shine", PrimitiveType.Sphere, h.face, new Vector3(0.37f, 0.07f, -0.17f), Vector3.one * 0.025f, gm.Mat("Monster Eye", Color.white, 0.7f), false);
+        LevelBuilder.Visual("Cheek", PrimitiveType.Sphere, h.face, new Vector3(0.36f, -0.08f, -0.14f), new Vector3(0.08f, 0.05f, 0.02f), gm.Mat("Blush", new Color(1f, 0.6f, 0.7f), 0.3f), false);
+        Shapes.Add(h.face, "Ear", Shapes.Sphere(), new Vector3(0.22f, 0.18f, -0.15f), new Vector3(0.06f, 0.07f, 0.03f), faceM, default, false);
+        for (int k = 0; k < 2; k++)
+            Shapes.Add(h.face, "Foot", Shapes.Sphere(), new Vector3(0.1f + k * 0.2f, -0.36f, -0.1f), new Vector3(0.08f, 0.05f, 0.1f), faceM, default, false);
         h.face.gameObject.SetActive(false);
         h.stars = new GameObject("Dizzy").transform;
         h.stars.SetParent(go.transform, false);
