@@ -199,6 +199,149 @@ public static class Shapes
         return m;
     }
 
+    // ---------- أشكال واقعية ----------
+
+    const float ShellSpread = 1.08f;   // نص زاوية مروحة الصدفة
+
+    // ارتفاع سطح الصدفة: u من جنب لجنب (0..1)، v من المفصل للحافة (0..1). inner = السطح اللي جوا (ناعم بدون ضلوع)
+    public static float ShellY(float u, float v, float height, int ribs, bool inner)
+    {
+        float side = Mathf.Pow(Mathf.Max(0f, Mathf.Cos((u * 2f - 1f) * Mathf.PI * 0.5f)), 0.45f);   // صفر على الجوانب
+        float dome = height * Mathf.Pow(Mathf.Max(0f, Mathf.Sin(Mathf.PI * Mathf.Pow(v, 0.75f))), 0.6f) * side;
+        float rib = Mathf.Pow(0.5f + 0.5f * Mathf.Cos(u * ribs * Mathf.PI * 2f), 1.5f) * height * 0.3f * Mathf.Pow(v, 0.8f) * side;
+        return inner ? dome * 0.78f + rib * Mathf.Pow(v, 8f) : dome + rib;
+    }
+
+    // مكان نقطة على الصدفة (المفصل عند 0 والحافة لقدام ناحية -z)
+    public static Vector3 ShellPoint(float u, float v, float length, float height, int ribs, bool inner)
+    {
+        float a = (u * 2f - 1f) * ShellSpread;
+        float r = length * v * (1f - 0.16f * Mathf.Pow(u * 2f - 1f, 4f));
+        return new Vector3(Mathf.Sin(a) * r, ShellY(u, v, height, ribs, inner), -Mathf.Cos(a) * r);
+    }
+
+    // نص صدفة محار (مثل الأسقلوب): مروحة بضلوع وحافة متموجة. قسمين: 0 برا (ضلوع)، 1 جوا (ناعم لامع)
+    public static Mesh Shell(int ribs = 16, float length = 1.25f, float height = 0.28f)
+    {
+        string key = "shell" + ribs + "_" + length.ToString("0.00") + "_" + height.ToString("0.00");
+        if (cache.TryGetValue(key, out Mesh m) && m != null) return m;
+        const int nu = 96, nv = 22;
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var outer = new List<int>();
+        var inner = new List<int>();
+        for (int s = 0; s < 2; s++)
+        {
+            int b = verts.Count;
+            for (int j = 0; j <= nv; j++)
+                for (int i = 0; i <= nu; i++)
+                {
+                    float u = i / (float)nu, v = j / (float)nv;
+                    verts.Add(ShellPoint(u, v, length, height, ribs, s == 1));
+                    uvs.Add(new Vector2(u, v));
+                }
+            var tris = s == 0 ? outer : inner;
+            for (int j = 0; j < nv; j++)
+                for (int i = 0; i < nu; i++)
+                {
+                    int a = b + j * (nu + 1) + i, c = a + 1, d = a + nu + 1, e = d + 1;
+                    if (s == 0) { tris.Add(a); tris.Add(c); tris.Add(d); tris.Add(c); tris.Add(e); tris.Add(d); }
+                    else { tris.Add(a); tris.Add(d); tris.Add(c); tris.Add(c); tris.Add(d); tris.Add(e); }
+                }
+        }
+        m = new Mesh { name = "Shell" };
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.subMeshCount = 2;
+        m.SetTriangles(outer, 0);
+        m.SetTriangles(inner, 1);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        cache[key] = m;
+        return m;
+    }
+
+    // لون الصدفة من برا: فاتح عند المفصل ويغمق للحافة، خطوط لون بين الضلوع، وخطوط نمو دايرية
+    public static Material ShellPattern(string key, Color light, Color dark, int ribs)
+    {
+        key = "shell " + key;
+        if (faces.TryGetValue(key, out Material cached) && cached != null) return cached;
+        const int w = 384, h = 128;
+        var tex = new Texture2D(w, h, TextureFormat.RGBA32, true) { name = key, wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[w * h];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                float u = x / (float)(w - 1), v = y / (float)(h - 1);
+                Color c = Color.Lerp(light, dark, Mathf.SmoothStep(0.05f, 0.55f, v));
+                // أحزمة لون مثل الصدف الحقيقي
+                if (Mathf.PerlinNoise(v * 7f, u * 1.5f + 3f) > 0.58f) c = Color.Lerp(c, dark * 0.8f, 0.35f);
+                // بين الضلوع أغمق شوي
+                float rib = 0.5f + 0.5f * Mathf.Cos(u * ribs * Mathf.PI * 2f);
+                c *= Mathf.Lerp(0.78f, 1.06f, Mathf.Pow(rib, 0.7f));
+                // خطوط النمو
+                if (Mathf.Repeat(v * 26f + Mathf.PerlinNoise(u * 6f, v * 3f) * 0.8f, 1f) < 0.1f) c *= 0.86f;
+                c.a = 1f;
+                px[y * w + x] = c;
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        var mat = GameManager.MakeMaterial(Color.white, 0.45f);
+        mat.name = key;
+        if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex);
+        faces[key] = mat;
+        return mat;
+    }
+
+    // صنج نحاس: قبة صغيرة بالنص، وبعدها ينزل رقيق للحافة، وعليه حلقات خراطة تلمع. الحافة عند y = 0 والقبة لفوق
+    public static Mesh Cymbal(float radius = 0.8f)
+    {
+        string key = "cymbal" + radius.ToString("0.00");
+        if (cache.TryGetValue(key, out Mesh m) && m != null) return m;
+        float Top(float r)
+        {
+            float bell = 0.2f * radius, y;
+            if (r < bell) y = 0.11f * radius + 0.1f * radius * Mathf.Pow(Mathf.Cos(r / bell * Mathf.PI * 0.5f), 1.2f);
+            else y = 0.11f * radius * Mathf.Pow(1f - (r - bell) / (radius - bell), 1.15f);
+            if (r > bell * 1.1f && r < radius * 0.97f) y += 0.0035f * Mathf.Sin(r / radius * 110f);
+            return y;
+        }
+        var profile = new List<Vector2>();
+        const int n = 72;
+        // من تحت (من النص للحافة)، وبعدين من فوق (من الحافة للنص)
+        for (int i = 0; i <= n; i++) { float r = radius * i / n; profile.Add(new Vector2(r, Top(r) - Mathf.Lerp(0.02f, 0.008f, i / (float)n))); }
+        for (int i = n; i >= 0; i--) { float r = radius * i / n; profile.Add(new Vector2(r, Top(r))); }
+        m = CharacterMeshes.Lathe(profile, 48);
+        m.name = "Cymbal";
+        cache[key] = m;
+        return m;
+    }
+
+    // نجمة خماسية مجسمة بوجوه حادة (مثل نجوم الزينة): الرؤوس بالمستوى XY والنص بارز لقدام ولورا
+    public static Mesh Star(float inner = 0.42f, float depth = 0.22f)
+    {
+        string key = "star" + inner.ToString("0.00") + depth.ToString("0.00");
+        if (cache.TryGetValue(key, out Mesh m) && m != null) return m;
+        var v = new List<Vector3> { new Vector3(0f, 0f, -depth), new Vector3(0f, 0f, depth) };
+        for (int k = 0; k < 10; k++)
+        {
+            float a = Mathf.PI * 0.5f + k * Mathf.PI / 5f;
+            float r = k % 2 == 0 ? 1f : inner;
+            v.Add(new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f));
+        }
+        var t = new List<int>();
+        for (int k = 0; k < 10; k++)
+        {
+            int a = 2 + k, b = 2 + (k + 1) % 10;
+            t.Add(0); t.Add(a); t.Add(b);
+            t.Add(1); t.Add(b); t.Add(a);
+        }
+        m = Facets(v.ToArray(), t.ToArray());
+        m.name = "Star";
+        cache[key] = m;
+        return m;
+    }
+
     // ---------- وجوه مرسومة ----------
 
     public enum Eyes { Cute, Sleepy, Angry, Happy, Scared, Dots, None }

@@ -179,7 +179,8 @@ public class FinalDoor : MonoBehaviour
 public class EndingCutscene : MonoBehaviour
 {
     static readonly Vector3 RoomOrigin = new Vector3(-300f, 0f, 0f);
-    const float FlipEvery = 1.8f, PagesStart = 10.5f;
+    const float FlipEvery = 2.4f, PagesStart = 10.5f;
+    const int ShownPages = 6;   // ما نعرض الدفتر كله: ثلاث صفحات مزدوجة بس (من أول الرحلة ووسطها وآخرها)
 
     GameManager gm;
     System.Action onFinished;
@@ -213,7 +214,13 @@ public class EndingCutscene : MonoBehaviour
         if (follow != null) follow.SetTarget(null, false);
         room = Bedroom.Build(gm, RoomOrigin);
 
-        memoryLevels = DrawingMemory.Levels();
+        var all = DrawingMemory.Levels();
+        memoryLevels = all;
+        if (all.Count > ShownPages)
+        {
+            memoryLevels = new List<int>();
+            for (int i = 0; i < ShownPages; i++) memoryLevels.Add(all[Mathf.RoundToInt(i * (all.Count - 1) / (float)(ShownPages - 1))]);
+        }
         spreads = Mathf.Max(1, Mathf.CeilToInt(memoryLevels.Count / 2f));
         endTime = PagesStart + spreads * FlipEvery + 8f;
 

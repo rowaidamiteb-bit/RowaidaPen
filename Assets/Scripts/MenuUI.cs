@@ -618,7 +618,6 @@ public class MenuUI : MonoBehaviour
     readonly List<Image> nodeFills = new List<Image>();
     readonly List<Text> nodeNumbers = new List<Text>();
     readonly List<Image[]> nodeStars = new List<Image[]>();
-    readonly List<Image> nodeStickers = new List<Image>();
     Text levelsTitle, infoTitle, infoHint, startLabel;
     RawImage infoThumb;
     Image[] infoStars;
@@ -716,14 +715,6 @@ public class MenuUI : MonoBehaviour
                 Place(stars[s].rectTransform, new Vector2((s - 1) * 26f, -60f + (s == 1 ? -4f : 0f)), new Vector2(24f, 24f));
             }
             nodeStars.Add(stars);
-            // ملصق صغير على الدايرة إذا لقيتيه
-            var badge = Panel(ring.rectTransform, "Sticker", Pink);
-            badge.sprite = circle;
-            Place(badge.rectTransform, new Vector2(38f, 38f), new Vector2(36f, 36f));
-            var bstar = Panel(badge.rectTransform, "Star", Yellow);
-            bstar.sprite = star;
-            Place(bstar.rectTransform, Vector2.zero, new Vector2(26f, 26f));
-            nodeStickers.Add(badge);
         }
 
         // بطاقة المرحلة المختارة (يسار)
@@ -788,8 +779,6 @@ public class MenuUI : MonoBehaviour
             nodeFills[i].rectTransform.sizeDelta = new Vector2(size - (chosen ? 18f : 14f), size - (chosen ? 18f : 14f));
             nodeNumbers[i].color = open ? (current ? Color.white : Navy) : new Color(0.5f, 0.5f, 0.52f);
             nodeNumbers[i].rectTransform.sizeDelta = new Vector2(size, size);
-            nodeStickers[i].gameObject.SetActive(open && SaveData.HasSticker(i));
-            nodeStickers[i].rectTransform.anchoredPosition = new Vector2(size * 0.38f, size * 0.38f);
             for (int s = 0; s < SaveData.MaxStars; s++)
             {
                 nodeStars[i][s].enabled = open && got > 0;
@@ -810,7 +799,6 @@ public class MenuUI : MonoBehaviour
         int st = SaveData.Stars(sel);
         for (int s = 0; s < infoStars.Length; s++) infoStars[s].color = s < st ? Gold : StarOff;
         string hint = selOpen ? d.subtitle : "تُفتح بعد إنهاء المراحل السابقة";
-        if (selOpen && d.sticker.HasValue) hint += SaveData.HasSticker(sel) ? " — عُثر على الملصق!" : " — فيها ملصق مخفي";
         infoHint.text = WrapFix(hint, 30);
         startButton.GetComponent<Image>().color = selOpen ? PinkDark : LockedDark;
         startButton.transform.GetChild(0).GetComponent<Image>().color = selOpen ? Pink : Locked;

@@ -12,7 +12,6 @@ public static class ForestFeatures
         foreach (Vector3 h in data.hives) BeeHive.Create(root, h, gm);
         foreach (Vector3 h in data.honeys) GluePuddle.Create(root, h, gm, true);
         if (data.forest) ForestScenery.Create(root, data, gm, rng);
-        if (data.sticker.HasValue) Sticker.Create(root, data.sticker.Value, data, gm);
     }
 }
 
@@ -1065,73 +1064,5 @@ public class ForestScenery : MonoBehaviour
             bunnies[i].localRotation = Quaternion.Euler(0f, Mathf.Cos(k * 0.4f) > 0f ? 0f : 180f, 0f);
         }
         for (int i = 0; i < glows.Count; i++) glows[i].localScale = Vector3.one * (1f + Mathf.Sin(t * 2f + i) * 0.1f);
-    }
-}
-
-// ---------- الملصق المخفي ----------
-
-// بكل مرحلة من الجزء الثالث ملصق لامع مخبى بمكان صعب شوي: المسيه بخط (أو تمر عليه رويدا) وينحفظ
-public class Sticker : MonoBehaviour
-{
-    Vector3 home;
-    int levelIndex;
-    bool taken;
-    Transform badge;
-
-    public static void Create(Transform root, Vector3 pos, LevelData data, GameManager gm)
-    {
-        int index = Levels.All.IndexOf(data);
-        if (index < 0) index = gm.LevelIndex;
-        var go = new GameObject("Sticker");
-        go.transform.SetParent(root, false);
-        go.transform.position = pos;
-        var s = go.AddComponent<Sticker>();
-        s.home = pos;
-        s.levelIndex = index;
-        bool had = index >= 0 && index < Levels.All.Count && SaveData.HasSticker(index);
-        Material rim = gm.Mat("Sticker Rim", Color.white, 0.6f);
-        Material face = gm.Mat("Sticker Face", had ? new Color(0.8f, 0.8f, 0.85f) : new Color(1f, 0.45f, 0.65f), 0.6f);
-        Material star = gm.Mat("Sticker Star", had ? new Color(0.95f, 0.95f, 0.95f) : new Color(1.4f, 1.15f, 0.3f), 0.6f);
-        s.badge = new GameObject("Badge").transform;
-        s.badge.SetParent(go.transform, false);
-        var r = LevelBuilder.Visual("Rim", PrimitiveType.Cylinder, s.badge, Vector3.zero, new Vector3(0.75f, 0.03f, 0.75f), rim, false).transform;
-        r.localRotation = Quaternion.Euler(90f, 0f, 0f);
-        var f = LevelBuilder.Visual("Face", PrimitiveType.Cylinder, s.badge, new Vector3(0f, 0f, -0.02f), new Vector3(0.62f, 0.03f, 0.62f), face, false).transform;
-        f.localRotation = Quaternion.Euler(90f, 0f, 0f);
-        for (int i = 0; i < 2; i++)
-        {
-            var st = LevelBuilder.Visual("Star", PrimitiveType.Cube, s.badge, new Vector3(0f, 0f, -0.05f), new Vector3(0.28f, 0.28f, 0.02f), star, false).transform;
-            st.localRotation = Quaternion.Euler(0f, 0f, i * 45f);
-        }
-    }
-
-    void Update()
-    {
-        GameManager gm = GameManager.Instance;
-        if (gm == null || taken) return;
-        float t = Time.time;
-        transform.position = home + Vector3.up * Mathf.Sin(t * 2f) * 0.15f;
-        badge.localRotation = Quaternion.Euler(0f, Mathf.Sin(t * 1.5f) * 35f, Mathf.Sin(t * 0.9f) * 8f);
-        if (Random.value < 0.08f) Fx.Sparkle(transform.position + Random.insideUnitSphere * 0.4f, new Color(1f, 0.9f, 0.5f), 1);
-
-        bool touched = gm.Rowaida != null && (gm.Rowaida.transform.position + Vector3.up * 0.5f - transform.position).sqrMagnitude < 0.8f * 0.8f;
-        if (!touched)
-        {
-            Bounds me = new Bounds(transform.position, new Vector3(1.2f, 1.2f, 4f));
-            foreach (InkMark m in FindObjectsByType<InkMark>(FindObjectsSortMode.None))
-            {
-                var mr = m.GetComponent<MeshRenderer>();
-                if (mr != null && mr.bounds.Intersects(me)) { touched = true; break; }
-            }
-        }
-        if (!touched) return;
-        taken = true;
-        bool first = levelIndex >= 0 && levelIndex < Levels.All.Count && !SaveData.HasSticker(levelIndex);
-        if (levelIndex >= 0 && levelIndex < Levels.All.Count) SaveData.SetSticker(levelIndex);
-        LevelSfx.Play("sticker", 0.9f);
-        Fx.Sparkle(transform.position, new Color(1f, 0.6f, 0.8f), 30);
-        Fx.Sparkle(transform.position, new Color(1f, 0.95f, 0.5f), 20);
-        gm.UI.ShowMessage("", 2.4f, first ? "عُثر على الملصق المخفي!" : "هذا الملصق موجود من قبل");
-        Destroy(gameObject, 0.05f);
     }
 }

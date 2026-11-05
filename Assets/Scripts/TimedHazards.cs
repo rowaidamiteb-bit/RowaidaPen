@@ -72,11 +72,33 @@ public class TimedHazard : MonoBehaviour
             }
             case "clam":
             {
-                Material shell = gm.Mat("Clam Shell", new Color(0.75f, 0.6f, 0.85f), 0.5f);
+                // محارة حقيقية: نصين بضلوع وحافة متموجة (مثل الأسقلوب)، جوا لامع لؤلؤي، لحم وردي، ولؤلؤة.
+                // المفصل ورا والفتحة ناحية الكاميرا، والنص الفوقي يلف من المفصل
+                Material outer = Shapes.ShellPattern("clam", new Color(1f, 0.86f, 0.72f), new Color(0.95f, 0.4f, 0.32f), 16);
+                Material nacre = gm.Mat("Clam Nacre", new Color(1f, 0.9f, 0.92f), 0.92f, 0.1f);
+                Material flesh = gm.Mat("Clam Flesh", new Color(1f, 0.6f, 0.56f), 0.6f);
                 Material pearl = gm.Mat("Pearl", new Color(1f, 0.97f, 0.95f), 0.95f);
-                Part(PrimitiveType.Sphere, new Vector3(0f, 0.1f, 0f), new Vector3(2.2f, 0.4f, 1.6f), shell);          // تحت
-                Part(PrimitiveType.Sphere, new Vector3(0f, 0.3f, 0f), new Vector3(2.2f, 0.4f, 1.6f), shell);          // فوق (يتحرك)
-                Part(PrimitiveType.Sphere, new Vector3(0f, 0.35f, -0.2f), Vector3.one * 0.35f, pearl);
+                Mesh half = Shapes.Shell(16);
+                Vector3 hingeAt = new Vector3(0f, 0.2f, 0.65f);
+                var lower = Shapes.Add(model, "Lower Shell", half, hingeAt, new Vector3(1f, -1f, 1f), outer);
+                lower.GetComponent<MeshRenderer>().sharedMaterials = new[] { outer, nacre };
+                parts.Add(lower.transform);
+                var top = new GameObject("Upper Shell").transform;
+                top.SetParent(model, false);
+                top.localPosition = hingeAt;
+                Shapes.Add(top, "Shell", half, Vector3.zero, Vector3.one, outer).GetComponent<MeshRenderer>().sharedMaterials = new[] { outer, nacre };
+                parts.Add(top);
+                // لحم المحارة: حافة وردية متموجة جوا النص التحتي
+                var frill = new List<Vector3>();
+                for (int k = 0; k <= 26; k++)
+                {
+                    float u = Mathf.Lerp(0.14f, 0.86f, k / 26f);
+                    Vector3 p = Shapes.ShellPoint(u, 0.84f, 1.25f, 0.28f, 16, true);
+                    frill.Add(hingeAt + new Vector3(p.x, -p.y + 0.05f + Mathf.Sin(k * 1.9f) * 0.02f, p.z));
+                }
+                Shapes.Add(model, "Flesh", Shapes.Tube(frill, 0.06f, 0.06f, 8), Vector3.zero, Vector3.one, flesh, default, false);
+                Vector3 bed = Shapes.ShellPoint(0.5f, 0.45f, 1.25f, 0.28f, 16, true);
+                Shapes.Add(model, "Pearl", Shapes.Sphere(), hingeAt + new Vector3(0f, -bed.y + 0.17f, bed.z), Vector3.one * 0.17f, pearl);
                 break;
             }
             case "pencil":
@@ -144,11 +166,18 @@ public class TimedHazard : MonoBehaviour
             }
             case "cymbals":
             {
-                Material brass = gm.Mat("Gear Brass", new Color(0.85f, 0.65f, 0.3f), 0.7f, 0.5f);
+                // صنجين نحاس حقيقيين: قبة بالنص وحلقات خراطة تلمع، وعلى ظهر كل واحد مسكة جلد
+                Material bronze = gm.Mat("Cymbal Bronze", new Color(0.93f, 0.7f, 0.32f), 0.84f, 0.7f);
+                Material leather = gm.Mat("Cymbal Strap", new Color(0.35f, 0.2f, 0.12f), 0.35f);
                 for (int s = 0; s < 2; s++)
                 {
-                    var c = Part(PrimitiveType.Cylinder, Vector3.zero, new Vector3(1.5f, 0.05f, 1.5f), brass);
-                    c.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                    var c = new GameObject("Cymbal").transform;
+                    c.SetParent(model, false);
+                    parts.Add(c);
+                    Shapes.Add(c, "Plate", Shapes.Cymbal(0.8f), Vector3.zero, Vector3.one, bronze);
+                    LevelBuilder.Visual("Strap Pad", PrimitiveType.Cylinder, c, new Vector3(0f, 0.17f, 0f), new Vector3(0.2f, 0.012f, 0.2f), leather, false);
+                    var loop = new List<Vector3> { new Vector3(-0.1f, 0.17f, 0f), new Vector3(-0.09f, 0.3f, 0f), new Vector3(0f, 0.35f, 0f), new Vector3(0.09f, 0.3f, 0f), new Vector3(0.1f, 0.17f, 0f) };
+                    Shapes.Add(c, "Strap", Shapes.Tube(loop, 0.028f, 0.028f, 8), Vector3.zero, Vector3.one, leather, default, false);
                 }
                 break;
             }
@@ -437,16 +466,38 @@ public class TimedHazard : MonoBehaviour
             }
             case "stapler":
             {
-                // دباسة عملاقة: القاعدة على الأرض، والذراع يتحرك من مفصل ورا
-                Material red = gm.Mat("Stapler Red", new Color(0.9f, 0.22f, 0.25f), 0.6f, 0.2f);
+                // دباسة مكتب حقيقية: قاعدة مدورة بنفس لون الغطا (أغمق شوي) عليها سندان كروم، مفصل بمسمار،
+                // وغطا أحمر مقوس لامع تحته مخزن الدبابيس المعدني. الذراع يلف من المفصل ورا (عند z = 1.8)
+                Material red = gm.Mat("Stapler Red", new Color(0.78f, 0.07f, 0.1f), 0.82f, 0.1f);
+                Material dark = gm.Mat("Stapler Base Red", new Color(0.45f, 0.04f, 0.06f), 0.55f);
                 Material steel = gm.Mat("Sharpener Steel", new Color(0.8f, 0.82f, 0.86f), 0.9f, 0.8f);
-                LevelBuilder.Visual("Stapler Base", PrimitiveType.Cube, transform, new Vector3(spec.x, 0.04f, 0.2f), new Vector3(1.5f, 0.08f, 3.6f), steel, false);
-                LevelBuilder.Visual("Stapler Anvil", PrimitiveType.Cube, transform, new Vector3(spec.x, 0.09f, -1.3f), new Vector3(0.8f, 0.04f, 0.6f), red, false);
-                LevelBuilder.Visual("Hinge", PrimitiveType.Cube, transform, new Vector3(spec.x, 0.5f, 1.8f), new Vector3(1.3f, 0.95f, 0.5f), red);
-                // الذراع (تحت المفصل لليسار)
-                Part(PrimitiveType.Cube, new Vector3(0f, 0.05f, -1.75f), new Vector3(1.3f, 0.45f, 3.6f), red);
-                Part(PrimitiveType.Cube, new Vector3(0f, -0.25f, -1.75f), new Vector3(1f, 0.15f, 3.4f), steel);
-                Part(PrimitiveType.Cube, new Vector3(0f, 0.12f, -3.4f), new Vector3(1.35f, 0.5f, 0.4f), red);
+                Transform t0 = transform;
+                // القاعدة: أنبوب مبطط بأطراف مدورة
+                var baseT = new GameObject("Stapler Base").transform;
+                baseT.SetParent(t0, false);
+                baseT.localPosition = new Vector3(spec.x, 0.1f, 0f);
+                baseT.localScale = new Vector3(1f, 0.2f, 1f);
+                var baseLine = new List<Vector3> { new Vector3(0f, 0f, 2.05f), new Vector3(0f, 0f, -1.75f) };
+                Shapes.Add(baseT, "Base", Shapes.Tube(baseLine, 0.6f, 0.58f, 28, true, false), Vector3.zero, Vector3.one, dark, default, false);
+                Shapes.Add(baseT, "Base Nose", Shapes.Sphere(), new Vector3(0f, 0f, -1.75f), new Vector3(0.58f, 0.58f, 0.3f), dark, default, false);
+                // السندان: لوح كروم صغير قدام
+                Shapes.Add(t0, "Stapler Anvil", Shapes.Sphere(), new Vector3(spec.x, 0.21f, -1.3f), new Vector3(0.24f, 0.025f, 0.3f), steel, default, false);
+                // عمود المفصل ومسماره
+                LevelBuilder.Visual("Hinge Post", PrimitiveType.Cube, t0, new Vector3(spec.x, 0.5f, 1.8f), new Vector3(0.95f, 0.75f, 0.5f), dark);
+                LevelBuilder.Visual("Hinge Pin", PrimitiveType.Cylinder, t0, new Vector3(spec.x, 0.95f, 1.8f), new Vector3(0.2f, 0.7f, 0.2f), steel, false).transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                // الذراع: غطا مقوس (أنبوب مبطط بالعرض)، أنفه مدور، وتحته مخزن الدبابيس ولوح الدفع
+                var cover = new GameObject("Cover").transform;
+                cover.SetParent(model, false);
+                cover.localScale = new Vector3(1f, 0.55f, 1f);
+                parts.Add(cover);
+                var spine = new List<Vector3> { new Vector3(0f, 0f, 0f), new Vector3(0f, 0.18f, -1.1f), new Vector3(0f, 0.12f, -2.4f), new Vector3(0f, -0.12f, -3.35f) };
+                Shapes.Add(cover, "Cover Shell", Shapes.Tube(spine, 0.64f, 0.5f, 28), Vector3.zero, Vector3.one, red);
+                Shapes.Add(cover, "Cover Nose", Shapes.Sphere(), new Vector3(0f, -0.12f, -3.35f), new Vector3(0.5f, 0.5f, 0.28f), red);
+                Shapes.Add(cover, "Cover Back", Shapes.Sphere(), Vector3.zero, new Vector3(0.64f, 0.64f, 0.3f), red);
+                // شعار كروم صغير فوق
+                Part(PrimitiveType.Cube, new Vector3(0f, 0.42f, -1.3f), new Vector3(0.36f, 0.03f, 0.8f), steel);
+                Part(PrimitiveType.Cube, new Vector3(0f, -0.3f, -1.75f), new Vector3(0.82f, 0.16f, 3.2f), steel);
+                Part(PrimitiveType.Cube, new Vector3(0f, -0.5f, -3.32f), new Vector3(0.78f, 0.32f, 0.08f), steel);
                 break;
             }
             case "metronome":
@@ -497,8 +548,7 @@ public class TimedHazard : MonoBehaviour
                 model.position = new Vector3(cx, 0f, 0f);
                 // مفتوحة وهي مو شغالة، وتسكر بقوة وقت العقبة
                 float open = on ? (k < 0.15f ? 1f - k / 0.15f : 0f) : Mathf.Clamp01((Local - Active) / 0.4f);
-                parts[1].localPosition = new Vector3(0f, 0.3f + open * 0.5f, 0.4f * open);
-                parts[1].localRotation = Quaternion.Euler(-open * 40f, 0f, 0f);
+                parts[1].localRotation = Quaternion.Euler(Mathf.SmoothStep(0f, 1f, open) * 78f, 0f, 0f);
                 break;
             }
             case "pencil":
@@ -538,9 +588,13 @@ public class TimedHazard : MonoBehaviour
             case "cymbals":
             {
                 float gap = on ? Mathf.Abs(Mathf.Cos(k * Mathf.PI)) * 1.6f : 1.6f;
-                model.position = new Vector3(cx, 1f, 0f);
-                parts[0].localPosition = new Vector3(-gap * 0.5f - 0.05f, 0f, 0f);
-                parts[1].localPosition = new Vector3(gap * 0.5f + 0.05f, 0f, 0f);
+                model.position = new Vector3(cx, 1.1f, 0f);
+                // يتقابلون على خط مايل شوي عشان يبان وجه الصنج من الكاميرا، والقبة لبرا
+                Vector3 axis = Quaternion.Euler(0f, -32f, 0f) * Vector3.right;
+                parts[0].localPosition = -axis * (gap * 0.5f + 0.03f);
+                parts[1].localPosition = axis * (gap * 0.5f + 0.03f);
+                parts[0].localRotation = Quaternion.FromToRotation(Vector3.up, -axis);
+                parts[1].localRotation = Quaternion.FromToRotation(Vector3.up, axis);
                 model.gameObject.SetActive(true);
                 break;
             }

@@ -889,15 +889,6 @@ public static class LevelSfx
                 }
                 return Normalize(Loop(b, 0.1f), 0.3f);
             }
-            case "sticker":
-            {
-                // جمعتي ملصق: أربع نغمات تطلع ولمعة
-                b = Buf(1.1f);
-                float[] notes = { 1046f, 1318f, 1568f, 2093f };
-                for (int k = 0; k < notes.Length; k++) AddTone(b, k * 0.08f, 0.8f, notes[k], 0.35f, 5f, 0.15f);
-                for (int k = 0; k < 6; k++) AddTone(b, 0.35f + k * 0.05f, 0.3f, 3000f + k * 300f, 0.06f, 12f, 0f);
-                return Normalize(b, 0.55f);
-            }
             case "amb_night":
             {
                 b = Buf(6.5f);

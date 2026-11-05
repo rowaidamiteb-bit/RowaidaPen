@@ -38,7 +38,7 @@ public static class DreamFeatures
         if (!colliders) foreach (Collider c in m.GetComponentsInChildren<Collider>()) c.enabled = false;
     }
 
-    // نفخة غيمة (كرات بيضا ملزوقة)
+    // نفخة غيمة مدورة: كورة كبيرة بالنص وحولها كور أصغر على دايرة (شكلها دايري منفوش مثل القطن)
     public static Transform Puff(Transform parent, Vector3 localPos, float size, GameManager gm)
     {
         var t = new GameObject("Puff").transform;
@@ -46,9 +46,41 @@ public static class DreamFeatures
         t.localPosition = localPos;
         Material m = gm.Mat("Dream Cloud", new Color(1f, 0.97f, 1f), 0.2f);
         LevelBuilder.Visual("Puff", PrimitiveType.Sphere, t, Vector3.zero, Vector3.one * size, m, false);
-        LevelBuilder.Visual("Puff", PrimitiveType.Sphere, t, new Vector3(size * 0.35f, size * 0.15f, 0.05f), Vector3.one * size * 0.75f, m, false);
-        LevelBuilder.Visual("Puff", PrimitiveType.Sphere, t, new Vector3(-size * 0.35f, size * 0.1f, -0.05f), Vector3.one * size * 0.7f, m, false);
+        for (int k = 0; k < 7; k++)
+        {
+            float a = k * Mathf.PI * 2f / 7f + 0.3f;
+            LevelBuilder.Visual("Puff", PrimitiveType.Sphere, t, new Vector3(Mathf.Cos(a) * 0.34f, Mathf.Sin(a) * 0.31f, 0.03f) * size, Vector3.one * size * 0.56f, m, false);
+        }
         return t;
+    }
+
+    // خروف مدور منفوش (يطالع يمين): كورة صوف عليها كور صوف صغيرة، راس غامق مدور بخصلة صوف، عيون، ورجول قصيرة
+    public static Transform Sheep(Transform parent, GameManager gm)
+    {
+        Transform body = new GameObject("Sheep").transform;
+        body.SetParent(parent, false);
+        body.localPosition = new Vector3(0f, -0.1f, 0f);
+        Material wool = gm.Mat("Dream Cloud", new Color(1f, 0.97f, 1f), 0.2f);
+        Material face = gm.Mat("Sheep Face", new Color(0.3f, 0.28f, 0.32f), 0.4f);
+        Material white = gm.Mat("Badge White", Color.white, 0.4f);
+        Material dark = gm.Mat("Monster Pupil", new Color(0.05f, 0.04f, 0.06f), 0.9f);
+        Material pink = gm.Mat("Blush", new Color(1f, 0.6f, 0.7f), 0.3f);
+        LevelBuilder.Visual("Wool", PrimitiveType.Sphere, body, Vector3.zero, new Vector3(1.25f, 1.05f, 1.05f), wool, false);
+        // كور الصوف موزعة على سطح الجسم كله (إلا تحت)
+        for (int k = 0; k < 24; k++)
+        {
+            float y = 1f - (k + 0.5f) / 24f * 2f, r = Mathf.Sqrt(1f - y * y), a = k * 2.4f;
+            if (y < -0.55f) continue;
+            LevelBuilder.Visual("Wool", PrimitiveType.Sphere, body, new Vector3(Mathf.Cos(a) * r * 0.56f, y * 0.46f, Mathf.Sin(a) * r * 0.46f), Vector3.one * 0.4f, wool, false);
+        }
+        LevelBuilder.Visual("Sheep Head", PrimitiveType.Sphere, body, new Vector3(0.7f, 0.12f, -0.1f), new Vector3(0.5f, 0.48f, 0.46f), face, false);
+        for (int k = 0; k < 3; k++) LevelBuilder.Visual("Head Wool", PrimitiveType.Sphere, body, new Vector3(0.62f + k * 0.09f, 0.36f - k * 0.02f, -0.1f + (k - 1) * 0.08f), Vector3.one * 0.22f, wool, false);
+        for (int e = -1; e <= 1; e += 2) LevelBuilder.Visual("Sheep Ear", PrimitiveType.Sphere, body, new Vector3(0.64f, 0.2f, -0.1f + e * 0.27f), new Vector3(0.12f, 0.08f, 0.26f), face, false);
+        LevelBuilder.Visual("Sheep Eye", PrimitiveType.Sphere, body, new Vector3(0.83f, 0.2f, -0.28f), Vector3.one * 0.14f, white, false);
+        LevelBuilder.Visual("Sheep Pupil", PrimitiveType.Sphere, body, new Vector3(0.86f, 0.2f, -0.34f), Vector3.one * 0.07f, dark, false);
+        LevelBuilder.Visual("Sheep Blush", PrimitiveType.Sphere, body, new Vector3(0.84f, 0.04f, -0.27f), new Vector3(0.1f, 0.06f, 0.04f), pink, false);
+        for (int k = 0; k < 4; k++) LevelBuilder.Visual("Sheep Leg", PrimitiveType.Cylinder, body, new Vector3(k < 2 ? 0.32f : -0.32f, -0.5f, k % 2 == 0 ? -0.2f : 0.2f), new Vector3(0.12f, 0.14f, 0.12f), face, false);
+        return body;
     }
 
     // وجه نعسان أو صاحي (عيون مسكرة خط، أو مفتوحة)
@@ -295,14 +327,7 @@ public class SheepBridge : MonoBehaviour
             DreamFeatures.HideInk(m);
             var s = new Sheep { m = m, from = m.transform.position, to = new Vector3(gapFrom + (gapTo - gapFrom) * (sheep.Count + 0.5f) / slots, top - 0.35f, 0f), t = 0f };
             // شكل الخروف
-            Transform body = new GameObject("Sheep").transform;
-            body.SetParent(m.transform, false);
-            for (int k = 0; k < 6; k++) DreamFeatures.Puff(body, new Vector3(-0.45f + (k % 3) * 0.45f, (k / 3) * 0.3f, 0f), 0.6f, gm);
-            Material face = gm.Mat("Sheep Face", new Color(0.3f, 0.28f, 0.32f), 0.4f);
-            LevelBuilder.Visual("Sheep Head", PrimitiveType.Sphere, body, new Vector3(0.85f, 0.25f, -0.1f), new Vector3(0.45f, 0.5f, 0.45f), face, false);
-            for (int e = -1; e <= 1; e += 2) LevelBuilder.Visual("Sheep Ear", PrimitiveType.Sphere, body, new Vector3(0.8f, 0.45f, e * 0.25f), new Vector3(0.3f, 0.1f, 0.15f), face, false);
-            for (int e = -1; e <= 1; e += 2) LevelBuilder.Visual("Sheep Eye", PrimitiveType.Sphere, body, new Vector3(0.98f, 0.32f, e * 0.12f - 0.18f), Vector3.one * 0.08f, gm.Mat("Badge White", Color.white, 0.4f), false);
-            for (int k = 0; k < 4; k++) LevelBuilder.Visual("Sheep Leg", PrimitiveType.Cube, body, new Vector3(-0.4f + k * 0.27f, -0.35f, (k % 2) * 0.3f - 0.15f), new Vector3(0.1f, 0.3f, 0.1f), face, false);
+            DreamFeatures.Sheep(m.transform, gm);
             var col = m.gameObject.AddComponent<BoxCollider>();
             col.center = new Vector3(0f, 0.15f, 0f);
             col.size = new Vector3(1.45f, 0.5f, 1.6f);
@@ -357,8 +382,7 @@ public class Constellation : MonoBehaviour
             var st = new GameObject("Star").transform;
             st.SetParent(go.transform, false);
             st.position = p;
-            for (int k = 0; k < 2; k++) LevelBuilder.Visual("Star Arm", PrimitiveType.Cube, st, Vector3.zero, new Vector3(0.55f, 0.14f, 0.1f), c.dimMat, false).transform.localRotation = Quaternion.Euler(0f, 0f, k * 90f);
-            for (int k = 0; k < 2; k++) LevelBuilder.Visual("Star Arm", PrimitiveType.Cube, st, Vector3.zero, new Vector3(0.35f, 0.12f, 0.1f), c.dimMat, false).transform.localRotation = Quaternion.Euler(0f, 0f, 45f + k * 90f);
+            Shapes.Add(st, "Star Shape", Shapes.Star(), Vector3.zero, Vector3.one * 0.38f, c.dimMat, default, false);
             c.stars.Add(st); c.pos.Add(p);
         }
         // جسر النور (يطلع لما تكتمل)
@@ -378,7 +402,8 @@ public class Constellation : MonoBehaviour
         float t = Time.time, dt = Time.deltaTime;
         for (int i = 0; i < stars.Count; i++)
         {
-            stars[i].localRotation = Quaternion.Euler(0f, 0f, t * (lit[i] ? 60f : 15f) + i * 20f);
+            // تتمايل شوي (عشان تلمع وجوهها)، واللي تضوي تلف
+            stars[i].localRotation = Quaternion.Euler(0f, Mathf.Sin(t * 1.5f + i) * 25f, Mathf.Sin(t * 0.8f + i * 2f) * 12f + (lit[i] ? t * 40f : 0f));
             stars[i].localScale = Vector3.one * (lit[i] ? 1.3f + Mathf.Sin(t * 5f + i) * 0.1f : 0.9f + Mathf.Sin(t * 2f + i) * 0.1f);
         }
         if (bridgeT < 0f)
@@ -695,6 +720,8 @@ public class ShadowChase : MonoBehaviour
             return;
         }
         if (!gm.IsPlaying) return;
+        // والتعليمات على الشاشة (أو رويدا تتكلم) الظل يستنى، ويعطي اللاعبة شوي وقت بعدها عشان تلحق تسوي اللي انطلب
+        if (gm.UI.MessageShowing || Narration.Speaking) { delay = Mathf.Max(delay, 1.5f); return; }
         if (delay > 0f) { delay -= dt; return; }
         RowaidaController r = gm.Rowaida;
         float gap = r != null ? r.transform.position.x - Front : 99f;
@@ -703,8 +730,8 @@ public class ShadowChase : MonoBehaviour
         foreach (Transform l in lamps) if (l != null && l.position.x > transform.position.x - 1f && l.position.x - Front < 4f) scared = true;
         float s = speed;
         if (scared) s = -2.2f;
-        else if (r != null && r.Held) s = gap < 6f ? 2f : 4.5f;
-        else if (gap > 8f) s = 4.5f;
+        else if (r != null && r.Held) s = gap < 6f ? 1.2f : 3.5f;
+        else if (gap > 8f) s = 3.6f;
         if (Front < endX || s < 0f) transform.position += new Vector3(s * dt, 0f, 0f);
         eyes.localScale = scared ? new Vector3(1f, 0.4f, 1f) : Vector3.one;
         if (r == null) return;
@@ -958,9 +985,10 @@ public class DreamScenery : MonoBehaviour
             var c = new GameObject("Dream Cloud").transform;
             c.SetParent(p, false);
             c.position = new Vector3(x, R(-3f, 9f), R(5f, 12f));
-            int n = Random.Range(3, 6);
-            for (int k = 0; k < n; k++) DreamFeatures.Puff(c, new Vector3(k * 0.9f - n * 0.45f, Mathf.Sin(k) * 0.3f, 0f), R(1.2f, 2f), gm);
-            if (Random.value < 0.3f) DreamFeatures.Face(c, new Vector3(0f, 0.1f, -0.9f), 2f, false, gm);
+            float size = R(1.8f, 2.8f);
+            DreamFeatures.Puff(c, Vector3.zero, size, gm);
+            if (Random.value < 0.5f) DreamFeatures.Puff(c, new Vector3((Random.value < 0.5f ? -1f : 1f) * size * 0.45f, -size * 0.22f, 0.15f), size * 0.5f, gm);
+            if (Random.value < 0.3f) DreamFeatures.Face(c, new Vector3(0f, 0.05f, -size * 0.52f), size, false, gm);
             Bob(c);
         }
         // قوس قزح
@@ -993,7 +1021,7 @@ public class DreamScenery : MonoBehaviour
         Material[] starM = { gm.Mat("BG Star", new Color(2.2f, 2.2f, 1.8f), 0.5f), gm.Mat("BG Star Blue", new Color(1.4f, 1.8f, 2.6f), 0.5f) };
         for (int k = 0; k < 140; k++)
         {
-            var st = LevelBuilder.Visual("Star", PrimitiveType.Sphere, p, new Vector3(R(minX - 15f, maxX + 15f), R(3f, 16f), R(9f, 14f)), Vector3.one * R(0.06f, 0.2f), starM[k % 2], false);
+            var st = Shapes.Add(p, "Star", Shapes.Star(0.45f, 0.15f), new Vector3(R(minX - 15f, maxX + 15f), R(3f, 16f), R(9f, 14f)), Vector3.one * R(0.05f, 0.16f), starM[k % 2], new Vector3(0f, 0f, R(0f, 72f)), false);
             twinkle.Add(st.GetComponent<Renderer>());
         }
         // كواكب بحلقات
@@ -1015,7 +1043,7 @@ public class DreamScenery : MonoBehaviour
             for (int i = 0; i < 4; i++)
             {
                 Vector3 b = a + new Vector3(R(0.8f, 1.8f), R(-0.8f, 0.8f), 0f);
-                LevelBuilder.Visual("Const Star", PrimitiveType.Sphere, p, b, Vector3.one * 0.18f, starM[0], false);
+                Shapes.Add(p, "Const Star", Shapes.Star(0.45f, 0.15f), b, Vector3.one * 0.15f, starM[0], new Vector3(0f, 0f, R(0f, 72f)), false);
                 var line = LevelBuilder.Visual("Const Line", PrimitiveType.Cylinder, p, Vector3.zero, Vector3.one, LabFeatures2.Tint("Const Line", new Color(0.8f, 0.85f, 1f, 0.35f)), false).transform;
                 LabFeatures2.Stretch(line, a, b, 0.03f);
                 a = b;

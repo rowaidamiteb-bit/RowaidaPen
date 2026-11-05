@@ -268,7 +268,6 @@ public class LevelData
     public List<Vector3> stonePonds = new List<Vector3>();  // بركة حجار تطلع وتغطس (من x، لـ x، كل كم ثانية)
     public List<Vector2> stumps = new List<Vector2>();      // جذع مقطوع على الطريق تنطين فوقه (x، سطح)
     public bool forest;                                     // منظر الغابة (شجر، عشب، فراشات، أرانب، طيور)
-    public Vector3? sticker;                                // ملصق مخفي (الجزء الثالث)
     public bool concertStage;                               // اللحن الأخير: المرحلة مسرح (ستارة، جمهور، أضواء، قائد أوركسترا)
     public bool risingPianos;                               // البيانو: كل بيانو نغمته أعلى من اللي قبله لين آخر المرحلة
     public List<Vector3> swarms = new List<Vector3>();      // اليراعات: سرب يعبي الفانوس (لمسة رويدا أو خط)
@@ -814,6 +813,7 @@ public static class Levels
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(53f, 0f, 0f),
             ink = 20f,
+            allowJump = true,                // القفز يدوي هنا (المسافة أو السهم للأعلى)
             blocks =
             {
                 Page(-7f, 4f),
@@ -943,6 +943,7 @@ public static class Levels
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(55f, 0f, 0f),
             ink = 44f,
+            allowJump = true,                // القفز يدوي هنا (المسافة أو السهم للأعلى)
             blocks =
             {
                 Page(-7f, 5f),
@@ -1317,7 +1318,6 @@ public static class Levels
             webs = { new Vector2(2.5f, 0f) },
             seedPits = { new Vector3(6f, 12f, 0f) },
             deadTrees = { new Vector3(22f, 28f, 0f) },
-            sticker = new Vector3(9f, 5.2f, 0f),
         };
         Oval(level, 9f, 2.4f, new Color(0.45f, 0.75f, 0.35f));
         return level;
@@ -1348,7 +1348,6 @@ public static class Levels
             vines = { new Vector3(13f, 19f, 0f) },
             owls = { new Vector3(25f, 0f, 3f) },
             mushrooms = { new Vector3(31.8f, 0f, 11f) },
-            sticker = new Vector3(16f, 7.2f, 0f),
         };
     }
 
@@ -1377,7 +1376,6 @@ public static class Levels
             turtlePonds = { new Vector3(18f, 24.5f, 0f) },
             stonePonds = { new Vector3(31f, 37.5f, 4f) },
             webs = { new Vector2(41.5f, 0f) },
-            sticker = new Vector3(21.2f, 5.5f, 0f),
         };
     }
 
@@ -1408,7 +1406,6 @@ public static class Levels
             seedPits = { new Vector3(14f, 20f, 0f) },
             mushrooms = { new Vector3(33.8f, 0f, 11f) },
             rivers = { new Vector3(42.5f, 49f, 4f) },
-            sticker = new Vector3(37.5f, 6.8f, 0f),
         };
     }
 
@@ -1435,7 +1432,6 @@ public static class Levels
             },
             recipePots = { new Vector3(6f, 13f, 0f) },
             fridges = { new Vector3(21f, 0f, 4f) },
-            sticker = new Vector3(16f, 5.8f, 0f),
         };
     }
 
@@ -1462,7 +1458,6 @@ public static class Levels
             candyGates = { new Vector2(7f, 0f) },
             chocoRivers = { new Vector3(10f, 16f, 0f) },
             gumballPits = { new Vector3(24f, 29f, 0f) },
-            sticker = new Vector3(13f, 5f, 0f),
         };
     }
 
@@ -1489,7 +1484,6 @@ public static class Levels
             pancakePans = { new Vector3(6f, 12f, 0f) },
             conveyors = { new Vector3(14f, 20f, 0f) },
             ovenDoors = { new Vector3(27.5f, 32.5f, 4.6f) },
-            sticker = new Vector3(9f, 5.5f, 0f),
         };
     }
 
@@ -1521,7 +1515,6 @@ public static class Levels
             chocoRivers = { new Vector3(35f, 41f, 0f) },
             candyGates = { new Vector2(44.5f, 0f) },
             pancakePans = { new Vector3(47f, 53f, 0f) },
-            sticker = new Vector3(29f, 6.2f, 0f),
         };
     }
 
@@ -1551,7 +1544,6 @@ public static class Levels
             labFlasks = { new Vector4(10.5f, 0f, 3f, 12.6f) },
             slimeFriends = { new Vector4(16f, 21f, 0f, 14.4f) },
             circuitLifts = { new Vector4(24.5f, 0f, 29.5f, 3.5f) },
-            sticker = new Vector3(18.5f, 5.4f, 0f),
         };
         return level;
     }
@@ -1577,7 +1569,6 @@ public static class Levels
             freezePools = { new Vector4(6f, 11f, 0f, 3.2f) },
             iceWalls = { new Vector4(17f, 0f, 3.4f, 14.3f) },
             icicles = { new Vector3(22f, 31f, 4.4f) },
-            sticker = new Vector3(34f, 2.4f, 0f),
         };
     }
 
@@ -1605,7 +1596,6 @@ public static class Levels
             mouseHoles = { new Vector3(9f, 12f, 1f) },
             growBeams = { new Vector4(18f, 0f, 4.2f, 3.2f) },
             pulleyLifts = { new Vector4(23.5f, 0f, 3f, 21f) },
-            sticker = new Vector3(10.5f, 0.45f, 0f),
         };
     }
 
@@ -1634,7 +1624,6 @@ public static class Levels
             volcano = new Vector4(-7f, 46f, -3f, 0.25f),
             robotHelpers = { new Vector4(4.5f, 24f, 6f, 2.4f) },
             blastFlasks = { new Vector3(11.6f, 2.4f, 3.6f), new Vector3(38f, 12f, 3.6f) },
-            sticker = new Vector3(40f, 14.4f, 0f),
         };
     }
 
@@ -1662,7 +1651,6 @@ public static class Levels
             coinGates = { new Vector4(1.5f, 6.5f, 0f, 8f) },
             pixelCreatures = { new Vector4(11f, 16f, 0f, 0f) },
             breakouts = { new Vector4(18.5f, 22.5f, 0f, 23.3f) },
-            sticker = new Vector3(29f, 2.6f, 0f),
         };
     }
 
@@ -1687,7 +1675,6 @@ public static class Levels
             commandLifts = { new Vector4(6f, 0f, 3f, 4f) },
             bugCatches = { new Vector4(15f, 3f, 18.5f, 0f) },
             loopDoors = { new Vector4(25f, 3f, 0f, 0f) },
-            sticker = new Vector3(30f, 5.4f, 0f),
         };
     }
 
@@ -1713,7 +1700,6 @@ public static class Levels
             tallyGates = { new Vector4(7f, 0f, 3f, 3.5f) },
             numberScales = { new Vector4(13f, 0f, 2f, 16f) },
             calculators = { new Vector4(31f, 0f, 2f, 3f) },
-            sticker = new Vector3(18f, 2.8f, 0f),
         };
     }
 
@@ -1738,7 +1724,6 @@ public static class Levels
             virusBoss = new Vector4(-14f, 46f, 2.7f, 0f),
             popups = { new Vector2(8f, 0f), new Vector2(25f, 0f) },
             saveButtons = { new Vector2(35f, 0f) },
-            sticker = new Vector3(15.5f, 4f, 0f),
         };
     }
 
@@ -1766,7 +1751,6 @@ public static class Levels
             cloudBounces = { new Vector4(5.5f, 8.2f, 0f, 8.5f) },
             sleepyWinds = { new Vector4(11f, 18f, 4.2f, 19f) },
             sheepBridges = { new Vector3(22f, 26f, 4.2f) },
-            sticker = new Vector3(31f, 6.6f, 0f),
         };
     }
 
@@ -1792,7 +1776,6 @@ public static class Levels
             constellations = { new Vector4(6f, 10.5f, 0f, 3f) },
             moonFogs = { new Vector4(14f, 20f, 0f, 17f) },
             lanternLifts = { new Vector3(24f, 0f, 3.5f) },
-            sticker = new Vector3(30f, 6f, 0f),
         };
     }
 
@@ -1814,10 +1797,9 @@ public static class Levels
                 Page(-7f, 17f),
                 Page(20f, 40f),
             },
-            shadowChase = new Vector4(-14f, 40f, 2.6f, 0f),
+            shadowChase = new Vector4(-14f, 40f, 2.2f, 0f),
             scaryEyes = { new Vector2(10f, 0f) },
             alarmWakes = { new Vector2(30f, 0f) },
-            sticker = new Vector3(18.5f, 3.5f, 0f),
         };
     }
 

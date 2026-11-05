@@ -118,6 +118,7 @@ public class GameManager : MonoBehaviour
     public void StartLevelFromMenu(int index)
     {
         spokenLevel = -1;   // من القائمة: نسمع تعليمات المرحلة من جديد
+        announceLater = false;
         menu.Transition(() => LoadLevel(index));
     }
 
@@ -134,6 +135,7 @@ public class GameManager : MonoBehaviour
         {
             IntroActive = false;
             SaveData.IntroSeen = true;
+            announceLater = true;
             LoadLevel(0);
         });
     }
@@ -387,6 +389,24 @@ public class GameManager : MonoBehaviour
             Rowaida.enabled = false;   // تنزل على الأرض وتوقف بدون ما تمشي
             return;
         }
+        // بعد المشهد الأول: رويدا تكمل جملتها الأخيرة أول، وبعدين نشرح المرحلة (وهي توقف لين ذاك الوقت)
+        if (announceLater) { Rowaida.Held = true; return; }
+        Announce(index, data);
+    }
+
+    bool announceLater;
+
+    // المشهد الأول خلص كلامه: نشرح المرحلة الحين
+    public void AnnounceLevel()
+    {
+        if (!announceLater) return;
+        announceLater = false;
+        if (Rowaida != null) Rowaida.Held = false;
+        if (CurrentLevel != null) Announce(levelIndex, CurrentLevel);
+    }
+
+    void Announce(int index, LevelData data)
+    {
         // تعليمات المرحلة بصوت رويدا (مرة وحدة، ما تنعاد كل ما نعيد المرحلة)
         string voice = "level_" + (index + 1).ToString("00");
         float voiceLen = index != spokenLevel ? Narration.Length(voice) : 0f;

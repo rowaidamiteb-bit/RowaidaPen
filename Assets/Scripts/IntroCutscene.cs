@@ -311,6 +311,8 @@ public class IntroCutscene : MonoBehaviour
             caption.color = new Color(1f, 1f, 1f, Mathf.Clamp01((k - 0.8f) / 0.4f) * Mathf.Clamp01((show - k) / 0.6f));
             yield return null;
         }
+        // خلصت جملتها: الحين نشرح المرحلة الأولى (عشان ما يختلط الصوتين)
+        gm.AnnounceLevel();
         Destroy(canvas.gameObject);
         Destroy(this);
     }

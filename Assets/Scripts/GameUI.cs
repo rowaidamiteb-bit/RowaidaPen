@@ -203,6 +203,9 @@ public class GameUI : MonoBehaviour
         if (levelText != null) levelText.text = ArabicText.Fix("المرحلة " + number);
     }
 
+    // فيه كلام على الشاشة الحين (تعليمات أو تلميح)
+    public bool MessageShowing => messageTimer > 0f;
+
     public void ShowMessage(string message, float duration, string subtitle = null)
     {
         messageText.text = ArabicText.Fix(message);
