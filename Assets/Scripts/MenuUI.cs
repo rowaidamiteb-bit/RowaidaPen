@@ -39,13 +39,13 @@ public class MenuUI : MonoBehaviour
     RectTransform canvasRect, dim, desk, mainPanel, levelsPanel, pausePanel, completePanel;
     RectTransform pageTurn;
     Image flash;
-    Sprite rounded, circle, star, triangle, smiley;
+    Sprite rounded, circle, star, triangle, smiley, coin;
     bool levelsFromPause;
     AudioClip clickClip, turnClip;
 
     public bool Transitioning { get; private set; }
     public bool PauseOpen => pausePanel.gameObject.activeSelf || (levelsPanel.gameObject.activeSelf && levelsFromPause);
-    public bool AnyOpen => mainPanel.gameObject.activeSelf || levelsPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf || completePanel.gameObject.activeSelf || pencilPanel.gameObject.activeSelf || confirmPanel.gameObject.activeSelf || titlePanel.gameObject.activeSelf || settingsPanel.gameObject.activeSelf || howToPanel.gameObject.activeSelf;
+    public bool AnyOpen => mainPanel.gameObject.activeSelf || levelsPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf || completePanel.gameObject.activeSelf || pencilPanel.gameObject.activeSelf || confirmPanel.gameObject.activeSelf || titlePanel.gameObject.activeSelf || settingsPanel.gameObject.activeSelf || howToPanel.gameObject.activeSelf || unlockPanel.gameObject.activeSelf || shopPanel.gameObject.activeSelf;
 
     public void Build(GameManager manager)
     {
@@ -56,6 +56,7 @@ public class MenuUI : MonoBehaviour
         star = StarSprite();
         triangle = TriangleSprite();
         smiley = SmileySprite();
+        coin = CoinSprite();
         clickClip = SynthAudio.Click();
         turnClip = SynthAudio.PageTurn();
 
@@ -90,11 +91,21 @@ public class MenuUI : MonoBehaviour
         BuildTitle();
         BuildSettings();
         BuildHowTo();
+        BuildUnlock();
+        BuildShop();
 
         flash = Panel(canvasRect, "Flash", new Color(1f, 1f, 1f, 0f));
         Stretch(flash.rectTransform);
         pageTurn = BuildPageTurn();
+        BuildToast();
         HideAll();
+        Coins.Changed += RefreshCoins;
+        RefreshCoins();
+    }
+
+    void OnDestroy()
+    {
+        Coins.Changed -= RefreshCoins;
     }
 
     // ---------- فتح وسكر ----------
@@ -112,6 +123,8 @@ public class MenuUI : MonoBehaviour
         if (titlePanel != null) titlePanel.gameObject.SetActive(false);
         if (settingsPanel != null) settingsPanel.gameObject.SetActive(false);
         if (howToPanel != null) howToPanel.gameObject.SetActive(false);
+        if (unlockPanel != null) unlockPanel.gameObject.SetActive(false);
+        if (shopPanel != null) shopPanel.gameObject.SetActive(false);
     }
 
     // onDesk: خلفية الدفتر الكريمية (للقوائم برا اللعب)، وإلا تظلل اللعبة ورا
@@ -824,17 +837,27 @@ public class MenuUI : MonoBehaviour
         SecondaryButton(mainPanel, "صندوق الأقلام", new Vector2(190f, -170f), new Vector2(240f, 96f), ShowPencil, 30, Lilac);
         SecondaryButton(mainPanel, "الإعدادات", new Vector2(-15f, -170f), new Vector2(160f, 96f), () => ShowSettings(mainPanel), 30, Teal);
         SecondaryButton(mainPanel, "من جديد", new Vector2(-200f, -170f), new Vector2(170f, 96f), ShowConfirm, 30, Orange);
-        // بالجوال ما فيه زر خروج (الآيفون ما يسمح فيه)، فزر طريقة اللعب ياخذ السطر كله
+        // بالجوال ما فيه زر خروج (الآيفون ما يسمح فيه)
         bool mobile = Application.isMobilePlatform;
-        SecondaryButton(mainPanel, "طريقة اللعب", new Vector2(mobile ? 0f : 140f, -285f), new Vector2(mobile ? 560f : 280f, 90f), () => ShowHowTo(ShowMain), 32, Yellow);
-        if (!mobile) SecondaryButton(mainPanel, "الخروج", new Vector2(-145f, -285f), new Vector2(270f, 90f), Application.Quit, 32, MintC);
+        if (mobile)
+        {
+            SecondaryButton(mainPanel, "طريقة اللعب", new Vector2(140f, -285f), new Vector2(280f, 90f), () => ShowHowTo(ShowMain), 32, Yellow);
+            SecondaryButton(mainPanel, "المتجر", new Vector2(-145f, -285f), new Vector2(270f, 90f), () => ShowShop(ShowMain), 32, MintC);
+        }
+        else
+        {
+            SecondaryButton(mainPanel, "طريقة اللعب", new Vector2(190f, -285f), new Vector2(240f, 90f), () => ShowHowTo(ShowMain), 30, Yellow);
+            SecondaryButton(mainPanel, "المتجر", new Vector2(-15f, -285f), new Vector2(160f, 90f), () => ShowShop(ShowMain), 30, MintC);
+            SecondaryButton(mainPanel, "الخروج", new Vector2(-200f, -285f), new Vector2(170f, 90f), Application.Quit, 30, Teal);
+        }
 
-        // عداد النجوم بشريط أصفر صغير
-        var pill = Framed(mainPanel, "Stars Pill", new Vector2(0f, -385f), new Vector2(300f, 70f), new Color(1f, 0.93f, 0.7f), YellowDark, 4f, 1.6f);
+        // عداد النجوم والكوينز بشريطين صفر صغار (الكوينز تفتح المتجر)
+        var pill = Framed(mainPanel, "Stars Pill", new Vector2(155f, -385f), new Vector2(280f, 70f), new Color(1f, 0.93f, 0.7f), YellowDark, 4f, 1.6f);
         var starIcon = Panel(pill, "Star", Gold);
         starIcon.sprite = star;
         Place(starIcon.rectTransform, new Vector2(95f, 2f), new Vector2(50f, 50f));
-        starsTotal = Label(pill, "", 34, new Vector2(-30f, 0f), new Vector2(220f, 60f));
+        starsTotal = Label(pill, "", 34, new Vector2(-25f, 0f), new Vector2(200f, 60f));
+        CoinPill(mainPanel, new Vector2(-155f, -385f), 280f, () => ShowShop(ShowMain));
     }
 
     void RefreshMain()
@@ -852,6 +875,7 @@ public class MenuUI : MonoBehaviour
     readonly List<Image> nodeFills = new List<Image>();
     readonly List<Text> nodeNumbers = new List<Text>();
     readonly List<Image[]> nodeStars = new List<Image[]>();
+    readonly List<Image> nodeCoins = new List<Image>();
     Text levelsTitle, infoTitle, infoHint, startLabel;
     RawImage infoThumb;
     Image[] infoStars;
@@ -949,7 +973,13 @@ public class MenuUI : MonoBehaviour
                 Place(stars[s].rectTransform, new Vector2((s - 1) * 26f, -60f + (s == 1 ? -4f : 0f)), new Vector2(24f, 24f));
             }
             nodeStars.Add(stars);
+            // المراحل اللي تنفتح بالكوينز: قطعة كوينز صغيرة تحت الدايرة
+            var badge = Panel(ring.rectTransform, "Coin", Color.white);
+            badge.sprite = coin;
+            Place(badge.rectTransform, new Vector2(0f, -58f), new Vector2(38f, 38f));
+            nodeCoins.Add(badge);
         }
+        CoinPill(levelsPanel, new Vector2(-560f, 405f), 250f, () => ShowShop(() => ShowLevels(levelsFromPause)));
 
         // بطاقة المرحلة المختارة (يسار)
         var info = Framed(levelsPanel, "Info", new Vector2(-540f, 40f), new Vector2(480f, 600f), Mint, MintBorder, 5f, 2.2f);
@@ -1019,6 +1049,8 @@ public class MenuUI : MonoBehaviour
                 nodeStars[i][s].color = s < got ? Gold : StarOff;
                 nodeStars[i][s].rectTransform.anchoredPosition = new Vector2((s - 1) * 26f, -size * 0.5f - 12f + (s == 1 ? -4f : 0f));
             }
+            nodeCoins[i].enabled = Coins.NeedsBuying(i);
+            nodeCoins[i].rectTransform.anchoredPosition = new Vector2(0f, -size * 0.5f - 10f);
         }
 
         // بطاقة المعلومات
@@ -1032,10 +1064,205 @@ public class MenuUI : MonoBehaviour
         infoTitle.text = ArabicText.Fix("المرحلة " + (sel + 1) + ": " + d.title);
         int st = SaveData.Stars(sel);
         for (int s = 0; s < infoStars.Length; s++) infoStars[s].color = s < st ? Gold : StarOff;
-        string hint = selOpen ? d.subtitle : "تُفتح بعد إنهاء المراحل السابقة";
+        bool paid = Coins.NeedsBuying(sel);
+        string hint = selOpen ? (paid ? "تُفتح هذه المرحلة بـ " + Coins.Price + " كوينز" : d.subtitle)
+                              : paid ? "تُفتح بعد إنهاء المراحل السابقة، وسعرها " + Coins.Price + " كوينز" : "تُفتح بعد إنهاء المراحل السابقة";
         infoHint.text = WrapFix(hint, 30);
-        startButton.GetComponent<Image>().color = selOpen ? PinkDark : LockedDark;
-        startButton.transform.GetChild(0).GetComponent<Image>().color = selOpen ? Pink : Locked;
+        // وصلتها بس تبي كوينز: الزر أصفر "فتحها بالكوينز"
+        bool buy = selOpen && paid;
+        startLabel.text = ArabicText.Fix(buy ? "فتحها بـ " + Coins.Price + " كوينز" : "لنبدأ اللعب!");
+        startButton.GetComponent<Image>().color = buy ? YellowDark : selOpen ? PinkDark : LockedDark;
+        startButton.transform.GetChild(0).GetComponent<Image>().color = buy ? Yellow : selOpen ? Pink : Locked;
+    }
+
+    // ---------- الكوينز: الشريط، فتح المراحل، والمتجر ----------
+
+    readonly List<Text> coinLabels = new List<Text>();
+
+    void RefreshCoins()
+    {
+        foreach (Text t in coinLabels) if (t != null) t.text = Coins.Balance.ToString();
+        if (shopPanel != null && shopPanel.gameObject.activeSelf) RefreshShop();
+    }
+
+    // شريط الكوينز: قطعة ذهبية وعددها، وزر + أخضر يفتح المتجر
+    void CoinPill(RectTransform parent, Vector2 pos, float width, Action onClick)
+    {
+        var pill = Framed(parent, "Coins Pill", pos, new Vector2(width, 70f), new Color(1f, 0.93f, 0.7f), YellowDark, 4f, 1.6f);
+        var icon = Panel(pill, "Coin", Color.white);
+        icon.sprite = coin;
+        Place(icon.rectTransform, new Vector2(width * 0.5f - 42f, 1f), new Vector2(52f, 52f));
+        coinLabels.Add(Label(pill, Coins.Balance.ToString(), 34, new Vector2(0f, 0f), new Vector2(width - 140f, 60f)));
+        var plus = Panel(pill, "Plus", MintC);
+        plus.sprite = circle;
+        Place(plus.rectTransform, new Vector2(-width * 0.5f + 36f, 0f), new Vector2(48f, 48f));
+        Label(plus.rectTransform, "+", 44, new Vector2(0f, 3f), new Vector2(48f, 48f)).color = Color.white;
+        var outer = pill.parent.gameObject;
+        outer.GetComponent<Image>().raycastTarget = true;
+        var button = outer.AddComponent<Button>();
+        button.transition = Selectable.Transition.None;
+        button.onClick.AddListener(() => onClick());
+        outer.AddComponent<ButtonJuice>().Init(gm, clickClip);
+    }
+
+    // نفس اللي ورا (دفتر أو اللعبة مظللة) لما نفتح نافذة من نافذة
+    bool OnDeskNow => desk.gameObject.activeSelf;
+
+    // نافذة فتح مرحلة بالكوينز
+    RectTransform unlockPanel;
+    Text unlockTitle, unlockInfo, unlockHint, unlockAction;
+    int unlockLevel;
+    Action unlockBack;
+
+    void BuildUnlock()
+    {
+        unlockPanel = NotebookCard(canvasRect, "Unlock Level", new Vector2(900f, 680f), 0.8f);
+        var big = Panel(unlockPanel, "Coin", Color.white);
+        big.sprite = coin;
+        Place(big.rectTransform, new Vector2(0f, 175f), new Vector2(130f, 130f));
+        unlockTitle = Label(unlockPanel, "", 56, new Vector2(0f, 60f), new Vector2(820f, 80f));
+        unlockTitle.color = Pink;
+        unlockInfo = Label(unlockPanel, "", 34, new Vector2(0f, -15f), new Vector2(820f, 50f));
+        unlockHint = Label(unlockPanel, "", 28, new Vector2(0f, -70f), new Vector2(820f, 44f));
+        unlockHint.color = Grey;
+        // من اليمين: الفتح (أو المتجر لو ما تكفي)، وبعدها رجوع
+        unlockAction = PrimaryButton(unlockPanel, "", new Vector2(150f, -185f), new Vector2(360f, 100f), () =>
+        {
+            if (Coins.CanAfford)
+            {
+                if (!Coins.Buy(unlockLevel)) return;
+                gm.Sound.Play(SynthAudio.Ding(1.6f), 0.6f);
+                gm.StartLevelFromMenu(unlockLevel);
+            }
+            else ShowShop(() => ShowUnlock(unlockLevel, unlockBack));
+        }, 38);
+        SecondaryButton(unlockPanel, "رجوع", new Vector2(-200f, -185f), new Vector2(240f, 100f), () => unlockBack?.Invoke(), 38, MintC);
+    }
+
+    public void ShowUnlock(int index) => ShowUnlock(index, BackFromHere());
+
+    void ShowUnlock(int index, Action back)
+    {
+        unlockLevel = index;
+        unlockBack = back;
+        bool afford = Coins.CanAfford;
+        unlockTitle.text = ArabicText.Fix("لنفتح المرحلة " + (index + 1));
+        unlockInfo.text = ArabicText.Fix("سعرها " + Coins.Price + " كوينز، ومعنا " + Coins.Balance);
+        unlockHint.text = ArabicText.Fix(afford ? "كل مرحلة ننهيها أول مرة تعطينا " + Coins.Reward + " كوينز" : "الكوينز لا تكفي، نجمعها من المراحل أو من المتجر");
+        unlockAction.text = ArabicText.Fix(afford ? "فتح المرحلة" : "المتجر");
+        Open(unlockPanel, OnDeskNow);
+    }
+
+    // من وين جينا: نرجع لها بزر الرجوع
+    Action BackFromHere()
+    {
+        if (levelsPanel.gameObject.activeSelf) { bool p = levelsFromPause; return () => ShowLevels(p); }
+        if (mainPanel.gameObject.activeSelf) return ShowMain;
+        if (completePanel.gameObject.activeSelf) return () => gm.GoToMainMenu();
+        return ShowMain;
+    }
+
+    // المتجر: حزمة كوينز تكفي عشرين مرحلة
+    RectTransform shopPanel;
+    Text shopBalance, shopBuy;
+    Action shopBack;
+    bool buying;
+
+    void BuildShop()
+    {
+        shopPanel = NotebookCard(canvasRect, "Shop", new Vector2(1000f, 860f), -0.8f);
+        var title = Label(shopPanel, ArabicText.Fix("المتجر"), 76, new Vector2(0f, 320f), new Vector2(900f, 100f));
+        title.color = Pink;
+        var bal = Framed(shopPanel, "Balance", new Vector2(0f, 230f), new Vector2(420f, 70f), new Color(1f, 0.93f, 0.7f), YellowDark, 4f, 1.6f);
+        var bi = Panel(bal, "Coin", Color.white);
+        bi.sprite = coin;
+        Place(bi.rectTransform, new Vector2(170f, 1f), new Vector2(52f, 52f));
+        shopBalance = Label(bal, "", 32, new Vector2(-25f, 0f), new Vector2(340f, 60f));
+
+        // بطاقة الحزمة: كومة كوينز، كم تعطي، وزر الشراء بالسعر
+        var card = Framed(shopPanel, "Pack", new Vector2(0f, 20f), new Vector2(780f, 290f), new Color(1f, 0.97f, 0.84f), YellowDark, 5f, 2.2f);
+        for (int i = 0; i < 5; i++)
+        {
+            var c = Panel(card, "Pack Coin", Color.white);
+            c.sprite = coin;
+            Vector2 p = new Vector2(255f + (i % 2 == 0 ? -1f : 1f) * (i == 4 ? 0f : 42f), -55f + (i / 2) * 52f + (i == 4 ? 30f : 0f));
+            Place(c.rectTransform, p, new Vector2(100f, 100f));
+        }
+        Label(card, ArabicText.Fix(Coins.Pack + " كوينز"), 58, new Vector2(-90f, 80f), new Vector2(480f, 80f)).color = new Color(0.8f, 0.5f, 0.1f);
+        Label(card, ArabicText.Fix("تكفي لفتح 20 مرحلة كاملة"), 30, new Vector2(-90f, 20f), new Vector2(480f, 50f)).color = Grey;
+        shopBuy = PrimaryButton(card, "", new Vector2(-90f, -75f), new Vector2(420f, 96f), BuyPack, 36);
+
+        Label(shopPanel, ArabicText.Fix("كل مرحلة ننهيها أول مرة تعطينا " + Coins.Reward + " كوينز"), 30, new Vector2(0f, -180f), new Vector2(900f, 46f)).color = Grey;
+        Label(shopPanel, ArabicText.Fix("وإذا شاهدنا الإعلان حتى النهاية تتضاعف!"), 30, new Vector2(0f, -225f), new Vector2(900f, 46f)).color = Grey;
+        SecondaryButton(shopPanel, "رجوع", new Vector2(0f, -320f), new Vector2(280f, 90f), () => shopBack?.Invoke(), 36, MintC);
+    }
+
+    public void ShowShop(Action back)
+    {
+        shopBack = back;
+        buying = false;
+        RefreshShop();
+        Open(shopPanel, OnDeskNow);
+    }
+
+    void RefreshShop()
+    {
+        shopBalance.text = ArabicText.Fix("معنا " + Coins.Balance + " كوينز");
+        shopBuy.text = ArabicText.Fix(buying ? "لحظة..." : "شراء — " + Shop.Price);
+    }
+
+    void BuyPack()
+    {
+        if (buying) return;
+        buying = true;
+        RefreshShop();
+        Shop.BuyPack(ok =>
+        {
+            buying = false;
+            RefreshShop();
+            if (ok)
+            {
+                gm.Sound.Play(SynthAudio.Ding(1.8f), 0.6f);
+                Toast(Shop.TestMode ? "وصلت " + Coins.Pack + " كوينز (شراء تجريبي)" : "وصلت " + Coins.Pack + " كوينز، شكرًا لكِ!");
+            }
+            else Toast("لم يكتمل الشراء");
+        });
+    }
+
+    // رسالة صغيرة فوق (مثل: تضاعفت الكوينز!) تطلع وتختفي لحالها
+    RectTransform toast;
+    Text toastText;
+    Coroutine toastRoutine;
+
+    void BuildToast()
+    {
+        toast = Framed(canvasRect, "Toast", new Vector2(0f, 0f), new Vector2(760f, 90f), new Color(1f, 0.95f, 0.75f), YellowDark, 5f, 1.6f).parent as RectTransform;
+        toast.anchorMin = toast.anchorMax = new Vector2(0.5f, 1f);
+        toast.anchoredPosition = new Vector2(0f, -90f);
+        var icon = Panel(toast, "Coin", Color.white);
+        icon.sprite = coin;
+        Place(icon.rectTransform, new Vector2(330f, 1f), new Vector2(60f, 60f));
+        toastText = Label(toast, "", 36, new Vector2(-20f, 0f), new Vector2(640f, 70f));
+        toast.gameObject.SetActive(false);
+    }
+
+    public void Toast(string text)
+    {
+        toastText.text = ArabicText.Fix(text);
+        if (toastRoutine != null) StopCoroutine(toastRoutine);
+        toastRoutine = StartCoroutine(ToastRoutine());
+    }
+
+    IEnumerator ToastRoutine()
+    {
+        toast.gameObject.SetActive(true);
+        for (float t = 0f; t < 3f; t += Time.unscaledDeltaTime)
+        {
+            float pop = Mathf.Clamp01(t / 0.25f), hide = Mathf.Clamp01((3f - t) / 0.3f);
+            toast.localScale = Vector3.one * Mathf.Min(pop < 1f ? Mathf.Lerp(0.6f, 1.08f, pop) : 1f, Mathf.Lerp(0.6f, 1f, hide));
+            yield return null;
+        }
+        toast.gameObject.SetActive(false);
     }
 
     // ---------- من جديد: نتأكد قبل ما نمسح التقدم ----------
@@ -1235,7 +1462,8 @@ public class MenuUI : MonoBehaviour
     readonly Image[] bigStars = new Image[SaveData.MaxStars];
     readonly Text[] reasons = new Text[SaveData.MaxStars];
     readonly Image[] reasonStars = new Image[SaveData.MaxStars];
-    RectTransform face, decoStarA, decoStarB;
+    RectTransform face, decoStarA, decoStarB, completeCoins;
+    Text completeCoinsText;
     Action nextAction;
 
     void BuildComplete()
@@ -1274,14 +1502,25 @@ public class MenuUI : MonoBehaviour
             reasons[i] = Label(completePanel, "", 28, new Vector2(-30f, -160f - i * 46f), new Vector2(360f, 44f));
             reasons[i].alignment = TextAnchor.MiddleRight;
         }
+        // الكوينز اللي أخذتها (أول مرة بس) جنب الوجه
+        completeCoins = Framed(completePanel, "Coins Won", new Vector2(-320f, 90f), new Vector2(210f, 80f), new Color(1f, 0.93f, 0.7f), YellowDark, 4f, 1.6f);
+        var won = Panel(completeCoins, "Coin", Color.white);
+        won.sprite = coin;
+        Place(won.rectTransform, new Vector2(62f, 1f), new Vector2(58f, 58f));
+        completeCoinsText = Label(completeCoins, "", 40, new Vector2(-30f, 0f), new Vector2(130f, 70f));
+        completeCoinsText.color = new Color(0.8f, 0.5f, 0.1f);
         nextLabel = PrimaryButton(completePanel, "", new Vector2(0f, -330f), new Vector2(520f, 104f), () => nextAction?.Invoke(), 42);
         SecondaryButton(completePanel, "إعادة", new Vector2(130f, -428f), new Vector2(230f, 72f), () => gm.RestartLevel(), 32, MintC);
         SecondaryButton(completePanel, "خريطة المراحل", new Vector2(-130f, -428f), new Vector2(250f, 72f), () => ShowLevels(false), 30, SkyBlue);
     }
 
-    public void ShowComplete(int index, bool[] earned, bool last, Action next)
+    public void ShowComplete(int index, bool[] earned, bool last, int coinsWon, Action next)
     {
         nextAction = next;
+        Transform coinBox = completeCoins.parent;
+        coinBox.gameObject.SetActive(coinsWon > 0);
+        coinBox.localScale = Vector3.zero;
+        completeCoinsText.text = "+" + coinsWon;
         completeTitle.text = ArabicText.Fix(last ? "اكتملت كل المراحل!" : "أحسنتِ يا رويدا!");
         completeLevel.text = ArabicText.Fix("المرحلة " + (index + 1) + " — " + Levels.All[index].title);
         nextLabel.text = ArabicText.Fix(last ? "القائمة الرئيسية" : "للصفحة التالية  <");
@@ -1320,6 +1559,17 @@ public class MenuUI : MonoBehaviour
             s.rectTransform.localScale = Vector3.one;
             s.rectTransform.localRotation = Quaternion.identity;
         }
+        // وبعد النجوم تنط الكوينز
+        Transform coinBox = completeCoins.parent;
+        if (!coinBox.gameObject.activeSelf) yield break;
+        yield return new WaitForSecondsRealtime(0.25f);
+        gm.Sound.Play(SynthAudio.Ding(2f), 0.5f);
+        for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.35f)
+        {
+            coinBox.localScale = Vector3.one * (t < 0.6f ? Mathf.Lerp(0f, 1.2f, t / 0.6f) : Mathf.Lerp(1.2f, 1f, (t - 0.6f) / 0.4f));
+            yield return null;
+        }
+        coinBox.localScale = Vector3.one;
     }
 
     void Update()
@@ -1623,6 +1873,38 @@ public class MenuUI : MonoBehaviour
             {
                 float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(s * 0.5f, s * 0.5f));
                 px[y * s + x] = new Color(1f, 1f, 1f, Mathf.Clamp01(s * 0.5f - 1f - d + 0.5f));
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 100f);
+    }
+
+    // قطعة كوينز ذهبية: حافة أغمق، دايرة محفورة جوا، نجمة بالنص، ولمعة فوق
+    public static Sprite CoinSprite()
+    {
+        const int s = 128;
+        var tex = new Texture2D(s, s, TextureFormat.RGBA32, true) { name = "Coin", wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[s * s];
+        Color rim = new Color(0.86f, 0.55f, 0.12f), body = new Color(1f, 0.79f, 0.22f), face = new Color(1f, 0.86f, 0.36f), line = new Color(0.88f, 0.6f, 0.14f);
+        float R = s * 0.5f - 1f;
+        for (int y = 0; y < s; y++)
+            for (int x = 0; x < s; x++)
+            {
+                Vector2 p = new Vector2(x + 0.5f - s * 0.5f, y + 0.5f - s * 0.5f);
+                float d = p.magnitude;
+                Color c = d > R * 0.88f ? rim : d > R * 0.7f ? body : face;
+                float ring = Mathf.Abs(d - R * 0.7f);
+                if (ring < 2.5f) c = Color.Lerp(c, line, Mathf.Clamp01(2.5f - ring));
+                // نجمة خماسية بالنص
+                float a = Mathf.Atan2(p.y, p.x) - Mathf.PI * 0.5f;
+                float k = Mathf.Repeat(a, Mathf.PI * 0.4f) / (Mathf.PI * 0.4f);
+                float edge = Mathf.Lerp(R * 0.22f, R * 0.5f, Mathf.Abs(k - 0.5f) * 2f);
+                if (d < edge) c = Color.Lerp(c, line, Mathf.Clamp01(edge - d));
+                // لمعة فوق يسار
+                float sh = Vector2.Distance(p, new Vector2(-R * 0.42f, R * 0.42f));
+                if (sh < R * 0.16f) c = Color.Lerp(c, Color.white, 0.7f * Mathf.Clamp01((R * 0.16f - sh) / 4f));
+                c.a = Mathf.Clamp01(R - d + 0.5f);
+                px[y * s + x] = c;
             }
         tex.SetPixels(px);
         tex.Apply();

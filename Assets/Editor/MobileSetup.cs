@@ -14,7 +14,7 @@ public static class MobileSetup
         EditorApplication.delayCall += Setup;
     }
 
-    static void Setup()
+    public static void Setup()
     {
         // الأيقونة: صورة كاملة بدون ضغط (الجوال يصغرها لكل حجم)
         var importer = AssetImporter.GetAtPath(IconPath) as TextureImporter;
@@ -47,13 +47,55 @@ public static class MobileSetup
         if (PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android) != BundleId) PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, BundleId);
         if (PlayerSettings.bundleVersion == "0.1.0") PlayerSettings.bundleVersion = "1.0.0";
         PlayerSettings.statusBarHidden = true;
+
+        // أندرويد: IL2CPP و64 بت (قوقل بلاي يطلبها)
+        if (PlayerSettings.GetScriptingBackend(NamedBuildTarget.Android) != ScriptingImplementation.IL2CPP)
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+
+        SetAdMobIds();
         AssetDatabase.SaveAssets();
         // يونتي ما يكتب إعدادات المشروع بالملف إلا إذا انحفظ المشروع: نحفظه مرة وحدة لو الملف لسا قديم
         string file = System.IO.File.ReadAllText("ProjectSettings/ProjectSettings.asset");
         if (!file.Contains("iPhone: " + BundleId) && !EditorApplication.isPlayingOrWillChangePlaymode)
             EditorApplication.ExecuteMenuItem("File/Save Project");
     }
+
+    // إعلانات قوقل تحتاج معرّف التطبيق بإعداداتها (بدونه اللعبة تطفي على الجوال)
+    static void SetAdMobIds()
+    {
+        System.Type type = null;
+        foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
+            if ((type = asm.GetType("GoogleMobileAds.Editor.GoogleMobileAdsSettings")) != null) break;
+        if (type == null) return;
+        var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
+        var settings = type.GetMethod("LoadInstance", flags)?.Invoke(null, null) as ScriptableObject;
+        if (settings == null) return;
+        var android = type.GetProperty("GoogleMobileAdsAndroidAppId");
+        var ios = type.GetProperty("GoogleMobileAdsIOSAppId");
+        if ((string)android.GetValue(settings) == Ads.AndroidAppId && (string)ios.GetValue(settings) == Ads.IosAppId) return;
+        android.SetValue(settings, Ads.AndroidAppId);
+        ios.SetValue(settings, Ads.IosAppId);
+        EditorUtility.SetDirty(settings);
+    }
 }
+
+#if UNITY_ANDROID
+// اسم اللعبة تحت الأيقونة بالأندرويد: "قلم رويدا"
+public class AndroidDisplayName : UnityEditor.Android.IPostGenerateGradleAndroidProject
+{
+    public int callbackOrder => 999;
+
+    public void OnPostGenerateGradleAndroidProject(string path)
+    {
+        string file = System.IO.Path.Combine(path, "..", "launcher", "src", "main", "res", "values", "strings.xml");
+        if (!System.IO.File.Exists(file)) return;
+        string xml = System.IO.File.ReadAllText(file);
+        xml = System.Text.RegularExpressions.Regex.Replace(xml, "<string name=\"app_name\">[^<]*</string>", "<string name=\"app_name\">قلم رويدا</string>");
+        System.IO.File.WriteAllText(file, xml);
+    }
+}
+#endif
 
 #if UNITY_IOS
 // اسم اللعبة تحت الأيقونة بالآيفون: "قلم رويدا" (اسم المشروع يبقى بالإنجليزي عشان ما تضيع الحفظات)

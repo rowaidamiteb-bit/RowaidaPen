@@ -51,6 +51,8 @@ public static class ClaudeCapture
             if (!File.Exists(RequestFile)) return;
             string request = File.ReadAllText(RequestFile).Trim();
             File.Delete(RequestFile);
+            // نسكر يونتي (عشان نبني نسخة الجوال من برا)
+            if (request == "quit") { EditorApplication.Exit(0); return; }
             Directory.CreateDirectory(OutDir);
             foreach (string f in Directory.GetFiles(OutDir)) File.Delete(f);
             SessionState.SetString(ShotsKey, request);
@@ -325,8 +327,54 @@ public static class ClaudeCapture
                     break;
                 case "adtest":
                     // يجرب الإعلان: كأنها خلصت خمس مراحل، وبعدين تبدأ المرحلة الجاية
-                    for (int k = 0; k < Ads.Every; k++) Ads.LevelCompleted();
+                    for (int k = 0; k < Ads.Every; k++) Ads.LevelCompleted(Coins.Reward);
                     GameManager.Instance.StartLevelFromMenu(int.Parse(arg));
+                    break;
+                case "backup":
+                    // نحفظ النجوم والكوينز قبل التجربة (restore يرجعها)
+                    string bk = Coins.Balance + "|";
+                    for (int k = 0; k < Levels.All.Count; k++) bk += SaveData.Stars(k) + ";";
+                    EditorPrefs.SetString("ClaudeBackup", bk);
+                    break;
+                case "restore":
+                    var bp = EditorPrefs.GetString("ClaudeBackup", "").Split('|');
+                    if (bp.Length < 2) break;
+                    var bs = bp[1].Split(new[] { ';' }, System.StringSplitOptions.RemoveEmptyEntries);
+                    for (int k = 0; k < bs.Length && k < Levels.All.Count; k++)
+                    {
+                        int st = int.Parse(bs[k]);
+                        SaveData.ForceStars(k, st);
+                        SaveData.SetRewarded(k, st > 0);
+                        SaveData.SetBought(k, k >= Coins.FreeLevels && (st > 0 || (k > 0 && int.Parse(bs[k - 1]) > 0)));
+                    }
+                    PlayerPrefs.SetInt("coins", int.Parse(bp[0]));
+                    Coins.Add(0);
+                    break;
+                case "newfrom":
+                    // كأنها لاعبة جديدة وصلت هالمرحلة: newfrom:رقم المرحلة من صفر (اللي بعدها بدون نجوم ولا كوينز ولا شراء)
+                    int nf = int.Parse(arg);
+                    for (int k = 0; k < Levels.All.Count; k++)
+                    {
+                        if (k < nf && SaveData.Stars(k) == 0) SaveData.ForceStars(k, 3);
+                        if (k >= nf) SaveData.ForceStars(k, 0);
+                        SaveData.SetRewarded(k, k < nf);
+                        SaveData.SetBought(k, false);
+                    }
+                    break;
+                case "shop":
+                    Object.FindAnyObjectByType<MenuUI>().ShowShop(null);
+                    break;
+                case "unlock":
+                    // نافذة فتح مرحلة بالكوينز: unlock:رقم المرحلة من صفر
+                    Object.FindAnyObjectByType<MenuUI>().ShowUnlock(int.Parse(arg));
+                    break;
+                case "coins":
+                    // نحط رصيد كوينز للتجربة
+                    PlayerPrefs.SetInt("coins", int.Parse(arg));
+                    Coins.Add(0);
+                    break;
+                case "toast":
+                    Object.FindAnyObjectByType<MenuUI>().Toast(arg);
                     break;
                 case "howto":
                     // صفحة طريقة اللعب: howto:رقم البطاقة

@@ -39,13 +39,23 @@ public static class SaveData
         { "قلعة الحلوى", "قلعة الحلاوة" },
     };
 
-    static string Key(string title)
+    static string Key(string title) => "stars_" + Hash(title);
+
+    static string Hash(string title)
     {
         if (Renamed.TryGetValue(title, out string old)) title = old;
         uint h = 2166136261;
         foreach (char c in title) { h ^= c; h *= 16777619; }
-        return "stars_" + h.ToString("x8");
+        return h.ToString("x8");
     }
+
+    // ---------- الكوينز لكل مرحلة ----------
+    // ما تنمسح لو بدأتي من جديد: كوينز المرحلة تنعطى مرة وحدة بس، واللي فتحتيه بالكوينز يظل مفتوح
+
+    public static bool Bought(int index) => PlayerPrefs.GetInt("bought_" + Hash(Levels.All[index].title), 0) == 1;
+    public static void SetBought(int index, bool on = true) { PlayerPrefs.SetInt("bought_" + Hash(Levels.All[index].title), on ? 1 : 0); PlayerPrefs.Save(); }
+    public static bool Rewarded(int index) => PlayerPrefs.GetInt("coined_" + Hash(Levels.All[index].title), 0) == 1;
+    public static void SetRewarded(int index, bool on = true) { PlayerPrefs.SetInt("coined_" + Hash(Levels.All[index].title), on ? 1 : 0); PlayerPrefs.Save(); }
 
     // أبعد مرحلة مفتوحة (رقمها من 0): المرحلة اللي بعد آخر وحدة خلصتيها من البداية ورا بعض
     public static int Unlocked

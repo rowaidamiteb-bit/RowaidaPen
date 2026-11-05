@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<projectSettings>
+  <projectSetting name="com.google.external-dependency-managerAnalyticsEnabled" value="False" />
+  <projectSetting name="Google.Android.Resolver.AutoResolutionDisabledWarning" value="False" />
+  <projectSetting name="Google.Android.Resolver.EnableAutoResolution" value="True" />
+  <projectSetting name="Google.Android.Resolver.PromptBeforeAutoResolution" value="False" />
+  <projectSetting name="Google.Android.Resolver.PatchMainTemplateGradle" value="True" />
+  <projectSetting name="Google.Android.Resolver.PatchPropertiesTemplateGradle" value="True" />
+  <projectSetting name="Google.Android.Resolver.PatchSettingsTemplateGradle" value="True" />
+  <projectSetting name="Google.Android.Resolver.UseJetifier" value="True" />
+  <projectSetting name="Google.Android.Resolver.UserRejectedGradleUpgrade" value="True" />
+  <projectSetting name="Google.IOSResolver.PodfileGenerationEnabled" value="True" />
+  <projectSetting name="Google.PackageManagerResolver.Enable" value="False" />
+  <projectSetting name="Google.PackageManagerResolver.PromptToMigrate" value="False" />
+  <projectSetting name="Google.VersionHandler.VerboseLoggingEnabled" value="False" />
+</projectSettings>

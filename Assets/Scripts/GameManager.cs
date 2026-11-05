@@ -71,6 +71,10 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        // الكوينز والمتجر والإعلانات يجهزون من أول ما تفتح اللعبة
+        Coins.Init();
+        Shop.Init();
+        Ads.Init();
         menu = gameObject.AddComponent<MenuUI>();
         menu.Build(this);
 
@@ -88,6 +92,7 @@ public class GameManager : MonoBehaviour
     // ---------- القوائم ----------
 
     MenuUI menu;
+    public MenuUI Menu => menu;
     public bool Paused { get; private set; }
 
     // القائمة الرئيسية وورها آخر مرحلة وصلتها (واقفة كخلفية)
@@ -122,8 +127,12 @@ public class GameManager : MonoBehaviour
     {
         spokenLevel = -1;   // من القائمة: نسمع تعليمات المرحلة من جديد
         announceLater = false;
-        // لو خلصت خمس مراحل: إعلان قبل ما تبدأ المرحلة الجاية
-        Ads.ShowIfDue(() => menu.Transition(() => LoadLevel(index)));
+        // لو خلصت خمس مراحل: إعلان قبل ما تبدأ المرحلة الجاية، وبعدين لو المرحلة تبي كوينز نسأل نفتحها
+        Ads.ShowIfDue(() =>
+        {
+            if (Coins.NeedsBuying(index)) menu.ShowUnlock(index);
+            else menu.Transition(() => LoadLevel(index));
+        });
     }
 
     int spokenLevel = -1;
@@ -490,6 +499,7 @@ public class GameManager : MonoBehaviour
         int stars = 0;
         foreach (bool e in earned) if (e) stars++;
         SaveData.SetStars(index, stars);
+        Coins.LevelDone(index);
 
         // تمشي لداخل النور وتختفي
         Transform r = Rowaida.transform;
@@ -523,7 +533,8 @@ public class GameManager : MonoBehaviour
         foreach (bool e in earned) if (e) stars++;
         SaveData.SetStars(index, stars);
         if (!last) SaveData.Unlock(index + 1);
-        Ads.LevelCompleted();
+        int coins = Coins.LevelDone(index);
+        Ads.LevelCompleted(coins);
 
         yield return new WaitForSeconds(1.4f);
 
@@ -534,7 +545,7 @@ public class GameManager : MonoBehaviour
             yield break;
         }
         ui.SetVisible(false);
-        menu.ShowComplete(index, earned, last, () =>
+        menu.ShowComplete(index, earned, last, coins, () =>
         {
             if (last) GoToMainMenu();
             else StartLevelFromMenu(index + 1);
