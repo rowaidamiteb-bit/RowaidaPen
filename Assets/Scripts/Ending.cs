@@ -458,6 +458,7 @@ public class EndingCutscene : MonoBehaviour
         var t = new GameObject("Label", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
         t.transform.SetParent(page, false);
         t.font = ArabicText.Font;
+        t.verticalOverflow = VerticalWrapMode.Overflow;   // الخط العربي سطره عالي: ما نخليه ينقص ويختفي
         t.fontSize = ArabicText.Size(34);
         t.fontStyle = FontStyle.Bold;
         t.alignment = TextAnchor.MiddleCenter;
@@ -625,6 +626,7 @@ public class EndingCutscene : MonoBehaviour
         var t = new GameObject("Text", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
         t.transform.SetParent(parent, false);
         t.font = ArabicText.Font;
+        t.verticalOverflow = VerticalWrapMode.Overflow;   // الخط العربي سطره عالي: ما نخليه ينقص ويختفي
         t.fontSize = ArabicText.Size(size);
         t.fontStyle = FontStyle.Bold;
         t.alignment = TextAnchor.MiddleCenter;

@@ -323,6 +323,11 @@ public static class ClaudeCapture
                 case "settings":
                     Object.FindAnyObjectByType<MenuUI>().ShowSettings(null);
                     break;
+                case "adtest":
+                    // يجرب الإعلان: كأنها خلصت خمس مراحل، وبعدين تبدأ المرحلة الجاية
+                    for (int k = 0; k < Ads.Every; k++) Ads.LevelCompleted();
+                    GameManager.Instance.StartLevelFromMenu(int.Parse(arg));
+                    break;
                 case "howto":
                     // صفحة طريقة اللعب: howto:رقم البطاقة
                     var mh = Object.FindAnyObjectByType<MenuUI>();

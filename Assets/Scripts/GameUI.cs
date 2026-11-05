@@ -31,7 +31,10 @@ public class GameUI : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = 0.5f;
-        Transform root = canvasGo.transform;
+        // كل الواجهة داخل المنطقة الآمنة (بعيد عن النوتش وخط الشاشة الرئيسية بالآيفون)
+        var safe = new GameObject("Safe Area", typeof(RectTransform), typeof(SafeArea)).GetComponent<RectTransform>();
+        safe.SetParent(canvasGo.transform, false);
+        Transform root = safe;
 
         // شريط الحبر
         // حافة بيضا عشان الكلام الأسود يبان حتى في المراحل الغامقة
@@ -601,6 +604,7 @@ public class GameUI : MonoBehaviour
         go.transform.SetParent(parent, false);
         var t = go.GetComponent<Text>();
         t.font = font;
+        t.verticalOverflow = VerticalWrapMode.Overflow;   // الخط العربي سطره عالي: ما نخليه ينقص ويختفي
         t.text = text;
         t.fontSize = ArabicText.Size(size);
         t.fontStyle = FontStyle.Bold;
@@ -632,4 +636,25 @@ public class TapDown : MonoBehaviour, UnityEngine.EventSystems.IPointerDownHandl
 {
     public System.Action onDown;
     public void OnPointerDown(UnityEngine.EventSystems.PointerEventData e) => onDown?.Invoke();
+}
+
+// يحط الواجهة داخل المنطقة الآمنة للشاشة (الجوالات اللي فيها نوتش أو حواف مدورة)
+public class SafeArea : MonoBehaviour
+{
+    Rect last;
+    Vector2Int lastSize;
+
+    void Awake() => Apply();
+    void Update() { if (Screen.safeArea != last || lastSize.x != Screen.width || lastSize.y != Screen.height) Apply(); }
+
+    void Apply()
+    {
+        var rt = (RectTransform)transform;
+        last = Screen.safeArea;
+        lastSize = new Vector2Int(Screen.width, Screen.height);
+        if (Screen.width <= 0 || Screen.height <= 0) return;
+        rt.anchorMin = new Vector2(last.xMin / Screen.width, last.yMin / Screen.height);
+        rt.anchorMax = new Vector2(last.xMax / Screen.width, last.yMax / Screen.height);
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+    }
 }

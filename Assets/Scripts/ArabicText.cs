@@ -63,13 +63,13 @@ public static class ArabicText
     public const float Scale = 1.28f;
     public static int Size(int s) => Mathf.RoundToInt(s * Scale);
 
-    // خط من الويندوز يدعم الحروف العربية
+    // خط عربي داخل اللعبة نفسها (نوتو نسخ، رخصته مفتوحة) عشان يشتغل بالجوال، ولو ما لقيناه نرجع لخطوط الويندوز
     public static Font Font
     {
         get
         {
-            if (font == null)
-                font = Font.CreateDynamicFontFromOSFont(new[] { "Traditional Arabic", "Tahoma", "Segoe UI", "Arial" }, 64);
+            if (font == null) font = Resources.Load<Font>("Fonts/NotoNaskhArabic-Regular");
+            if (font == null) font = Font.CreateDynamicFontFromOSFont(new[] { "Traditional Arabic", "Tahoma", "Segoe UI", "Arial" }, 64);
             return font;
         }
     }

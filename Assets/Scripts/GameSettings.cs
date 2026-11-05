@@ -192,6 +192,7 @@ public class SkipButton : MonoBehaviour
         var label = new GameObject("Text", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
         label.transform.SetParent(go.transform, false);
         label.font = ArabicText.Font;
+        label.verticalOverflow = VerticalWrapMode.Overflow;   // الخط العربي سطره عالي: ما نخليه ينقص ويختفي
         label.fontSize = ArabicText.Size(40);
         label.fontStyle = FontStyle.Bold;
         label.alignment = TextAnchor.MiddleCenter;

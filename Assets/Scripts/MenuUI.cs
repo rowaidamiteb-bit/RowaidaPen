@@ -824,8 +824,10 @@ public class MenuUI : MonoBehaviour
         SecondaryButton(mainPanel, "صندوق الأقلام", new Vector2(190f, -170f), new Vector2(240f, 96f), ShowPencil, 30, Lilac);
         SecondaryButton(mainPanel, "الإعدادات", new Vector2(-15f, -170f), new Vector2(160f, 96f), () => ShowSettings(mainPanel), 30, Teal);
         SecondaryButton(mainPanel, "من جديد", new Vector2(-200f, -170f), new Vector2(170f, 96f), ShowConfirm, 30, Orange);
-        SecondaryButton(mainPanel, "طريقة اللعب", new Vector2(140f, -285f), new Vector2(280f, 90f), () => ShowHowTo(ShowMain), 32, Yellow);
-        SecondaryButton(mainPanel, "الخروج", new Vector2(-145f, -285f), new Vector2(270f, 90f), Application.Quit, 32, MintC);
+        // بالجوال ما فيه زر خروج (الآيفون ما يسمح فيه)، فزر طريقة اللعب ياخذ السطر كله
+        bool mobile = Application.isMobilePlatform;
+        SecondaryButton(mainPanel, "طريقة اللعب", new Vector2(mobile ? 0f : 140f, -285f), new Vector2(mobile ? 560f : 280f, 90f), () => ShowHowTo(ShowMain), 32, Yellow);
+        if (!mobile) SecondaryButton(mainPanel, "الخروج", new Vector2(-145f, -285f), new Vector2(270f, 90f), Application.Quit, 32, MintC);
 
         // عداد النجوم بشريط أصفر صغير
         var pill = Framed(mainPanel, "Stars Pill", new Vector2(0f, -385f), new Vector2(300f, 70f), new Color(1f, 0.93f, 0.7f), YellowDark, 4f, 1.6f);
@@ -1529,6 +1531,7 @@ public class MenuUI : MonoBehaviour
         go.transform.SetParent(parent, false);
         var t = go.GetComponent<Text>();
         t.font = font;
+        t.verticalOverflow = VerticalWrapMode.Overflow;   // الخط العربي سطره عالي: ما نخليه ينقص ويختفي
         t.text = text;
         t.fontSize = ArabicText.Size(size);
         t.fontStyle = FontStyle.Bold;
@@ -1610,7 +1613,7 @@ public class MenuUI : MonoBehaviour
         return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(r + 2, r + 2, r + 2, r + 2));
     }
 
-    static Sprite CircleSprite()
+    public static Sprite CircleSprite()
     {
         const int s = 128;
         var tex = new Texture2D(s, s, TextureFormat.RGBA32, true) { name = "Circle", wrapMode = TextureWrapMode.Clamp };

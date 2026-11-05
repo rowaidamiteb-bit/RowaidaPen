@@ -380,6 +380,7 @@ public class IntroCutscene : MonoBehaviour
         var t = new GameObject("Text", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
         t.transform.SetParent(parent, false);
         t.font = ArabicText.Font;
+        t.verticalOverflow = VerticalWrapMode.Overflow;   // الخط العربي سطره عالي: ما نخليه ينقص ويختفي
         t.fontSize = ArabicText.Size(size);
         t.alignment = TextAnchor.MiddleCenter;
         t.color = Color.white;

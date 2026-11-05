@@ -52,6 +52,8 @@ public class GameManager : MonoBehaviour
     {
         Instance = this;
         Application.runInBackground = true;
+        // الجوال (خصوصًا الآيفون) يشغل على ٣٠ إطار بالثانية لو ما قلنا له: نبيها ناعمة
+        if (Application.isMobilePlatform) Application.targetFrameRate = 60;
         CreateMaterials();
         CreateCameraAndLight();
         CreatePostProcessing(Camera.main);
@@ -120,7 +122,8 @@ public class GameManager : MonoBehaviour
     {
         spokenLevel = -1;   // من القائمة: نسمع تعليمات المرحلة من جديد
         announceLater = false;
-        menu.Transition(() => LoadLevel(index));
+        // لو خلصت خمس مراحل: إعلان قبل ما تبدأ المرحلة الجاية
+        Ads.ShowIfDue(() => menu.Transition(() => LoadLevel(index)));
     }
 
     int spokenLevel = -1;
@@ -520,6 +523,7 @@ public class GameManager : MonoBehaviour
         foreach (bool e in earned) if (e) stars++;
         SaveData.SetStars(index, stars);
         if (!last) SaveData.Unlock(index + 1);
+        Ads.LevelCompleted();
 
         yield return new WaitForSeconds(1.4f);
 
