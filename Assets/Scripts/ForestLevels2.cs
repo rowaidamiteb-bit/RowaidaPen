@@ -1007,7 +1007,7 @@ public class SteppingStones : MonoBehaviour
     }
 }
 
-// ---------- جذع شجرة مقطوع على الطريق: رويدا ما تقدر تعديه، اللاعبة تنط (المسافة أو السهم فوق) ----------
+// ---------- جذع شجرة مقطوع على الطريق: رويدا ما تقدر تعديه، اللاعبة تنط بزر القفز ----------
 public class JumpStump : MonoBehaviour
 {
     static bool told;
@@ -1048,7 +1048,7 @@ public class JumpStump : MonoBehaviour
         if (!told && r != null && gm.IsPlaying && r.transform.position.x > x - 3f && r.transform.position.x < x)
         {
             told = true;
-            gm.UI.ShowMessage("", 3.6f, "جذع على الطريق! الضغط على المسافة (أو السهم للأعلى) يجعل رويدا تقفز");
+            gm.UI.ShowMessage("", 3.6f, "جذع على الطريق! نضغط زر القفز الوردي فتقفز رويدا");
         }
     }
 }

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// الرسم بالماوس: الرسمة تتحول لأنبوب حبر ثلاثي الأبعاد في نفس عمق رويدا (z = 0)
+// الرسم بالماوس أو بالإصبع: الرسمة تتحول لأنبوب حبر ثلاثي الأبعاد في نفس عمق رويدا (z = 0)
 // - خط مفتوح  => منصة ثابتة تمشي عليها رويدا
 // - شكل مغلق  => جسم صلب يطيح بالجاذبية ويتدحرج
 public class InkDrawer : MonoBehaviour
@@ -28,8 +28,9 @@ public class InkDrawer : MonoBehaviour
 
     void Update()
     {
-        Mouse mouse = Mouse.current;
-        if (Game == null || mouse == null) return;
+        // الماوس بالكمبيوتر، أو الإصبع بالجوال (الاثنين "مؤشر")
+        Pointer pointer = Pointer.current;
+        if (Game == null || pointer == null) return;
 
         if (!Game.IsPlaying)
         {
@@ -38,24 +39,37 @@ public class InkDrawer : MonoBehaviour
         }
 
         HandleColorKeys();
-        Vector2 screen = mouse.position.ReadValue();
+        Vector2 screen = pointer.position.ReadValue();
+        bool pressed = pointer.press.wasPressedThisFrame, held = pointer.press.isPressed;
 
         // ضغطة على ألوان الحبر في الشاشة: نغير اللون وما نرسم
-        if (mouse.leftButton.wasPressedThisFrame && ColorsAllowed && Game.UI.PaletteHit(screen, out InkColor picked))
+        if (pressed && ColorsAllowed && Game.UI.PaletteHit(screen, out InkColor picked))
         {
             SelectColor(picked);
             return;
         }
-        // ضغطة على زر في الشاشة (إعادة، استراحة): ما نرسم
-        if (mouse.leftButton.wasPressedThisFrame && UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+        // ضغطة على زر في الشاشة (إعادة، استراحة، قفز): ما نرسم
+        if (pressed && OverButton(screen))
             return;
-        if (mouse.leftButton.wasPressedThisFrame)
+        if (pressed)
             BeginStroke(screen);
-        else if (drawing && mouse.leftButton.isPressed)
+        else if (drawing && held)
             ContinueStroke(screen);
 
-        if (drawing && !mouse.leftButton.isPressed)
+        if (drawing && !held)
             FinishStroke();
+    }
+
+    readonly List<UnityEngine.EventSystems.RaycastResult> uiHits = new List<UnityEngine.EventSystems.RaycastResult>();
+
+    // فيه زر من أزرار الشاشة تحت الإصبع (أو الماوس)؟
+    bool OverButton(Vector2 screen)
+    {
+        var es = UnityEngine.EventSystems.EventSystem.current;
+        if (es == null) return false;
+        uiHits.Clear();
+        es.RaycastAll(new UnityEngine.EventSystems.PointerEventData(es) { position = screen }, uiHits);
+        return uiHits.Count > 0;
     }
 
     // صوت القلم: يعلى ويسرع مع سرعة الرسم، ويسكت لما يوقف القلم

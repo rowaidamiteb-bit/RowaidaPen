@@ -138,8 +138,6 @@ public class GameUI : MonoBehaviour
         subtitleText.color = Color.white;
         subtitleText.gameObject.AddComponent<Outline>().effectColor = new Color(0.05f, 0.03f, 0.1f, 0.9f);
         messageText.gameObject.AddComponent<Outline>().effectColor = Color.white;
-        Label(root, ArabicText.Fix("استراحة") + " Esc   •   " + ArabicText.Fix("الرسم بالفأرة   •   R لإعادة المرحلة"), 28, TextAnchor.MiddleCenter, new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1200f, 40f))
-            .color = new Color(0f, 0f, 0f, 0.6f);
     }
 
     Image inkFillImage;
@@ -248,6 +246,57 @@ public class GameUI : MonoBehaviour
         AudioClip click = SynthAudio.Click();
         SideButton(root, "Pause Button", new Vector2(-70f, -125f), IconSprite(false), () => GameManager.Instance.TogglePause(), click);
         SideButton(root, "Restart Button", new Vector2(-160f, -125f), IconSprite(true), () => GameManager.Instance.RestartLevel(), click);
+
+        // زر القفز (للجوال): كبير تحت يمين، يطلع بس بالمراحل اللي فيها نط، وينط أول ما ينلمس
+        Image jump = Panel(root, "Jump Button", Color.white);
+        jump.sprite = JumpSprite();
+        jump.raycastTarget = true;
+        Place(jump.rectTransform, new Vector2(1f, 0f), new Vector2(-150f, 150f), new Vector2(170f, 170f));
+        jump.gameObject.AddComponent<TapDown>().onDown = () =>
+        {
+            var gm = GameManager.Instance;
+            if (gm != null && gm.IsPlaying && gm.Rowaida != null) gm.Rowaida.Jump();
+            jump.rectTransform.localScale = Vector3.one * 0.88f;
+        };
+        jumpButton = jump.rectTransform;
+        jumpButton.gameObject.SetActive(false);
+    }
+
+    RectTransform jumpButton;
+
+    void UpdateJumpButton()
+    {
+        var gm = GameManager.Instance;
+        bool show = gm != null && gm.IsPlaying && !gm.IntroActive && gm.CurrentLevel != null && gm.CurrentLevel.CanJump;
+        if (jumpButton.gameObject.activeSelf != show) jumpButton.gameObject.SetActive(show);
+        if (show) jumpButton.localScale = Vector3.MoveTowards(jumpButton.localScale, Vector3.one, Time.unscaledDeltaTime * 2f);
+    }
+
+    // أيقونة زر القفز: دايرة وردية بحافة بيضا وفيها سهم أبيض لفوق
+    public static Sprite JumpSprite()
+    {
+        const int s = 128;
+        var tex = new Texture2D(s, s, TextureFormat.RGBA32, true) { name = "Jump Icon", wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[s * s];
+        Color pink = new Color(1f, 0.47f, 0.56f), dark = new Color(0.86f, 0.33f, 0.45f);
+        for (int y = 0; y < s; y++)
+            for (int x = 0; x < s; x++)
+            {
+                float u = (x + 0.5f) / s * 2f - 1f, v = (y + 0.5f) / s * 2f - 1f;
+                float r = Mathf.Sqrt(u * u + v * v);
+                float disc = Mathf.Clamp01((0.96f - r) * s * 0.5f);
+                float rim = Mathf.Clamp01((r - 0.84f) * s * 0.5f);
+                // سهم: راس مثلث فوق وعمود تحته
+                bool head = v > 0.02f && v < 0.5f && Mathf.Abs(u) < (0.5f - v) * 0.95f;
+                bool stem = v > -0.45f && v <= 0.05f && Mathf.Abs(u) < 0.13f;
+                Color c = Color.Lerp(pink, dark, Mathf.Clamp01(-v * 0.6f));
+                if (head || stem || rim > 0f) c = Color.Lerp(c, Color.white, Mathf.Max(rim, head || stem ? 1f : 0f));
+                c.a = disc;
+                px[y * s + x] = c;
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 100f);
     }
 
     void SideButton(Transform root, string name, Vector2 pos, Sprite icon, System.Action onClick, AudioClip click)
@@ -530,6 +579,7 @@ public class GameUI : MonoBehaviour
         if (hearts[0] == null) return;   // الواجهة انحذفت (وقفنا اللعب)
         AnimateHearts();
         AnimateMessage();
+        if (jumpButton != null) UpdateJumpButton();
         if (messageTimer <= 0f) return;
         messageTimer -= Time.deltaTime;
         if (messageTimer <= 0f) { messageText.enabled = subtitleText.enabled = false; if (banner != null) banner.gameObject.SetActive(false); }
@@ -575,4 +625,11 @@ public class GameUI : MonoBehaviour
         rt.offsetMin = Vector2.one * inset;
         rt.offsetMax = -Vector2.one * inset;
     }
+}
+
+// زر يشتغل أول ما ينلمس (مو لما ترفعين إصبعك)، مثل زر القفز
+public class TapDown : MonoBehaviour, UnityEngine.EventSystems.IPointerDownHandler
+{
+    public System.Action onDown;
+    public void OnPointerDown(UnityEngine.EventSystems.PointerEventData e) => onDown?.Invoke();
 }

@@ -580,11 +580,11 @@ public class MenuUI : MonoBehaviour
     Action howToDone;
     RectTransform drawLine, drawPointer;
 
-    static readonly string[] HowToTitles = { "فكرة اللعبة", "كيف نرسم؟", "الأشكال المغلقة", "الحبر", "الأزرار" };
+    static readonly string[] HowToTitles = { "فكرة اللعبة", "كيف نرسم؟", "الأشكال المغلقة", "الحبر", "أزرار الشاشة" };
     static readonly string[] HowToTexts =
     {
         "نامت رويدا فوجدت نفسها داخل دفتر رسمها! لنساعدها تعبر الصفحات حتى تصل إلى آخر صفحة وتعود إلى غرفتها",
-        "نضغط بالفأرة ونسحب لنرسم خطًّا... يصبح الخط جسرًا أو طريقًا، ورويدا تمشي عليه وحدها",
+        "نرسم بإصبعنا على الشاشة... يصبح الخط جسرًا أو طريقًا، ورويدا تمشي عليه وحدها",
         "إذا رسمنا شكلًا مغلقًا مثل الدائرة صار كرة نرميها، أو بالونًا، أو شيئًا آخر حسب المرحلة",
         "حبر القلم محدود! نراقب القلم في أعلى الشاشة، ونرسم بقدر الحاجة فقط",
         "في بداية كل مرحلة تقف رويدا وتشرح لنا المطلوب... لنستمع إليها جيدًا!",
@@ -710,15 +710,17 @@ public class MenuUI : MonoBehaviour
         MiniPage(p, new Vector2(-230f, -80f), 300f);
         MiniPage(p, new Vector2(230f, -80f), 300f);
         MiniRowaida(p, new Vector2(-280f, -50f));
-        // الخط اللي يترسم فوق الحفرة من اليسار لليمين (يطول ويرجع)، والمؤشر عند آخره
+        // الخط اللي يترسم فوق الحفرة من اليسار لليمين (يطول ويرجع)، والإصبع عند آخره
         drawLine = Bit(p, new Vector2(-85f, -48f), new Vector2(170f, 10f), Navy, 0f, rounded, true).rectTransform;
         drawLine.pivot = new Vector2(0f, 0.5f);
         drawLine.anchoredPosition = new Vector2(-85f, -48f);
-        var ptr = new GameObject("Pointer", typeof(RectTransform)).GetComponent<RectTransform>();
+        var ptr = new GameObject("Finger", typeof(RectTransform)).GetComponent<RectTransform>();
         ptr.SetParent(p, false);
         Place(ptr, Vector2.zero, new Vector2(40f, 40f));
-        var arrow = Bit(ptr, new Vector2(10f, -12f), new Vector2(34f, 40f), Color.white, 25f, triangle);
-        arrow.gameObject.AddComponent<Outline>().effectColor = Navy;
+        // إصبع: طرفه عند آخر الخط، ومايل لتحت يمين
+        var finger = Bit(ptr, new Vector2(14f, -36f), new Vector2(34f, 84f), new Color(1f, 0.82f, 0.7f), 20f, rounded, true);
+        finger.gameObject.AddComponent<Outline>().effectColor = new Color(0.75f, 0.5f, 0.42f);
+        Bit(ptr, new Vector2(6f, -14f), new Vector2(20f, 22f), new Color(1f, 0.93f, 0.9f), 20f, rounded, true);
         drawPointer = ptr;
     }
 
@@ -755,18 +757,19 @@ public class MenuUI : MonoBehaviour
 
     void SceneKeys(RectTransform p)
     {
-        // زرين من الكيبورد، وزرين من الشاشة (نفس الأيقونات اللي فوق يمين وقت اللعب)
-        string[] keys = { "المسافة", "١ ٢ ٣ ٤" };
+        // نفس الأزرار اللي تطلع على الشاشة وقت اللعب: القفز، ألوان الحبر، الاستراحة، والإعادة
         string[] what = { "القفز (في بعض المراحل)", "لون الحبر (في مراحل الألوان)", "استراحة", "إعادة المرحلة" };
+        Color[] inks = { new Color(0.16f, 0.15f, 0.2f), new Color(0.92f, 0.25f, 0.32f), new Color(0.25f, 0.55f, 1f), new Color(0.3f, 0.8f, 0.38f) };
         for (int i = 0; i < what.Length; i++)
         {
             float y = 110f - i * 72f;
-            if (i < 2)
-            {
-                Bit(p, new Vector2(250f, y - 5f), new Vector2(200f, 60f), new Color(0.78f, 0.82f, 0.88f), 0f, rounded, true);
-                Bit(p, new Vector2(250f, y), new Vector2(192f, 52f), Color.white, 0f, rounded, true);
-                Label(p, ArabicText.Fix(keys[i]), 30, new Vector2(250f, y + 2f), new Vector2(200f, 52f));
-            }
+            if (i == 0) Bit(p, new Vector2(250f, y), new Vector2(66f, 66f), Color.white, 0f, GameUI.JumpSprite());
+            else if (i == 1)
+                for (int k = 0; k < 4; k++)
+                {
+                    Bit(p, new Vector2(196f + k * 36f, y), new Vector2(34f, 34f), Color.white, 0f, circle);
+                    Bit(p, new Vector2(196f + k * 36f, y), new Vector2(26f, 26f), inks[k], 0f, circle);
+                }
             else Bit(p, new Vector2(250f, y), new Vector2(62f, 62f), Color.white, 0f, GameUI.IconSprite(i == 3));
             var d = Label(p, ArabicText.Fix(what[i]), 32, new Vector2(-120f, y), new Vector2(480f, 56f));
             d.alignment = TextAnchor.MiddleRight;

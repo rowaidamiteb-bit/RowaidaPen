@@ -962,7 +962,7 @@ public class TimedHazard : MonoBehaviour
             if (on && gm.IsPlaying && gap > 1.2f && gap < 5f && (Time.time - lastJumpHint > 25f || Time.time < lastJumpHint) && !gm.UI.MessageShowing)
             {
                 lastJumpHint = Time.time;
-                gm.UI.ShowMessage("", 2.4f, "اقفزي! (المسافة أو السهم للأعلى)");
+                gm.UI.ShowMessage("", 2.4f, "لنقفز! نضغط زر القفز الوردي");
             }
             if (on && Mathf.Abs(gap) < 0.45f && p.y - spec.y < 1.05f && p.y - spec.y > -0.5f && !rw.IsKnocked)
             {

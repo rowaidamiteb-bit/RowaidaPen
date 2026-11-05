@@ -126,7 +126,7 @@ public class LevelData
     public List<Vector3> vanishTiles = new List<Vector3>(); // الصفحة المتلاشية: (من x، لـ x، مسافة البداية)
     public List<FloaterSpec> floaters = new List<FloaterSpec>(); // الأرض الطايرة: صفحات تتحرك في السما
     public List<Vector3> icePlanks = new List<Vector3>();   // زيزو: ألواح جليد طايرة تتكسر بعد ما تنطين عليها (من x، لـ x، ارتفاع السطح)
-    public bool allowJump;                                  // تقدر رويدا تنط (زر المسافة)
+    public bool allowJump;                                  // تقدر رويدا تنط (زر القفز بالشاشة، أو المسافة بالكيبورد)
     // النط يدوي: مسموح بالمراحل اللي فيها نط، وأي مرحلة فيها أقلام أو جذوع تتدحرج (رويدا ما تنط بروحها)
     public bool CanJump => allowJump || hazards.Exists(h => h.kind == "pencil" || h.kind == "rollinglog");
     public float gravityScale = 1f;                         // الفضاء: جاذبية خفيفة (أقل من 1)
@@ -489,7 +489,7 @@ public static class Levels
 
     // الصفحة المتلاشية: أجزاء من الأرض تهتز وتختفي لما تقربين منها، ارسمي خط فوقها عشان تعدين.
     // (تقدرين ترسمين الخط قبل لا تختفي، والخط يبقى)
-    // زيزو: صباح ثلجي، والمرحلة الوحيدة اللي فيها نط (زر المسافة). انهيار ثلجي يلحق رويدا من البداية:
+    // زيزو: صباح ثلجي، ومرحلة فيها نط (زر القفز). انهيار ثلجي يلحق رويدا من البداية:
     // 1) ألواح جليد طايرة فوق وتحت، كل لوح يتكسر بعد ما تنطين عليه  2) رجال ثلج يرمون كور كثير (ارسمي درع)
     // 3) فوق التلة ترسمين زلاجة وتنزلين المنحدر وتطيرين فوق حفرة كبيرة
     static LevelData SnowLevel()
@@ -815,7 +815,7 @@ public static class Levels
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(53f, 0f, 0f),
             ink = 20f,
-            allowJump = true,                // القفز يدوي هنا (المسافة أو السهم للأعلى)
+            allowJump = true,                // القفز يدوي هنا (زر القفز)
             blocks =
             {
                 Page(-7f, 4f),
@@ -945,7 +945,7 @@ public static class Levels
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(55f, 0f, 0f),
             ink = 44f,
-            allowJump = true,                // القفز يدوي هنا (المسافة أو السهم للأعلى)
+            allowJump = true,                // القفز يدوي هنا (زر القفز)
             blocks =
             {
                 Page(-7f, 5f),
@@ -1305,7 +1305,7 @@ public static class Levels
             hazards = { new HazardSpec("rollinglog", 17f, 1.8f, 4.2f), new HazardSpec("mole", 33f, 1.2f, 3.2f, 1f) },
             title = "مدخل الغابة",
             theme = LevelTheme.Forest(),
-            subtitle = "في هذه المرحلة يكون القفز يدويًّا (المسافة أو السهم للأعلى)! لنقطع الشبكة، ونزرع بذرة، ونقفز فوق الجذوع",
+            subtitle = "في هذه المرحلة نقفز بأنفسنا! لنقطع الشبكة، ونزرع بذرة، ونقفز فوق الجذوع",
             spawn = new Vector3(-5f, 1f, 0f),
             door = new Vector3(37f, 0f, 0f),
             ink = 12f,
