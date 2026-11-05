@@ -263,6 +263,15 @@ public static class ClaudeCapture
                         nl += "\n" + nn + " " + Narration.Length(nn).ToString("0.00") + " clip=" + (Narration.Clip(nn) != null) + " on=" + GameSettings.NarrationOn;
                     File.AppendAllText(Path.Combine(OutDir, "probe.txt"), nl);
                     break;
+                case "tpfrac":
+                    // ينقل رويدا لنسبة من طريق المرحلة (0 البداية، 1 الباب)
+                    var lvl = GameManager.Instance.CurrentLevel;
+                    float fx = Mathf.Lerp(1f, lvl.door.x - 1f, float.Parse(arg, System.Globalization.CultureInfo.InvariantCulture));
+                    float topY = 0f;
+                    foreach (Block bl in lvl.blocks)
+                        if (Mathf.Abs(fx - bl.center.x) < bl.size.x * 0.5f) topY = Mathf.Max(topY, bl.center.y + bl.size.y * 0.5f);
+                    GameManager.Instance.Rowaida.Respawn(new Vector3(fx, topY + 1.2f, 0f));
+                    break;
                 case "tp":
                     GameManager.Instance.Rowaida.Respawn(new Vector3(float.Parse(arg, System.Globalization.CultureInfo.InvariantCulture), 1.5f, 0f));
                     break;
