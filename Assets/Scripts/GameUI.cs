@@ -268,7 +268,7 @@ public class GameUI : MonoBehaviour
     }
 
     // أيقونة مرسومة بالكود: دايرة بيضا بحافة غامقة وفيها سهم دايري (إعادة) أو خطين (استراحة)
-    static Sprite IconSprite(bool restart)
+    public static Sprite IconSprite(bool restart)
     {
         const int s = 128;
         var tex = new Texture2D(s, s, TextureFormat.RGBA32, true) { name = restart ? "Restart Icon" : "Pause Icon", wrapMode = TextureWrapMode.Clamp };

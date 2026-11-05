@@ -45,7 +45,7 @@ public class RowaidaController : MonoBehaviour
     void Update()
     {
         var gm = GameManager.Instance;
-        if (gm == null || !gm.IsPlaying || gm.CurrentLevel == null || !gm.CurrentLevel.allowJump) return;
+        if (gm == null || !gm.IsPlaying || gm.CurrentLevel == null || !gm.CurrentLevel.CanJump) return;
         var keyboard = UnityEngine.InputSystem.Keyboard.current;
         if (keyboard == null) return;
         if (keyboard.spaceKey.wasPressedThisFrame || keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame)

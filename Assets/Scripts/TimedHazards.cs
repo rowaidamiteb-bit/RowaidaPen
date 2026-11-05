@@ -18,6 +18,7 @@ public class TimedHazard : MonoBehaviour
     bool holding, played;
     Transform model;
     readonly List<Transform> parts = new List<Transform>();
+    static float lastJumpHint = -99f;
     // كم ثانية تكون العقبة على الطريق (القلم أطول لأنه يتدحرج من بعيد على مهله)
     float Active => spec.kind == "pencil" || spec.kind == "rollinglog" ? (spec.width + 6f) / 4f : 1.2f;
 
@@ -953,13 +954,16 @@ public class TimedHazard : MonoBehaviour
         if (rw == null) return;
         Vector3 p = rw.transform.position;
         float x0 = spec.x - spec.width * 0.5f, x1 = spec.x + spec.width * 0.5f;
-        // القلم: يتدحرج لها ورويدا تنط من فوقه (ولو لمسها يرجعها لورا)
+        // القلم: يتدحرج لها واللاعبة هي اللي تنط من فوقه (ولو لمسها يرجعها لورا)
         if (spec.kind == "pencil" || spec.kind == "rollinglog")
         {
             float gap = model.position.x - p.x;
-            // تنط لحالها، إلا بالمراحل اللي فيها نط (هناك اللاعبة تنط بنفسها)
-            bool manual = gm.CurrentLevel != null && gm.CurrentLevel.allowJump;
-            if (!manual && on && gm.IsPlaying && gap > 1.1f && gap < 2.4f && Mathf.Abs(p.y - spec.y - 0.7f) < 0.4f) rw.Jump(true);
+            // أول ما يقرب: تلميح بزر النط (مرة كل شوي، مو كل ما يجي قلم)
+            if (on && gm.IsPlaying && gap > 1.2f && gap < 5f && (Time.time - lastJumpHint > 25f || Time.time < lastJumpHint) && !gm.UI.MessageShowing)
+            {
+                lastJumpHint = Time.time;
+                gm.UI.ShowMessage("", 2.4f, "اقفزي! (المسافة أو السهم للأعلى)");
+            }
             if (on && Mathf.Abs(gap) < 0.45f && p.y - spec.y < 1.05f && p.y - spec.y > -0.5f && !rw.IsKnocked)
             {
                 rw.Knockback(-1.2f);

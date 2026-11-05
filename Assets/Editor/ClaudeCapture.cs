@@ -323,6 +323,12 @@ public static class ClaudeCapture
                 case "settings":
                     Object.FindAnyObjectByType<MenuUI>().ShowSettings(null);
                     break;
+                case "howto":
+                    // صفحة طريقة اللعب: howto:رقم البطاقة
+                    var mh = Object.FindAnyObjectByType<MenuUI>();
+                    mh.ShowHowTo(null);
+                    if (arg != null) mh.SetHowToPage(int.Parse(arg));
+                    break;
                 case "intro":
                     typeof(GameManager).GetMethod("StartIntro", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(GameManager.Instance, null);
                     break;

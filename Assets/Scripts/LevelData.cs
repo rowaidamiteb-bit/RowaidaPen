@@ -127,6 +127,8 @@ public class LevelData
     public List<FloaterSpec> floaters = new List<FloaterSpec>(); // الأرض الطايرة: صفحات تتحرك في السما
     public List<Vector3> icePlanks = new List<Vector3>();   // زيزو: ألواح جليد طايرة تتكسر بعد ما تنطين عليها (من x، لـ x، ارتفاع السطح)
     public bool allowJump;                                  // تقدر رويدا تنط (زر المسافة)
+    // النط يدوي: مسموح بالمراحل اللي فيها نط، وأي مرحلة فيها أقلام أو جذوع تتدحرج (رويدا ما تنط بروحها)
+    public bool CanJump => allowJump || hazards.Exists(h => h.kind == "pencil" || h.kind == "rollinglog");
     public float gravityScale = 1f;                         // الفضاء: جاذبية خفيفة (أقل من 1)
     public bool planets;                                    // الفضاء: كواكب كبيرة بالخلفية
     public bool drawDoor;                                   // الصفحة الأخيرة: ما فيه باب، اللاعبة ترسمه

@@ -45,7 +45,7 @@ public class MenuUI : MonoBehaviour
 
     public bool Transitioning { get; private set; }
     public bool PauseOpen => pausePanel.gameObject.activeSelf || (levelsPanel.gameObject.activeSelf && levelsFromPause);
-    public bool AnyOpen => mainPanel.gameObject.activeSelf || levelsPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf || completePanel.gameObject.activeSelf || pencilPanel.gameObject.activeSelf || confirmPanel.gameObject.activeSelf || titlePanel.gameObject.activeSelf || settingsPanel.gameObject.activeSelf;
+    public bool AnyOpen => mainPanel.gameObject.activeSelf || levelsPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf || completePanel.gameObject.activeSelf || pencilPanel.gameObject.activeSelf || confirmPanel.gameObject.activeSelf || titlePanel.gameObject.activeSelf || settingsPanel.gameObject.activeSelf || howToPanel.gameObject.activeSelf;
 
     public void Build(GameManager manager)
     {
@@ -89,6 +89,7 @@ public class MenuUI : MonoBehaviour
         BuildConfirm();
         BuildTitle();
         BuildSettings();
+        BuildHowTo();
 
         flash = Panel(canvasRect, "Flash", new Color(1f, 1f, 1f, 0f));
         Stretch(flash.rectTransform);
@@ -110,6 +111,7 @@ public class MenuUI : MonoBehaviour
         if (confirmPanel != null) confirmPanel.gameObject.SetActive(false);
         if (titlePanel != null) titlePanel.gameObject.SetActive(false);
         if (settingsPanel != null) settingsPanel.gameObject.SetActive(false);
+        if (howToPanel != null) howToPanel.gameObject.SetActive(false);
     }
 
     // onDesk: خلفية الدفتر الكريمية (للقوائم برا اللعب)، وإلا تظلل اللعبة ورا
@@ -567,6 +569,232 @@ public class MenuUI : MonoBehaviour
         return s;
     }
 
+    // ---------- طريقة اللعب: بطاقات تشرح فكرة اللعبة والرسم والحبر والأزرار، كل بطاقة فيها رسمة صغيرة ----------
+
+    RectTransform howToPanel;
+    readonly List<RectTransform> howToScenes = new List<RectTransform>();
+    readonly List<Image> howToDots = new List<Image>();
+    Text howToTitle, howToText, howToNext;
+    GameObject howToPrev;
+    int howToPage;
+    Action howToDone;
+    RectTransform drawLine, drawPointer;
+
+    static readonly string[] HowToTitles = { "فكرة اللعبة", "كيف نرسم؟", "الأشكال المغلقة", "الحبر", "الأزرار" };
+    static readonly string[] HowToTexts =
+    {
+        "نامت رويدا فوجدت نفسها داخل دفتر رسمها! لنساعدها تعبر الصفحات حتى تصل إلى آخر صفحة وتعود إلى غرفتها",
+        "نضغط بالفأرة ونسحب لنرسم خطًّا... يصبح الخط جسرًا أو طريقًا، ورويدا تمشي عليه وحدها",
+        "إذا رسمنا شكلًا مغلقًا مثل الدائرة صار كرة نرميها، أو بالونًا، أو شيئًا آخر حسب المرحلة",
+        "حبر القلم محدود! نراقب القلم في أعلى الشاشة، ونرسم بقدر الحاجة فقط",
+        "في بداية كل مرحلة تقف رويدا وتشرح لنا المطلوب... لنستمع إليها جيدًا!",
+    };
+
+    // done: وش يصير بعد ما تخلص (أول مرة: يبدأ المشهد الأول، ومن القائمة: يرجع لها)
+    public void ShowHowTo(Action done)
+    {
+        howToDone = done;
+        SetHowToPage(0);
+        Open(howToPanel, true);
+    }
+
+    void BuildHowTo()
+    {
+        howToPanel = NotebookCard(canvasRect, "How To Play", new Vector2(1180f, 900f), 0.6f);
+        Label(howToPanel, ArabicText.Fix("طريقة اللعب"), 40, new Vector2(0f, 360f), new Vector2(600f, 60f)).color = Grey;
+        howToTitle = Label(howToPanel, "", 74, new Vector2(0f, 290f), new Vector2(1000f, 100f));
+        howToTitle.color = Pink;
+
+        var stage = Framed(howToPanel, "Stage", new Vector2(0f, 60f), new Vector2(820f, 330f), new Color(1f, 0.98f, 0.93f), MintBorder, 5f, 2f);
+        for (int i = 0; i < HowToTitles.Length; i++)
+        {
+            var scene = new GameObject("Scene " + i, typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
+            scene.SetParent(stage, false);
+            Stretch(scene);
+            howToScenes.Add(scene);
+        }
+        SceneIdea(howToScenes[0]);
+        SceneDraw(howToScenes[1]);
+        SceneShapes(howToScenes[2]);
+        SceneInk(howToScenes[3]);
+        SceneKeys(howToScenes[4]);
+
+        howToText = Label(howToPanel, "", 36, new Vector2(0f, -195f), new Vector2(1000f, 150f));
+        howToText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        howToText.lineSpacing = 1.1f;
+
+        for (int i = 0; i < HowToTitles.Length; i++)
+        {
+            var dot = Panel(howToPanel, "Dot", StarOff);
+            dot.sprite = circle;
+            Place(dot.rectTransform, new Vector2((2 - i) * 34f, -290f), new Vector2(20f, 20f));
+            howToDots.Add(dot);
+        }
+        // التالي يسار (القراءة من اليمين)، والسابق يمين
+        howToNext = PrimaryButton(howToPanel, "التالي", new Vector2(-200f, -375f), new Vector2(360f, 100f), () =>
+        {
+            if (howToPage < HowToTitles.Length - 1) SetHowToPage(howToPage + 1);
+            else { HideAll(); howToDone?.Invoke(); }
+        }, 44);
+        howToPrev = SecondaryButton(howToPanel, "السابق", new Vector2(220f, -375f), new Vector2(280f, 90f), () => SetHowToPage(howToPage - 1), 38, SkyBlue).transform.parent.gameObject;
+    }
+
+    public void SetHowToPage(int page)
+    {
+        howToPage = Mathf.Clamp(page, 0, HowToTitles.Length - 1);
+        howToTitle.text = ArabicText.Fix(HowToTitles[howToPage]);
+        howToText.text = WrapFix(HowToTexts[howToPage], 46);
+        for (int i = 0; i < howToScenes.Count; i++) howToScenes[i].gameObject.SetActive(i == howToPage);
+        for (int i = 0; i < howToDots.Count; i++)
+        {
+            howToDots[i].color = i == howToPage ? Pink : StarOff;
+            howToDots[i].rectTransform.sizeDelta = Vector2.one * (i == howToPage ? 26f : 20f);
+        }
+        howToNext.text = ArabicText.Fix(howToPage == HowToTitles.Length - 1 ? "فهمت! لنلعب" : "التالي");
+        howToPrev.SetActive(howToPage > 0);
+        if (howToPanel.gameObject.activeSelf) StartCoroutine(PopIn(howToScenes[howToPage]));
+    }
+
+    // قطعة رسمة: مستطيل (أو شكل) بلون ومكان ودوران
+    Image Bit(RectTransform parent, Vector2 pos, Vector2 size, Color color, float rot = 0f, Sprite sprite = null, bool sliced = false)
+    {
+        var img = Panel(parent, "Bit", color);
+        img.sprite = sprite;
+        if (sliced) { img.type = Image.Type.Sliced; img.pixelsPerUnitMultiplier = 3f; }
+        Place(img.rectTransform, pos, size);
+        img.rectTransform.localRotation = Quaternion.Euler(0f, 0f, rot);
+        return img;
+    }
+
+    // صفحة دفتر صغيرة (أرض المرحلة)
+    void MiniPage(RectTransform p, Vector2 pos, float w)
+    {
+        Bit(p, pos + new Vector2(4f, -6f), new Vector2(w, 60f), new Color(0.1f, 0.2f, 0.35f, 0.15f), 0f, rounded, true);
+        Bit(p, pos, new Vector2(w, 60f), PaperWhite, 0f, rounded, true);
+        Bit(p, pos + new Vector2(0f, 8f), new Vector2(w - 16f, 3f), LineBlue);
+        Bit(p, pos + new Vector2(0f, -10f), new Vector2(w - 16f, 3f), LineBlue);
+        Bit(p, pos + new Vector2(0f, 30f), new Vector2(w, 5f), new Color(0.55f, 0.6f, 0.68f));
+    }
+
+    // رويدا صغيرة: شعر أسود طويل، وجه، بلوزة بيضا، وبنطلون أسود
+    void MiniRowaida(RectTransform p, Vector2 feet)
+    {
+        Color hair = new Color(0.1f, 0.08f, 0.1f), skin = new Color(1f, 0.85f, 0.74f);
+        Bit(p, feet + new Vector2(0f, 76f), new Vector2(50f, 62f), hair, 0f, rounded, true);
+        Bit(p, feet + new Vector2(0f, 46f), new Vector2(30f, 32f), Color.white, 0f, rounded, true);
+        for (int s = -1; s <= 1; s += 2) Bit(p, feet + new Vector2(s * 7f, 16f), new Vector2(11f, 30f), Navy, 0f, rounded, true);
+        Bit(p, feet + new Vector2(0f, 80f), new Vector2(40f, 40f), skin, 0f, circle);
+        Bit(p, feet + new Vector2(0f, 96f), new Vector2(44f, 16f), hair, 0f, rounded, true);
+        for (int s = -1; s <= 1; s += 2) Bit(p, feet + new Vector2(s * 8f, 80f), new Vector2(7f, 9f), hair, 0f, circle);
+        for (int s = -1; s <= 1; s += 2) Bit(p, feet + new Vector2(s * 13f, 72f), new Vector2(9f, 5f), PinkSoft, 0f, circle);
+    }
+
+    void SceneIdea(RectTransform p)
+    {
+        // مثل اللعبة: رويدا يسار وتمشي لليمين لين الباب
+        MiniPage(p, new Vector2(-270f, -80f), 200f);
+        MiniPage(p, new Vector2(0f, -80f), 200f);
+        MiniPage(p, new Vector2(270f, -80f), 200f);
+        for (int k = 0; k < 11; k++) Bit(p, new Vector2(-230f + k * 44f, 50f + Mathf.Sin(k * 0.6f) * 16f), new Vector2(12f, 12f), PinkSoft, 0f, circle);
+        MiniRowaida(p, new Vector2(-300f, -50f));
+        // الباب
+        Bit(p, new Vector2(300f, 30f), new Vector2(84f, 150f), new Color(0.62f, 0.38f, 0.22f), 0f, rounded, true);
+        Bit(p, new Vector2(300f, 30f), new Vector2(66f, 132f), new Color(0.75f, 0.5f, 0.3f), 0f, rounded, true);
+        Bit(p, new Vector2(276f, 26f), new Vector2(14f, 14f), Gold, 0f, circle);
+        var st = Bit(p, new Vector2(300f, 135f), new Vector2(44f, 44f), Gold, 0f, star);
+        st.name = "Spin Star";
+    }
+
+    void SceneDraw(RectTransform p)
+    {
+        MiniPage(p, new Vector2(-230f, -80f), 300f);
+        MiniPage(p, new Vector2(230f, -80f), 300f);
+        MiniRowaida(p, new Vector2(-280f, -50f));
+        // الخط اللي يترسم فوق الحفرة من اليسار لليمين (يطول ويرجع)، والمؤشر عند آخره
+        drawLine = Bit(p, new Vector2(-85f, -48f), new Vector2(170f, 10f), Navy, 0f, rounded, true).rectTransform;
+        drawLine.pivot = new Vector2(0f, 0.5f);
+        drawLine.anchoredPosition = new Vector2(-85f, -48f);
+        var ptr = new GameObject("Pointer", typeof(RectTransform)).GetComponent<RectTransform>();
+        ptr.SetParent(p, false);
+        Place(ptr, Vector2.zero, new Vector2(40f, 40f));
+        var arrow = Bit(ptr, new Vector2(10f, -12f), new Vector2(34f, 40f), Color.white, 25f, triangle);
+        arrow.gameObject.AddComponent<Outline>().effectColor = Navy;
+        drawPointer = ptr;
+    }
+
+    void SceneShapes(RectTransform p)
+    {
+        // دائرة مرسومة (حلقة حبر)
+        Bit(p, new Vector2(230f, 10f), new Vector2(150f, 150f), Navy, 0f, circle);
+        Bit(p, new Vector2(230f, 10f), new Vector2(132f, 132f), new Color(1f, 0.98f, 0.93f), 0f, circle);
+        // سهم
+        Bit(p, new Vector2(40f, 10f), new Vector2(110f, 16f), PinkSoft, 0f, rounded, true);
+        Bit(p, new Vector2(-25f, 10f), new Vector2(40f, 40f), PinkSoft, 90f, triangle);
+        // كرة وبالونة
+        Bit(p, new Vector2(-170f, -40f), new Vector2(110f, 110f), new Color(0.95f, 0.35f, 0.4f), 0f, circle).name = "Bounce Ball";
+        Bit(p, new Vector2(-185f, -20f), new Vector2(30f, 22f), new Color(1f, 1f, 1f, 0.6f), -30f, circle);
+        Bit(p, new Vector2(-300f, 60f), new Vector2(90f, 110f), SkyBlue, 0f, circle).name = "Float Balloon";
+        Bit(p, new Vector2(-300f, -40f), new Vector2(4f, 90f), Grey);
+    }
+
+    void SceneInk(RectTransform p)
+    {
+        // قلم الحبر مثل اللي فوق الشاشة: جسم أصفر، حبر غامق ينقص، ممحاة، وسن
+        Bit(p, new Vector2(0f, 20f), new Vector2(520f, 76f), YellowDark, 0f, rounded, true);
+        Bit(p, new Vector2(0f, 24f), new Vector2(500f, 60f), Yellow, 0f, rounded, true);
+        var fill = Bit(p, new Vector2(-240f, 24f), new Vector2(300f, 40f), Navy, 0f, rounded, true).rectTransform;
+        fill.pivot = new Vector2(0f, 0.5f);
+        fill.name = "Ink Fill";
+        Bit(p, new Vector2(290f, 20f), new Vector2(70f, 76f), PinkSoft, 0f, rounded, true);
+        Bit(p, new Vector2(-295f, 20f), new Vector2(60f, 60f), new Color(0.96f, 0.76f, 0.55f), 90f, triangle);
+        Bit(p, new Vector2(-322f, 20f), new Vector2(18f, 18f), Navy, 90f, triangle);
+        Label(p, ArabicText.Fix("الحبر"), 40, new Vector2(0f, 100f), new Vector2(300f, 60f)).color = Grey;
+        // قطرات حبر صغيرة
+        for (int k = 0; k < 3; k++) Bit(p, new Vector2(-120f + k * 120f, -95f), new Vector2(34f, 44f), Navy, 0f, circle);
+    }
+
+    void SceneKeys(RectTransform p)
+    {
+        // زرين من الكيبورد، وزرين من الشاشة (نفس الأيقونات اللي فوق يمين وقت اللعب)
+        string[] keys = { "المسافة", "١ ٢ ٣ ٤" };
+        string[] what = { "القفز (في بعض المراحل)", "لون الحبر (في مراحل الألوان)", "استراحة", "إعادة المرحلة" };
+        for (int i = 0; i < what.Length; i++)
+        {
+            float y = 110f - i * 72f;
+            if (i < 2)
+            {
+                Bit(p, new Vector2(250f, y - 5f), new Vector2(200f, 60f), new Color(0.78f, 0.82f, 0.88f), 0f, rounded, true);
+                Bit(p, new Vector2(250f, y), new Vector2(192f, 52f), Color.white, 0f, rounded, true);
+                Label(p, ArabicText.Fix(keys[i]), 30, new Vector2(250f, y + 2f), new Vector2(200f, 52f));
+            }
+            else Bit(p, new Vector2(250f, y), new Vector2(62f, 62f), Color.white, 0f, GameUI.IconSprite(i == 3));
+            var d = Label(p, ArabicText.Fix(what[i]), 32, new Vector2(-120f, y), new Vector2(480f, 56f));
+            d.alignment = TextAnchor.MiddleRight;
+            d.color = Grey;
+        }
+    }
+
+    void AnimateHowTo(float t)
+    {
+        // الخط يترسم فوق الحفرة والمؤشر يمشي معه
+        if (drawLine != null && howToPage == 1)
+        {
+            float k = Mathf.Clamp01(Mathf.Repeat(t, 2.6f) / 1.6f);
+            drawLine.sizeDelta = new Vector2(Mathf.Max(1f, 170f * k), 10f);
+            drawPointer.anchoredPosition = drawLine.anchoredPosition + new Vector2(170f * k, 4f + Mathf.Sin(k * 9f) * 3f);
+        }
+        if (howToPage == 0)
+            foreach (Transform c in howToScenes[0]) if (c.name == "Spin Star") c.localRotation = Quaternion.Euler(0f, 0f, t * 60f);
+        if (howToPage == 2)
+            foreach (Transform c in howToScenes[2])
+            {
+                if (c.name == "Bounce Ball") ((RectTransform)c).anchoredPosition = new Vector2(-170f, -40f + Mathf.Abs(Mathf.Sin(t * 3f)) * 40f);
+                if (c.name == "Float Balloon") ((RectTransform)c).anchoredPosition = new Vector2(-300f, 60f + Mathf.Sin(t * 1.5f) * 8f);
+            }
+        if (howToPage == 3)
+            foreach (Transform c in howToScenes[3]) if (c.name == "Ink Fill") ((RectTransform)c).sizeDelta = new Vector2(Mathf.Lerp(470f, 120f, Mathf.Repeat(t, 4f) / 4f), 40f);
+    }
+
     // ---------- القائمة الرئيسية ----------
 
     Text playLabel, starsTotal;
@@ -593,7 +821,8 @@ public class MenuUI : MonoBehaviour
         SecondaryButton(mainPanel, "صندوق الأقلام", new Vector2(190f, -170f), new Vector2(240f, 96f), ShowPencil, 30, Lilac);
         SecondaryButton(mainPanel, "الإعدادات", new Vector2(-15f, -170f), new Vector2(160f, 96f), () => ShowSettings(mainPanel), 30, Teal);
         SecondaryButton(mainPanel, "من جديد", new Vector2(-200f, -170f), new Vector2(170f, 96f), ShowConfirm, 30, Orange);
-        SecondaryButton(mainPanel, "الخروج من اللعبة", new Vector2(0f, -285f), new Vector2(560f, 90f), Application.Quit, 34, MintC);
+        SecondaryButton(mainPanel, "طريقة اللعب", new Vector2(140f, -285f), new Vector2(280f, 90f), () => ShowHowTo(ShowMain), 32, Yellow);
+        SecondaryButton(mainPanel, "الخروج", new Vector2(-145f, -285f), new Vector2(270f, 90f), Application.Quit, 32, MintC);
 
         // عداد النجوم بشريط أصفر صغير
         var pill = Framed(mainPanel, "Stars Pill", new Vector2(0f, -385f), new Vector2(300f, 70f), new Color(1f, 0.93f, 0.7f), YellowDark, 4f, 1.6f);
@@ -1092,6 +1321,7 @@ public class MenuUI : MonoBehaviour
     {
         if (mainPanel == null || completePanel == null) return;   // القوائم انحذفت (وقفنا اللعب)
         float t = Time.unscaledTime;
+        if (howToPanel != null && howToPanel.gameObject.activeSelf) AnimateHowTo(t);
         // شاشة البداية: الاسم يتمايل والقلم كأنه يكتب
         if (titlePanel != null && titlePanel.gameObject.activeSelf)
         {

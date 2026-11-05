@@ -111,7 +111,8 @@ public class GameManager : MonoBehaviour
     public void PlayFromMenu()
     {
         if (menu.Transitioning) return;
-        if (!SaveData.IntroSeen) menu.Transition(StartIntro);
+        // أول مرة: نشرح طريقة اللعب، وبعدين تبدأ الحكاية
+        if (!SaveData.IntroSeen) menu.ShowHowTo(() => menu.Transition(StartIntro));
         else StartLevelFromMenu(SaveData.Unlocked);
     }
 
@@ -272,7 +273,7 @@ public class GameManager : MonoBehaviour
     {
         LevelData level = CurrentLevel;
         bool timed = level != null && level.timeLimit > 0f;
-        if (timed && IsPlaying)
+        if (timed && IsPlaying && !briefing)
         {
             timeLeft -= Time.deltaTime;
             if (timeLeft <= 0f)
@@ -348,6 +349,7 @@ public class GameManager : MonoBehaviour
     public void LoadLevel(int index, bool showcase = false)
     {
         StopAllCoroutines();
+        briefing = false;
         Time.timeScale = 1f;
         Paused = false;
         if (!showcase)
@@ -408,11 +410,26 @@ public class GameManager : MonoBehaviour
     void Announce(int index, LevelData data)
     {
         // تعليمات المرحلة بصوت رويدا (مرة وحدة، ما تنعاد كل ما نعيد المرحلة)
+        bool first = index != spokenLevel;
         string voice = "level_" + (index + 1).ToString("00");
-        float voiceLen = index != spokenLevel ? Narration.Length(voice) : 0f;
+        float voiceLen = first ? Narration.Length(voice) : 0f;
         if (voiceLen > 0f) Narration.Say(voice);
         spokenLevel = index;
-        ui.ShowMessage(data.title, data.subtitle != null ? Mathf.Max(4f, voiceLen + 1f) : 1.5f, data.subtitle);
+        float show = data.subtitle != null ? Mathf.Max(4f, voiceLen + 1f) : 1.5f;
+        ui.ShowMessage(data.title, show, data.subtitle);
+        // أول مرة: رويدا توقف لين يخلص الشرح (مثل المرحلة الأولى)، عشان اللاعبة تستوعب وش المطلوب قبل ما تمشي
+        if (first && data.subtitle != null) StartCoroutine(Briefing(show));
+    }
+
+    bool briefing;   // رويدا واقفة تسمع شرح المرحلة (والوقت ما يمشي)
+
+    IEnumerator Briefing(float seconds)
+    {
+        briefing = true;
+        if (Rowaida != null) Rowaida.Held = true;
+        yield return new WaitForSeconds(Mathf.Max(1f, seconds - 0.3f));
+        if (Rowaida != null) Rowaida.Held = false;
+        briefing = false;
     }
 
     // شكل المرحلة: ألوان القلم والحلقات، السما، الإضاءة، والأشياء الطايرة
