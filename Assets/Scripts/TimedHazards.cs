@@ -75,7 +75,7 @@ public class TimedHazard : MonoBehaviour
                 // محارة حقيقية: نصين بضلوع وحافة متموجة (مثل الأسقلوب)، جوا لامع لؤلؤي، لحم وردي، ولؤلؤة.
                 // المفصل ورا والفتحة ناحية الكاميرا، والنص الفوقي يلف من المفصل
                 Material outer = Shapes.ShellPattern("clam", new Color(1f, 0.86f, 0.72f), new Color(0.95f, 0.4f, 0.32f), 16);
-                Material nacre = gm.Mat("Clam Nacre", new Color(1f, 0.9f, 0.92f), 0.92f, 0.1f);
+                Material nacre = gm.Mat("Clam Nacre", new Color(1f, 0.74f, 0.74f), 0.75f);
                 Material flesh = gm.Mat("Clam Flesh", new Color(1f, 0.6f, 0.56f), 0.6f);
                 Material pearl = gm.Mat("Pearl", new Color(1f, 0.97f, 0.95f), 0.95f);
                 Mesh half = Shapes.Shell(16);
