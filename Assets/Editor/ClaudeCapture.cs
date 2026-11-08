@@ -361,6 +361,13 @@ public static class ClaudeCapture
                         SaveData.SetBought(k, false);
                     }
                     break;
+                case "svcclear":
+                    // نبدأ نسجل أشكال الشيدرات اللي تنرسم (عشان نحطها بنسخة الجوال)
+                    typeof(ShaderUtil).GetMethod("ClearCurrentShaderVariantCollection", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public).Invoke(null, null);
+                    break;
+                case "svcsave":
+                    typeof(ShaderUtil).GetMethod("SaveCurrentShaderVariantCollection", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public).Invoke(null, new object[] { MobileSetup.VariantsPath });
+                    break;
                 case "shop":
                     Object.FindAnyObjectByType<MenuUI>().ShowShop(null);
                     break;

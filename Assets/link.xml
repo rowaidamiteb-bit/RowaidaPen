@@ -1,0 +1,11 @@
+<!-- مكتبات الإعلانات والمتجر: نمنع يونتي يشيل منها شي وقت البناء (تنطلب بالاسم وقت اللعب) -->
+<linker>
+  <assembly fullname="GoogleMobileAds" preserve="all" ignoreIfMissing="1"/>
+  <assembly fullname="GoogleMobileAds.Core" preserve="all" ignoreIfMissing="1"/>
+  <assembly fullname="GoogleMobileAds.Common" preserve="all" ignoreIfMissing="1"/>
+  <assembly fullname="GoogleMobileAds.Android" preserve="all" ignoreIfMissing="1"/>
+  <assembly fullname="GoogleMobileAds.iOS" preserve="all" ignoreIfMissing="1"/>
+  <assembly fullname="GoogleMobileAds.Ump" preserve="all" ignoreIfMissing="1"/>
+  <assembly fullname="GoogleMobileAds.Ump.Android" preserve="all" ignoreIfMissing="1"/>
+  <assembly fullname="GoogleMobileAds.Ump.iOS" preserve="all" ignoreIfMissing="1"/>
+</linker>

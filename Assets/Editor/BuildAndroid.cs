@@ -41,3 +41,22 @@ public static class BuildAndroid
         }
     }
 }
+
+// نسخة ويندوز سريعة للتجربة: نتأكد إن اللعبة تشتغل برا المحرر قبل ما نبني الجوال
+public static class BuildWindowsTest
+{
+    public static void Build()
+    {
+        string[] scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
+        MobileSetup.Setup();
+        BuildReport report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+        {
+            scenes = scenes,
+            locationPathName = "Builds/WindowsTest/RowaidaPen.exe",
+            target = BuildTarget.StandaloneWindows64,
+            options = BuildOptions.Development,
+        });
+        Debug.Log("WINDOWS BUILD: " + report.summary.result + " errors=" + report.summary.totalErrors);
+        if (Application.isBatchMode) EditorApplication.Exit(report.summary.result == BuildResult.Succeeded ? 0 : 1);
+    }
+}

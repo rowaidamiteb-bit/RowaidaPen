@@ -48,17 +48,46 @@ public static class MobileSetup
         if (PlayerSettings.bundleVersion == "0.1.0") PlayerSettings.bundleVersion = "1.0.0";
         PlayerSettings.statusBarHidden = true;
 
-        // أندرويد: IL2CPP و64 بت (قوقل بلاي يطلبها)
+        // أندرويد: IL2CPP، ويشتغل على الجوالات الجديدة (64 بت) والقديمة (32 بت)، ومن أندرويد 7.1 وفوق
         if (PlayerSettings.GetScriptingBackend(NamedBuildTarget.Android) != ScriptingImplementation.IL2CPP)
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64;
 
         SetAdMobIds();
+        IncludeShaders();
         AssetDatabase.SaveAssets();
         // يونتي ما يكتب إعدادات المشروع بالملف إلا إذا انحفظ المشروع: نحفظه مرة وحدة لو الملف لسا قديم
         string file = System.IO.File.ReadAllText("ProjectSettings/ProjectSettings.asset");
         if (!file.Contains("iPhone: " + BundleId) && !EditorApplication.isPlayingOrWillChangePlaymode)
             EditorApplication.ExecuteMenuItem("File/Save Project");
+    }
+
+    // شيدرات ينطلبون بالاسم من الكود: يونتي ما يحطهم بالبناء لحاله، وبدونهم الجوال يعلق أول ما تبدأ المرحلة.
+    // ونحط مع البناء كل أشكال الشيدرات اللي استخدمتها المراحل (انسجلت وإحنا نلعب كل المراحل بالمحرر)
+    static readonly string[] CodeShaders = { "Universal Render Pipeline/Unlit", "Universal Render Pipeline/Particles/Unlit" };
+    public const string VariantsPath = "Assets/Settings/GameShaders.shadervariants";
+
+    static void IncludeShaders()
+    {
+        var graphics = AssetDatabase.LoadAssetAtPath<Object>("ProjectSettings/GraphicsSettings.asset");
+        if (graphics == null) return;
+        var so = new SerializedObject(graphics);
+        bool changed = false;
+        var always = so.FindProperty("m_AlwaysIncludedShaders");
+        foreach (string name in CodeShaders)
+            changed |= AddOnce(always, Shader.Find(name));
+        changed |= AddOnce(so.FindProperty("m_PreloadedShaders"), AssetDatabase.LoadAssetAtPath<ShaderVariantCollection>(VariantsPath));
+        if (changed) so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    static bool AddOnce(SerializedProperty list, Object item)
+    {
+        if (list == null || item == null) return false;
+        for (int i = 0; i < list.arraySize; i++)
+            if (list.GetArrayElementAtIndex(i).objectReferenceValue == item) return false;
+        list.InsertArrayElementAtIndex(list.arraySize);
+        list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = item;
+        return true;
     }
 
     // إعلانات قوقل تحتاج معرّف التطبيق بإعداداتها (بدونه اللعبة تطفي على الجوال)

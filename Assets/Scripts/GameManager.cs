@@ -73,10 +73,11 @@ public class GameManager : MonoBehaviour
     {
         // الكوينز والمتجر والإعلانات يجهزون من أول ما تفتح اللعبة
         Coins.Init();
-        Shop.Init();
-        Ads.Init();
         menu = gameObject.AddComponent<MenuUI>();
         menu.Build(this);
+        // لو المتجر أو الإعلانات ما اشتغلوا بجوال معين (مثلًا بدون خدمات قوقل) اللعبة تكمل عادي
+        try { Shop.Init(); } catch (System.Exception e) { Debug.LogWarning(e); }
+        try { Ads.Init(); } catch (System.Exception e) { Debug.LogWarning(e); }
 
         // للتجربة من المحرر: نبدأ المرحلة على طول بدون القائمة
         if (!playIntro)

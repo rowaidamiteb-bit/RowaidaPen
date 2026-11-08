@@ -68,11 +68,18 @@ public static class Ads
         int bonus = PlayerPrefs.GetInt(BonusKey, 0);
         PlayerPrefs.SetInt(BonusKey, 0);
         PlayerPrefs.Save();
-        // فيه كوينز تتدبل: إعلان بمكافأة (قبله شاشة صغيرة تقول المكافأة، وتقدر تتخطاه)
-        if (bonus > 0 && rewarded != null && rewarded.CanShowAd())
-            AdIntro.Open(bonus, watch => { if (watch) ShowRewarded(bonus, then); else then(); });
-        else if (interstitial != null && interstitial.CanShowAd()) ShowInterstitial(then);
-        else then();   // ما فيه نت أو الإعلان ما جهز: نكمل عادي
+        try
+        {
+            // فيه كوينز تتدبل: إعلان بمكافأة (قبله شاشة صغيرة تقول المكافأة، وتقدر تتخطاه)
+            if (bonus > 0 && rewarded != null && rewarded.CanShowAd())
+            {
+                AdIntro.Open(bonus, watch => { if (watch) ShowRewarded(bonus, then); else then(); });
+                return;
+            }
+            if (interstitial != null && interstitial.CanShowAd()) { ShowInterstitial(then); return; }
+        }
+        catch (Exception e) { Debug.LogWarning(e); }
+        then();   // ما فيه نت أو الإعلان ما جهز أو صار خطأ: نكمل عادي
     }
 
     static void ShowRewarded(int bonus, Action then)
@@ -91,11 +98,15 @@ public static class Ads
         ad.OnAdFullScreenContentClosed += () => MobileAdsEventExecutor.ExecuteInUpdate(Finish);
         ad.OnAdFullScreenContentFailed += error => MobileAdsEventExecutor.ExecuteInUpdate(Finish);
         // شافته للآخر: الكوينز تتدبل
-        ad.Show(reward => MobileAdsEventExecutor.ExecuteInUpdate(() =>
+        try
         {
-            Coins.Add(bonus);
-            GameManager.Instance.Menu.Toast("تضاعفت الكوينز! حصلنا على " + bonus + " إضافية");
-        }));
+            ad.Show(reward => MobileAdsEventExecutor.ExecuteInUpdate(() =>
+            {
+                Coins.Add(bonus);
+                GameManager.Instance.Menu.Toast("تضاعفت الكوينز! حصلنا على " + bonus + " إضافية");
+            }));
+        }
+        catch (Exception e) { Debug.LogWarning(e); Finish(); }
     }
 
     static void ShowInterstitial(Action then)
@@ -113,7 +124,8 @@ public static class Ads
         }
         ad.OnAdFullScreenContentClosed += () => MobileAdsEventExecutor.ExecuteInUpdate(Finish);
         ad.OnAdFullScreenContentFailed += error => MobileAdsEventExecutor.ExecuteInUpdate(Finish);
-        ad.Show();
+        try { ad.Show(); }
+        catch (Exception e) { Debug.LogWarning(e); Finish(); }
     }
 }
 
