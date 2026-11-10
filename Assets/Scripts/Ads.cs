@@ -14,9 +14,10 @@ public static class Ads
     const string RewardedId = "";
     const string InterstitialId = "";
 #else
-    const string AppKey = "";
-    const string RewardedId = "";
-    const string InterstitialId = "";
+    // أندرويد: من حساب LevelPlay (تطبيق "قلم رويدا")
+    const string AppKey = "296e24f65";
+    const string RewardedId = "jglhr81kmtpagg0a";       // Double Coins Rewarded
+    const string InterstitialId = "bngenpt4djx3l4ci";   // Between Levels Interstitial
 #endif
     const string CountKey = "ads_levels_done";
     const string BonusKey = "ads_bonus";   // كوينز آخر خمس مراحل (تنضاف مرة ثانية لو شافت الإعلان كامل)

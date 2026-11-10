@@ -5,11 +5,11 @@ using UnityEngine;
 using UnityEngine.Purchasing;
 
 // المتجر: حزمة كوينز تكفي عشرين مرحلة بـ ٤ دولار (السعر نفسه ينحط بحساب قوقل بلاي وآبل بنفس رقم المنتج)
-// TestMode: لين ننزل اللعبة بالمتجر، الشراء تجريبي وما ينخصم فيه شي (عشان نجربه على الجوال)
+// TestMode: لو true الشراء تجريبي وما ينخصم شي (الحين مقفل: الشراء حقيقي من قوقل بلاي)
 public static class Shop
 {
     public const string PackId = "com.rowaida.pen.coins20";
-    public static readonly bool TestMode = true;
+    public static readonly bool TestMode = false;
     static StoreController store;
     static Action<bool> waiting;
 
