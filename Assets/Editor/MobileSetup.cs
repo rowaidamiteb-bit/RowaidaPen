@@ -53,7 +53,6 @@ public static class MobileSetup
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64;
 
-        SetAdMobIds();
         IncludeShaders();
         AssetDatabase.SaveAssets();
         // يونتي ما يكتب إعدادات المشروع بالملف إلا إذا انحفظ المشروع: نحفظه مرة وحدة لو الملف لسا قديم
@@ -88,24 +87,6 @@ public static class MobileSetup
         list.InsertArrayElementAtIndex(list.arraySize);
         list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = item;
         return true;
-    }
-
-    // إعلانات قوقل تحتاج معرّف التطبيق بإعداداتها (بدونه اللعبة تطفي على الجوال)
-    static void SetAdMobIds()
-    {
-        System.Type type = null;
-        foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
-            if ((type = asm.GetType("GoogleMobileAds.Editor.GoogleMobileAdsSettings")) != null) break;
-        if (type == null) return;
-        var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
-        var settings = type.GetMethod("LoadInstance", flags)?.Invoke(null, null) as ScriptableObject;
-        if (settings == null) return;
-        var android = type.GetProperty("GoogleMobileAdsAndroidAppId");
-        var ios = type.GetProperty("GoogleMobileAdsIOSAppId");
-        if ((string)android.GetValue(settings) == Ads.AndroidAppId && (string)ios.GetValue(settings) == Ads.IosAppId) return;
-        android.SetValue(settings, Ads.AndroidAppId);
-        ios.SetValue(settings, Ads.IosAppId);
-        EditorUtility.SetDirty(settings);
     }
 }
 

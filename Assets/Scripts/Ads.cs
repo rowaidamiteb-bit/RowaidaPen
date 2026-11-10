@@ -1,53 +1,66 @@
 using System;
-using GoogleMobileAds.Api;
-using GoogleMobileAds.Common;
+using Unity.Services.LevelPlay;
 using UnityEngine;
 using UnityEngine.UI;
 
-// الإعلانات (قوقل AdMob): بعد كل خمس مراحل يطلع إعلان قبل المرحلة الجاية (ما يقاطع اللعب أبدًا).
+// الإعلانات (يونتي LevelPlay): بعد كل خمس مراحل يطلع إعلان قبل المرحلة الجاية (ما يقاطع اللعب أبدًا).
 // لو شافته اللاعبة للآخر تتدبل الكوينز اللي جمعتها من آخر خمس مراحل.
-// المعرفات الحين معرفات قوقل التجريبية (تطلع إعلانات تجريبية حقيقية)، ولما تسوين حساب AdMob نحط معرفاتك هنا
+// المفتاح ورموز الإعلانين من لوحة LevelPlay (لو فاضية: ما فيه إعلانات واللعبة تكمل عادي)
 public static class Ads
 {
     public const int Every = 5;
-    public const string AndroidAppId = "ca-app-pub-3940256099942544~3347511713";
-    public const string IosAppId = "ca-app-pub-3940256099942544~1458002511";
 #if UNITY_IOS
-    const string RewardedId = "ca-app-pub-3940256099942544/6978759866";
-    const string InterstitialId = "ca-app-pub-3940256099942544/4411468910";
+    const string AppKey = "";
+    const string RewardedId = "";
+    const string InterstitialId = "";
 #else
-    const string RewardedId = "ca-app-pub-3940256099942544/5354046379";
-    const string InterstitialId = "ca-app-pub-3940256099942544/1033173712";
+    const string AppKey = "";
+    const string RewardedId = "";
+    const string InterstitialId = "";
 #endif
     const string CountKey = "ads_levels_done";
     const string BonusKey = "ads_bonus";   // كوينز آخر خمس مراحل (تنضاف مرة ثانية لو شافت الإعلان كامل)
     static bool pending, started;
-    static RewardedInterstitialAd rewarded;
-    static InterstitialAd interstitial;
+    static LevelPlayRewardedAd rewarded;
+    static LevelPlayInterstitialAd interstitial;
+    static Action afterAd;   // نكمل بعد ما يتسكر الإعلان
+    static int rewardBonus;  // الكوينز اللي تنضاف لو شافت الإعلان الحالي للآخر
 
     public static void Init()
     {
-        if (started) return;
+        if (started || string.IsNullOrEmpty(AppKey)) return;
         started = true;
-        MobileAds.SetiOSAppPauseOnBackground(true);
-        MobileAds.Initialize(status => MobileAdsEventExecutor.ExecuteInUpdate(() =>
+        LevelPlay.OnInitSuccess += config => CreateAds();
+        LevelPlay.OnInitFailed += error => Debug.LogWarning("الإعلانات ما اشتغلت: " + error);
+        LevelPlay.Init(AppKey);
+    }
+
+    // نجهز الإعلانين من قبل عشان يطلعون على طول وقت ما نحتاجهم
+    static void CreateAds()
+    {
+        rewarded = new LevelPlayRewardedAd(RewardedId);
+        rewarded.OnAdRewarded += (info, reward) =>
         {
-            LoadRewarded();
-            LoadInterstitial();
-        }));
+            if (rewardBonus <= 0) return;
+            Coins.Add(rewardBonus);
+            GameManager.Instance.Menu.Toast("تضاعفت الكوينز! حصلنا على " + rewardBonus + " إضافية");
+            rewardBonus = 0;
+        };
+        rewarded.OnAdClosed += info => { rewarded.LoadAd(); Continue(); };
+        rewarded.OnAdDisplayFailed += (info, error) => { rewarded.LoadAd(); Continue(); };
+        rewarded.LoadAd();
+
+        interstitial = new LevelPlayInterstitialAd(InterstitialId);
+        interstitial.OnAdClosed += info => { interstitial.LoadAd(); Continue(); };
+        interstitial.OnAdDisplayFailed += (info, error) => { interstitial.LoadAd(); Continue(); };
+        interstitial.LoadAd();
     }
 
-    // نجهز الإعلان من قبل عشان يطلع على طول وقت ما نحتاجه
-    static void LoadRewarded()
+    static void Continue()
     {
-        RewardedInterstitialAd.Load(RewardedId, new AdRequest(), (ad, error) =>
-            MobileAdsEventExecutor.ExecuteInUpdate(() => { if (error == null && ad != null) rewarded = ad; }));
-    }
-
-    static void LoadInterstitial()
-    {
-        InterstitialAd.Load(InterstitialId, new AdRequest(), (ad, error) =>
-            MobileAdsEventExecutor.ExecuteInUpdate(() => { if (error == null && ad != null) interstitial = ad; }));
+        Action next = afterAd;
+        afterAd = null;
+        next?.Invoke();
     }
 
     // خلصت مرحلة: نحسب كوينزها للمضاعفة، وكل خمس مراحل يصير فيه إعلان ينتظر
@@ -70,62 +83,31 @@ public static class Ads
         PlayerPrefs.Save();
         try
         {
-            // فيه كوينز تتدبل: إعلان بمكافأة (قبله شاشة صغيرة تقول المكافأة، وتقدر تتخطاه)
-            if (bonus > 0 && rewarded != null && rewarded.CanShowAd())
+            // فيه كوينز تتدبل: إعلان بمكافأة (قبله بطاقة صغيرة تقول المكافأة، وتقدر تتخطاه)
+            if (bonus > 0 && rewarded != null && rewarded.IsAdReady())
             {
-                AdIntro.Open(bonus, watch => { if (watch) ShowRewarded(bonus, then); else then(); });
+                AdIntro.Open(bonus, watch =>
+                {
+                    if (!watch) { then(); return; }
+                    rewardBonus = bonus;
+                    Show(() => rewarded.ShowAd(), then);
+                });
                 return;
             }
-            if (interstitial != null && interstitial.CanShowAd()) { ShowInterstitial(then); return; }
+            if (interstitial != null && interstitial.IsAdReady()) { Show(() => interstitial.ShowAd(), then); return; }
+            // ما جهز (ما فيه نت مثلًا): نطلب واحد للمرة الجاية
+            if (rewarded != null && !rewarded.IsAdReady()) rewarded.LoadAd();
+            if (interstitial != null && !interstitial.IsAdReady()) interstitial.LoadAd();
         }
         catch (Exception e) { Debug.LogWarning(e); }
-        then();   // ما فيه نت أو الإعلان ما جهز أو صار خطأ: نكمل عادي
+        then();
     }
 
-    static void ShowRewarded(int bonus, Action then)
+    static void Show(Action show, Action then)
     {
-        RewardedInterstitialAd ad = rewarded;
-        rewarded = null;
-        bool done = false;
-        void Finish()
-        {
-            if (done) return;
-            done = true;
-            ad.Destroy();
-            LoadRewarded();
-            then();
-        }
-        ad.OnAdFullScreenContentClosed += () => MobileAdsEventExecutor.ExecuteInUpdate(Finish);
-        ad.OnAdFullScreenContentFailed += error => MobileAdsEventExecutor.ExecuteInUpdate(Finish);
-        // شافته للآخر: الكوينز تتدبل
-        try
-        {
-            ad.Show(reward => MobileAdsEventExecutor.ExecuteInUpdate(() =>
-            {
-                Coins.Add(bonus);
-                GameManager.Instance.Menu.Toast("تضاعفت الكوينز! حصلنا على " + bonus + " إضافية");
-            }));
-        }
-        catch (Exception e) { Debug.LogWarning(e); Finish(); }
-    }
-
-    static void ShowInterstitial(Action then)
-    {
-        InterstitialAd ad = interstitial;
-        interstitial = null;
-        bool done = false;
-        void Finish()
-        {
-            if (done) return;
-            done = true;
-            ad.Destroy();
-            LoadInterstitial();
-            then();
-        }
-        ad.OnAdFullScreenContentClosed += () => MobileAdsEventExecutor.ExecuteInUpdate(Finish);
-        ad.OnAdFullScreenContentFailed += error => MobileAdsEventExecutor.ExecuteInUpdate(Finish);
-        try { ad.Show(); }
-        catch (Exception e) { Debug.LogWarning(e); Finish(); }
+        afterAd = then;
+        try { show(); }
+        catch (Exception e) { Debug.LogWarning(e); Continue(); }
     }
 }
 

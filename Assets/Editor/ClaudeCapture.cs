@@ -138,6 +138,30 @@ public static class ClaudeCapture
         }
     }
 
+    static async void LevelPlayInstall()
+    {
+        try
+        {
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+            System.Reflection.Assembly asm = null;
+            foreach (var a in System.AppDomain.CurrentDomain.GetAssemblies()) if (a.GetName().Name == "Unity.LevelPlay.Editor") asm = a;
+            var services = asm.GetType("Unity.Services.LevelPlay.Editor.EditorServices");
+            object inst = services.GetProperty("Instance", flags).GetValue(null);
+            object logger = services.GetProperty("LevelPlayLogger", flags).GetValue(inst);
+            object network = services.GetProperty("LevelPlayNetworkManager", flags).GetValue(inst);
+            var type = asm.GetType("Unity.Services.LevelPlay.Editor.SdkInstaller");
+            object installer = System.Activator.CreateInstance(type, flags, null, new[] { logger, network }, null);
+            foreach (string m in new[] { "PreInstallAsync", "InstallLatestIronSourceSdkAsync", "InstallUnityAdsAdapterAsync" })
+            {
+                var mi = type.GetMethod(m, flags);
+                object[] args = mi.GetParameters().Length == 1 ? new object[] { false } : null;
+                await (System.Threading.Tasks.Task)mi.Invoke(installer, args);
+            }
+            Debug.Log("LEVELPLAY INSTALL DONE");
+        }
+        catch (System.Exception e) { Debug.LogError("LEVELPLAY INSTALL FAILED " + e); }
+    }
+
     static void RunCommand(string kind, int index, string arg)
     {
         try
@@ -360,6 +384,10 @@ public static class ClaudeCapture
                         SaveData.SetRewarded(k, k < nf);
                         SaveData.SetBought(k, false);
                     }
+                    break;
+                case "lpinstall":
+                    // نثبت مكتبة ليفل بلاي الأساسية وإعلانات يونتي (المفروض تنثبت لحالها أول ما تنضاف الحزمة)
+                    LevelPlayInstall();
                     break;
                 case "svcclear":
                     // نبدأ نسجل أشكال الشيدرات اللي تنرسم (عشان نحطها بنسخة الجوال)
