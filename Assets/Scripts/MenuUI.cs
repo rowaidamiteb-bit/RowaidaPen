@@ -248,7 +248,7 @@ public class MenuUI : MonoBehaviour
         var page = Panel(canvasRect, "Page Turn", new Color(1f, 0.98f, 0.93f)).rectTransform;
         Place(page, Vector2.zero, new Vector2(2400f, 1500f));
         Lines(page, new Vector2(2400f, 1500f), 54f);
-        var logo = Pic(page, "logo", Vector2.zero, 0.8f);
+        var logo = Pic(page, LogoName, Vector2.zero, 0.8f);
         logo.color = new Color(1f, 1f, 1f, 0.35f);
         page.gameObject.SetActive(false);
         return page;
@@ -273,7 +273,7 @@ public class MenuUI : MonoBehaviour
     Action settingsBack;
     bool settingsInGame;
     Image musicToggle, soundToggle, voiceToggle;
-    Text musicState, soundState, voiceState, settingsDone;
+    Text musicState, soundState, voiceState, settingsDone, langEnglish, langArabic;
     GameObject settingsMenuRow;
 
     // from: النافذة اللي جينا منها (نرجع لها)، و null = القائمة الرئيسية
@@ -303,49 +303,65 @@ public class MenuUI : MonoBehaviour
         TopRibbon(settingsPanel, 340, ArabicText.Fix("الإعدادات"), 48, 2f);
         CloseSticker(settingsPanel, () => settingsBack?.Invoke());
 
-        musicToggle = SettingRow(settingsPanel, 230f, "music", "الموسيقى", null, () =>
+        musicToggle = SettingRow(settingsPanel, 255f, "music", "الموسيقى", null, () =>
         {
             GameSettings.MusicOn = !GameSettings.MusicOn;
             if (GameSettings.MusicOn && GameSettings.Music < 0.05f) GameSettings.Music = 1f;
             RefreshIcons();
         }, out musicState);
-        soundToggle = SettingRow(settingsPanel, 95f, "speaker", "الأصوات", null, () =>
+        soundToggle = SettingRow(settingsPanel, 135f, "speaker", "الأصوات", null, () =>
         {
             GameSettings.EffectsOn = !GameSettings.EffectsOn;
             if (GameSettings.EffectsOn && GameSettings.Effects < 0.05f) GameSettings.Effects = 1f;
             RefreshIcons();
         }, out soundState);
-        voiceToggle = SettingRow(settingsPanel, -40f, "mic", "صوت رويدا", "حين تروي القصة", () =>
+        voiceToggle = SettingRow(settingsPanel, 15f, "mic", "صوت رويدا", "حين تروي القصة", () =>
         {
             GameSettings.NarrationOn = !GameSettings.NarrationOn;
             RefreshIcons();
         }, out voiceState);
 
-        // برا اللعب بس: البدء من جديد (والخروج بالكمبيوتر، لأن الجوال ما يسمح فيه)
-        var row = new GameObject("Menu Row", typeof(RectTransform)).GetComponent<RectTransform>();
+        // برا اللعب بس: اللغة، والبدء من جديد (والخروج بالكمبيوتر، لأن الجوال ما يسمح فيه)
+        var row = new GameObject("Menu Rows", typeof(RectTransform)).GetComponent<RectTransform>();
         row.SetParent(settingsPanel, false);
-        Place(row, new Vector2(0f, -170f), new Vector2(900f, 100f));
+        Stretch(row);
         settingsMenuRow = row.gameObject;
+        // اللغة: أيقونة واسم، وزرين (English / العربية) واللي مختار أخضر
+        Pic(row, "st_lang", new Vector2(330f * M, -105f));
+        var lt = Label(row, ArabicText.Fix("اللغة"), 42, new Vector2(80f * M, -105f), new Vector2(360f, 60f));
+        lt.alignment = Lang.English ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight;
+        float pair = -250f * M;
+        langEnglish = MakeButton(row, "English", new Vector2(pair - 92f, -105f), new Vector2(176f, 76f), Color.white, () => SetLanguage(true), 30);
+        langArabic = MakeButton(row, "", new Vector2(pair + 92f, -105f), new Vector2(176f, 76f), Color.white, () => SetLanguage(false), 32);
+        langArabic.text = ArabicText.Shape("العربية");   // اسم اللغة يبقى بالعربي دايمًا
         bool desktop = !Application.isMobilePlatform;
-        MakeButton(row, "من جديد", new Vector2(desktop ? 140f : 0f, 0f), new Vector2(250f, 84f), COrange, ShowConfirm, 36);
-        if (desktop) MakeButton(row, "الخروج", new Vector2(-140f, 0f), new Vector2(250f, 84f), CPurple, Application.Quit, 36);
+        MakeButton(row, "من جديد", new Vector2(desktop ? 140f * M : 0f, -215f), new Vector2(250f, 84f), COrange, ShowConfirm, 36);
+        if (desktop) MakeButton(row, "الخروج", new Vector2(-140f * M, -215f), new Vector2(250f, 84f), CPurple, Application.Quit, 36);
 
-        settingsDone = PencilBtn(settingsPanel, "short", "نكمل اللعب", new Vector2(14f, -310f), () => settingsBack?.Invoke(), 42);
+        settingsDone = PencilBtn(settingsPanel, "short", "نكمل اللعب", new Vector2(14f, -322f), () => settingsBack?.Invoke(), 42);
+    }
+
+    // تغيير اللغة: نحفظها ونعيد تحميل اللعبة عشان كل الكلام ينبني باللغة الجديدة
+    void SetLanguage(bool english)
+    {
+        if (Lang.English == english) return;
+        Lang.English = english;
+        gm.ReloadForLanguage();
     }
 
     // سطر إعدادات: أيقونة يمين، الاسم جنبها، ومفتاح (يعمل / مطفأ) يسار
     Image SettingRow(RectTransform parent, float y, string icon, string name, string sub, Action toggle, out Text state)
     {
-        Pic(parent, "st_" + icon, new Vector2(330f, y));
-        var t = Label(parent, ArabicText.Fix(name), 42, new Vector2(80f, sub != null ? y + 16f : y), new Vector2(360f, 60f));
-        t.alignment = TextAnchor.MiddleRight;
+        Pic(parent, "st_" + icon, new Vector2(330f * M, y));
+        var t = Label(parent, ArabicText.Fix(name), 42, new Vector2(80f * M, sub != null ? y + 16f : y), new Vector2(360f, 60f));
+        t.alignment = Lang.English ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight;
         if (sub != null)
         {
-            var s = Label(parent, ArabicText.Fix(sub), 26, new Vector2(80f, y - 30f), new Vector2(360f, 40f));
-            s.alignment = TextAnchor.MiddleRight;
+            var s = Label(parent, ArabicText.Fix(sub), 26, new Vector2(80f * M, y - 30f), new Vector2(360f, 40f));
+            s.alignment = t.alignment;
             s.color = InkSoft;
         }
-        var sw = Pic(parent, "toggle_on", new Vector2(-250f, y));
+        var sw = Pic(parent, "toggle_on", new Vector2(-250f * M, y));
         Click(sw, toggle);
         state = Label(sw.rectTransform, "", 32, Vector2.zero, new Vector2(120f, 60f));
         Toon(state, 3f);
@@ -357,6 +373,11 @@ public class MenuUI : MonoBehaviour
         SetToggle(musicToggle, musicState, GameSettings.MusicOn);
         SetToggle(soundToggle, soundState, GameSettings.EffectsOn);
         SetToggle(voiceToggle, voiceState, GameSettings.NarrationOn);
+        if (langEnglish != null)
+        {
+            langEnglish.transform.parent.GetChild(0).GetComponent<Image>().color = Lang.English ? CGreen : Color.white;
+            langArabic.transform.parent.GetChild(0).GetComponent<Image>().color = Lang.English ? Color.white : CGreen;
+        }
     }
 
     void SetToggle(Image sw, Text state, bool on)
@@ -424,7 +445,7 @@ public class MenuUI : MonoBehaviour
         {
             var ring = Panel(howToPanel, "Dot", Ink);
             ring.sprite = circle;
-            Place(ring.rectTransform, new Vector2((2 - i) * 40f, -250f), new Vector2(28f, 28f));
+            Place(ring.rectTransform, new Vector2((2 - i) * 40f * M, -250f), new Vector2(28f, 28f));
             var dot = Panel(ring.rectTransform, "Fill", CGrey);
             dot.sprite = circle;
             Stretch(dot.rectTransform);
@@ -433,12 +454,12 @@ public class MenuUI : MonoBehaviour
             howToDots.Add(dot);
         }
         // التالي قلم يسار (القراءة من اليمين)، والسابق سهم يمين
-        howToNext = PencilBtn(howToPanel, "mid", "التالي", new Vector2(-90f, -350f), () =>
+        howToNext = PencilBtn(howToPanel, "mid", "التالي", new Vector2(-90f * M, -350f), () =>
         {
             if (howToPage < HowToTitles.Length - 1) SetHowToPage(howToPage + 1);
             else { HideAll(); howToDone?.Invoke(); }
         }, 44);
-        howToPrev = Sticker(howToPanel, "right", new Vector2(400f, -345f), () => SetHowToPage(howToPage - 1)).gameObject;
+        howToPrev = Sticker(howToPanel, Lang.English ? "left" : "right", new Vector2(400f * M, -345f), () => SetHowToPage(howToPage - 1)).gameObject;
     }
 
     public void SetHowToPage(int page)
@@ -567,15 +588,15 @@ public class MenuUI : MonoBehaviour
         for (int i = 0; i < what.Length; i++)
         {
             float y = 112f - i * 74f;
-            if (icons[i] != null) Bit(p, new Vector2(250f, y), new Vector2(78f, 78f), Color.white, 0f, Art(icons[i]));
+            if (icons[i] != null) Bit(p, new Vector2(250f * M, y), new Vector2(78f, 78f), Color.white, 0f, Art(icons[i]));
             else
                 for (int k = 0; k < 4; k++)
                 {
-                    Bit(p, new Vector2(196f + k * 36f, y), new Vector2(36f, 36f), Ink, 0f, circle);
-                    Bit(p, new Vector2(196f + k * 36f, y), new Vector2(26f, 26f), inks[k], 0f, circle);
+                    Bit(p, new Vector2((196f + k * 36f) * M, y), new Vector2(36f, 36f), Ink, 0f, circle);
+                    Bit(p, new Vector2((196f + k * 36f) * M, y), new Vector2(26f, 26f), inks[k], 0f, circle);
                 }
-            var d = Label(p, ArabicText.Fix(what[i]), 32, new Vector2(-120f, y), new Vector2(480f, 56f));
-            d.alignment = TextAnchor.MiddleRight;
+            var d = Label(p, ArabicText.Fix(what[i]), 32, new Vector2(-120f * M, y), new Vector2(480f, 56f));
+            d.alignment = Lang.English ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight;
             d.color = InkSoft;
         }
     }
@@ -610,12 +631,12 @@ public class MenuUI : MonoBehaviour
     {
         mainPanel = NotebookCard(canvasRect, "Main Menu", "nb_main", new Vector2(1320f, 664f));
         mainPanel.anchoredPosition = new Vector2(0f, -32f);
-        logoRect = Pic(mainPanel, "logo", new Vector2(0f, 178f)).rectTransform;
+        logoRect = Lang.English ? Pic(mainPanel, LogoName, new Vector2(0f, 196f), 0.86f).rectTransform : Pic(mainPanel, LogoName, new Vector2(0f, 178f)).rectTransform;
         playLabel = PencilBtn(mainPanel, "long", "هيا نلعب!", new Vector2(34f, -60f), () => gm.PlayFromMenu(), 64);
-        Sticker(mainPanel, "map", new Vector2(273f, -205f), () => ShowLevels(false), 1f, -4f, "الخريطة");
-        Sticker(mainPanel, "bag", new Vector2(93f, -211f), () => ShowShop(ShowMain), 1f, 3f, "المتجر");
-        Sticker(mainPanel, "pencil", new Vector2(-87f, -205f), ShowPencil, 1f, -3f, "الأقلام");
-        Sticker(mainPanel, "question", new Vector2(-267f, -211f), () => ShowHowTo(ShowMain), 1f, 4f, "طريقة اللعب");
+        Sticker(mainPanel, "map", new Vector2(273f * M, -205f), () => ShowLevels(false), 1f, -4f * M, "الخريطة");
+        Sticker(mainPanel, "bag", new Vector2(93f * M, -211f), () => ShowShop(ShowMain), 1f, 3f * M, "المتجر");
+        Sticker(mainPanel, "pencil", new Vector2(-87f * M, -205f), ShowPencil, 1f, -3f * M, "الأقلام");
+        Sticker(mainPanel, Lang.English ? "question_en" : "question", new Vector2(-267f * M, -211f), () => ShowHowTo(ShowMain), 1f, 4f * M, "طريقة اللعب");
 
         var c = CornersOf(mainPanel);
         CoinPill(c, new Vector2(210f, -378f), () => ShowShop(ShowMain), 4f);
@@ -653,8 +674,8 @@ public class MenuUI : MonoBehaviour
         part = Mathf.Clamp(p, 0, partPages.Count - 1);
         for (int i = 0; i < partPages.Count; i++) partPages[i].gameObject.SetActive(i == part);
         SetText(levelsTitle, ArabicText.Fix(PartNames[Mathf.Min(part, PartNames.Length - 1)]));
-        SetArrow(nextPart, "left", part < partPages.Count - 1);
-        SetArrow(prevPart, "right", part > 0);
+        SetArrow(nextPart, Lang.English ? "right" : "left", part < partPages.Count - 1);
+        SetArrow(prevPart, Lang.English ? "left" : "right", part > 0);
     }
 
     // سهم الأجزاء: وردي يشتغل، أو رمادي ما ينضغط
@@ -683,7 +704,9 @@ public class MenuUI : MonoBehaviour
     {
         int row = k / 5, col = k % 5;
         if (row % 2 == 1) col = 4 - col;
-        return new Vector2(670f - col * 192f, 196f - row * 160f + (k % 2 == 1 ? 6f : -6f));
+        float x = 670f - col * 192f;
+        if (Lang.English) x = 572f - x;   // نفس المكان بس من اليسار
+        return new Vector2(x, 196f - row * 160f + (k % 2 == 1 ? 6f : -6f));
     }
 
     void BuildLevels()
@@ -727,7 +750,7 @@ public class MenuUI : MonoBehaviour
             var node = Pic(hit.rectTransform, "node_locked", new Vector2(3f, -5f), 1f, -((i % 3) - 1));
             nodeImages.Add(node);
             nodeScales.Add(1f);
-            nodeNumbers.Add(Label(node.rectTransform, ArabicDigits(i + 1), 46, new Vector2(-3f, 6f), new Vector2(100f, 100f)));
+            nodeNumbers.Add(Label(node.rectTransform, Lang.Digits(i + 1), 46, new Vector2(-3f, 6f), new Vector2(100f, 100f)));
             Toon(nodeNumbers[i], 3f);
             var badge = Pic(node.rectTransform, "coin", new Vector2(28f, -24f), 0.38f);
             nodeCoins.Add(badge);
@@ -766,8 +789,8 @@ public class MenuUI : MonoBehaviour
         startButton = startLabel.transform.parent.GetComponent<Image>();
 
         // أسهم بين الأجزاء: اليسار للجزء اللي بعده (مثل قلب صفحات كتاب عربي)
-        nextPart = Sticker(levelsPanel, "left", new Vector2(-205f, -57f), () => ShowPart(part + 1));
-        prevPart = Sticker(levelsPanel, "right", new Vector2(833f, -57f), () => ShowPart(part - 1));
+        nextPart = Sticker(levelsPanel, Lang.English ? "right" : "left", new Vector2(Lang.English ? 833f : -205f, -57f), () => ShowPart(part + 1));
+        prevPart = Sticker(levelsPanel, Lang.English ? "left" : "right", new Vector2(Lang.English ? -205f : 833f, -57f), () => ShowPart(part - 1));
         // من الاستراحة: زر سكر يرجعنا لها
         levelsClose = CloseSticker(levelsPanel, ShowPause).gameObject;
 
@@ -824,7 +847,7 @@ public class MenuUI : MonoBehaviour
         infoThumb.uvRect = aspect > want ? new Rect((1f - want / aspect) * 0.5f, 0f, want / aspect, 1f) : new Rect(0f, 0f, 1f, 1f);
         infoThumb.color = selOpen ? Color.white : new Color(0.35f, 0.34f, 0.38f);
         infoLocked.enabled = !selOpen;
-        SetText(infoTitle, ArabicText.Fix("المرحلة " + (sel + 1) + ": " + d.title));
+        SetText(infoTitle, ArabicText.Fix(Lang.F("المرحلة {0}: {1}", sel + 1, d.title)));
         int st = SaveData.Stars(sel);
         for (int s = 0; s < infoStars.Length; s++) infoStars[s].sprite = Art(s < st ? "star_on" : "star_off");
         bool paidSel = Coins.NeedsBuying(sel);
@@ -988,7 +1011,7 @@ public class MenuUI : MonoBehaviour
         // سعر المتجر بالإنجليزي (مثل US$1.99): نحطه يسار الكلام بدون ما ينقلب
         string storePrice = Shop.StorePrice;
         if (buying) SetText(shopBuy, ArabicText.Fix("لحظة..."));
-        else if (storePrice != null) SetText(shopBuy, storePrice + "  " + ArabicText.Fix("شراء —"));
+        else if (storePrice != null) SetText(shopBuy, Lang.English ? Lang.Tr("شراء —") + " " + storePrice : storePrice + "  " + ArabicText.Fix("شراء —"));
         else SetText(shopBuy, ArabicText.Fix("شراء — " + Shop.Price));
     }
 
@@ -1102,7 +1125,7 @@ public class MenuUI : MonoBehaviour
             holder.SetParent(pencilPanel, false);
             holder.GetComponent<Image>().color = Color.clear;
             holder.GetComponent<Image>().raycastTarget = true;
-            Place(holder, new Vector2(455f - i * 130f, 100f), new Vector2(110f, 290f));
+            Place(holder, new Vector2((455f - i * 130f) * M, 100f), new Vector2(110f, 290f));
             var body = Framed(holder, "Body", new Vector2(0f, -30f), new Vector2(92f, 200f), c, Ink, 6f, 3f);
             // رأس القلم: خشب ورصاص
             var tipEdge = Panel(holder, "Tip Edge", Ink);
@@ -1118,14 +1141,14 @@ public class MenuUI : MonoBehaviour
             Place(band.rectTransform, new Vector2(-24f, 10f), new Vector2(12f, 150f));
             Click(holder.GetComponent<Image>(), () => { PencilStyle.ColorIndex = index; RefreshPencil(); });
             pencils.Add(holder);
-            pencilNames.Add(Label(pencilPanel, ArabicText.Fix(PencilStyle.ColorNames[i]), 28, new Vector2(455f - i * 130f, -70f), new Vector2(120f, 40f)));
+            pencilNames.Add(Label(pencilPanel, ArabicText.Fix(PencilStyle.ColorNames[i]), 28, new Vector2((455f - i * 130f) * M, -70f), new Vector2(120f, 40f)));
         }
 
         Label(pencilPanel, ArabicText.Fix("شكل الخط"), 38, new Vector2(0f, -125f), new Vector2(400f, 50f));
         for (int i = 0; i < PencilStyle.StyleNames.Length; i++)
         {
             int index = i;
-            MakeButton(pencilPanel, PencilStyle.StyleNames[i], new Vector2(400f - i * 200f, -195f), new Vector2(184f, 76f),
+            MakeButton(pencilPanel, PencilStyle.StyleNames[i], new Vector2((400f - i * 200f) * M, -195f), new Vector2(184f, 76f),
                 Color.white, () => { PencilStyle.Current = (PencilStyle.Style)index; RefreshPencil(); }, 32);
             styleButtons.Add(pencilPanel.GetChild(pencilPanel.childCount - 1).GetChild(0).GetComponent<Image>());
         }
@@ -1154,7 +1177,7 @@ public class MenuUI : MonoBehaviour
         for (int i = 0; i < pencils.Count; i++)
         {
             bool on = i == c;
-            pencils[i].anchoredPosition = new Vector2(455f - i * 130f, on ? 130f : 100f);
+            pencils[i].anchoredPosition = new Vector2((455f - i * 130f) * M, on ? 130f : 100f);
             pencils[i].localRotation = Quaternion.Euler(0f, 0f, on ? 0f : (i % 2 == 0 ? 3f : -3f));
             pencilNames[i].color = on ? PinkDark : Grey;
         }
@@ -1195,7 +1218,7 @@ public class MenuUI : MonoBehaviour
                 preview.uvRect = new Rect(0f, 0f, 2f, 1f);
                 break;
         }
-        previewName.text = ArabicText.Fix("الخط: " + PencilStyle.StyleNames[(int)st] + " — " + PencilStyle.ColorNames[c]);
+        previewName.text = ArabicText.Fix(Lang.F("الخط: {0} — {1}", PencilStyle.StyleNames[(int)st], PencilStyle.ColorNames[c]));
     }
 
     // ---------- الاستراحة ----------
@@ -1264,13 +1287,13 @@ public class MenuUI : MonoBehaviour
         for (int i = 0; i < SaveData.MaxStars; i++)
         {
             float y = -18f - i * 50f;
-            reasonChecks[i] = Pic(completePanel, "check_on", new Vector2(252f, y));
-            reasons[i] = Label(completePanel, "", 28, new Vector2(36f, y + 2f), new Vector2(360f, 44f));
-            reasons[i].alignment = TextAnchor.MiddleRight;
+            reasonChecks[i] = Pic(completePanel, "check_on", new Vector2(252f * M, y));
+            reasons[i] = Label(completePanel, "", 28, new Vector2(36f * M, y + 2f), new Vector2(360f, 44f));
+            reasons[i].alignment = Lang.English ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight;
         }
 
         // الكوينز اللي أخذتها (أول مرة بس)، وتحتها زر إعلان بمكافأة يعطي ٥٠ زيادة (١٠٠ بدل ٥٠)
-        var pill = Pic(completePanel, "pill", new Vector2(-259f, -38f), 0.75f, 6f);
+        var pill = Pic(completePanel, "pill", new Vector2(-259f * M, -38f), 0.75f, 6f * M);
         completeCoins = pill.rectTransform;
         Pic(completeCoins, "coin", new Vector2(72f, 2f), 0.62f);
         completeCoinsText = Label(completeCoins, "", 46, new Vector2(-22f, 5f), new Vector2(140f, 70f));
@@ -1279,7 +1302,7 @@ public class MenuUI : MonoBehaviour
         ce.effectColor = Ink;
         ce.effectDistance = new Vector2(2.5f, -2.5f);
 
-        var reward = Pic(completePanel, "btn_green", new Vector2(-250f, -135f), 1f, 4f);
+        var reward = Pic(completePanel, "btn_green", new Vector2(-250f * M, -135f), 1f, 4f * M);
         Click(reward, WatchRewardAd);
         var rt = Label(reward.rectTransform, ArabicText.Fix("شاهد إعلانًا واربح " + Coins.Reward), 28, new Vector2(-33f, 7f), new Vector2(230f, 60f));
         Toon(rt, 2.5f);
@@ -1318,7 +1341,7 @@ public class MenuUI : MonoBehaviour
         completeCoins.localScale = Vector3.zero;
         completeCoinsText.text = "+" + coinsWon;
         SetText(completeTitle, ArabicText.Fix(last ? "اكتملت كل المراحل!" : "أحسنتِ!"));
-        SetText(completeLevel, ArabicText.Fix("المرحلة " + (index + 1) + " — " + Levels.All[index].title));
+        SetText(completeLevel, ArabicText.Fix(Lang.F("المرحلة {0} — {1}", index + 1, Levels.All[index].title)));
         SetText(nextLabel, ArabicText.Fix(last ? "القائمة الرئيسية" : "الصفحة التالية"));
         string[] texts = { "إنهاء المرحلة", "بلا خسارة أي قلب", "توفير الحبر" };
         for (int i = 0; i < SaveData.MaxStars; i++)
@@ -1408,6 +1431,10 @@ public class MenuUI : MonoBehaviour
     }
 
     // ---------- أدوات البناء ----------
+
+    // بالعربي الترتيب من اليمين (1)، وبالإنجليزي من اليسار (-1): نضرب فيه مكان الأشياء اللي تنقلب
+    static float M => Lang.English ? -1f : 1f;
+    static string LogoName => Lang.English ? "logo_en" : "logo";
 
     // دفتر كرتوني (نفس الدفتر اللي تمشي عليه رويدا): السلك فوق والحافة بوجه تحت، والصفحة نفسها بمقاس النافذة
     RectTransform NotebookCard(Transform parent, string name, string sprite, Vector2 size, float tilt = 0f)
@@ -1671,6 +1698,8 @@ public class MenuUI : MonoBehaviour
     static string WrapFix(string text, int maxChars)
     {
         if (string.IsNullOrEmpty(text)) return "";
+        text = Lang.Tr(text);
+        if (!Lang.HasArabic(text)) maxChars = Mathf.RoundToInt(maxChars * 1.25f);
         var lines = new List<string>();
         string line = "";
         foreach (string w in text.Split(' '))
@@ -1684,12 +1713,7 @@ public class MenuUI : MonoBehaviour
     }
 
     // أرقام عربية (١ ٢ ٣)
-    static string ArabicDigits(int n)
-    {
-        char[] s = n.ToString().ToCharArray();
-        for (int i = 0; i < s.Length; i++) s[i] = (char)('٠' + (s[i] - '0'));
-        return new string(s);
-    }
+    static string ArabicDigits(int n) => Lang.Digits(n);
 
     static Image Panel(Transform parent, string name, Color color)
     {

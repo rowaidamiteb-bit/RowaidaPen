@@ -187,6 +187,13 @@ public class GameManager : MonoBehaviour
 
     public void OpenSettings() => Pause(true);
 
+    // تغيير اللغة: نعيد تحميل المشهد عشان كل الكلام والقوائم تنبني من جديد باللغة الجديدة
+    public void ReloadForLanguage()
+    {
+        Time.timeScale = 1f;
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+    }
+
     public void Resume()
     {
         if (!Paused) return;

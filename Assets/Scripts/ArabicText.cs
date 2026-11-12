@@ -82,8 +82,17 @@ public static class ArabicText
     // الحرف يقدر يتصل باللي بعده (يعني له شكل أول/وسط)
     static bool JoinsNext(char c) => forms.TryGetValue(c, out var f) && f[2] != 0;
 
-    // يحوّل سطر عربي لشكل يطلع صح في Unity (كل سطر لحاله)
+    // كل كلام اللعبة يمر من هنا: لو اللغة إنجليزي نترجمه (Lang)، ولو بقى عربي نصلح شكل حروفه
     public static string Fix(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        text = Lang.Tr(text);
+        if (!Lang.HasArabic(text)) return text;   // إنجليزي أو أرقام: يبقى زي ما هو (ما ينقلب)
+        return Shape(text);
+    }
+
+    // يحوّل سطر عربي لشكل يطلع صح في Unity (كل سطر لحاله) بدون ترجمة
+    public static string Shape(string text)
     {
         if (string.IsNullOrEmpty(text)) return text;
         string[] lines = text.Split('\n');

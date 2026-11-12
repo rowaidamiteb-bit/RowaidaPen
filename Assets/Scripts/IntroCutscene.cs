@@ -372,6 +372,7 @@ public class IntroCutscene : MonoBehaviour
         fade.raycastTarget = false;
 
         caption = NewText(go.transform, 50, new Vector2(0.5f, 0f), new Vector2(0f, 120f), new Vector2(1700f, 90f));
+        if (Lang.English) caption.horizontalOverflow = HorizontalWrapMode.Wrap;
         skip = SkipButton.Create(go.transform, Skip);
     }
 

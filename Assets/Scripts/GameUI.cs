@@ -162,7 +162,7 @@ public class GameUI : MonoBehaviour
     {
         if (levelText == null) return;
         string title = number >= 1 && number <= Levels.All.Count ? Levels.All[number - 1].title : null;
-        levelText.text = ArabicText.Fix(string.IsNullOrEmpty(title) ? "المرحلة " + number : "المرحلة " + number + " — " + title);
+        levelText.text = ArabicText.Fix(string.IsNullOrEmpty(title) ? Lang.F("المرحلة {0}", number) : Lang.F("المرحلة {0} — {1}", number, title));
         levelText.fontSize = ArabicText.Size(38);
         while (levelText.fontSize > 20 && levelText.preferredWidth > 520f) levelText.fontSize -= 2;
     }
@@ -180,6 +180,9 @@ public class GameUI : MonoBehaviour
             banner.sizeDelta = new Vector2(Mathf.Clamp(messageText.preferredWidth + 140f, 420f, 1500f), 128f);
         }
         subtitleText.text = ArabicText.Fix(subtitle ?? "");
+        // الإنجليزي ينقسم سطرين لحاله لو طويل (العربي مقلوب فما نقدر نخلي Unity تقسمه)
+        subtitleText.horizontalOverflow = Lang.English ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
+        subtitleText.rectTransform.sizeDelta = new Vector2(Lang.English ? 1500f : 1700f, 70f);
         subtitleText.enabled = true;
         messageTimer = duration;
         messageAge = 0f;

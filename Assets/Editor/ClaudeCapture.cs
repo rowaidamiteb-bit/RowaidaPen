@@ -422,6 +422,11 @@ public static class ClaudeCapture
                 case "levels":
                     Object.FindAnyObjectByType<MenuUI>().ShowLevels(false);
                     break;
+                case "lang":
+                    // يبدل اللغة ويعيد تحميل اللعبة: lang:en أو lang:ar
+                    Lang.English = arg != "ar";
+                    GameManager.Instance.ReloadForLanguage();
+                    break;
                 case "resume":
                     GameManager.Instance.Resume();
                     break;

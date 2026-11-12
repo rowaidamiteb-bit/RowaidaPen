@@ -1009,7 +1009,7 @@ public class DreamScenery : MonoBehaviour
             var pil = LevelBuilder.Visual("Floating Pillow", PrimitiveType.Sphere, p, new Vector3(x, R(4.5f, 7f), R(2.5f, 4f)), new Vector3(1.6f, 0.55f, 1f), gm.Mat("Pillow", new Color(0.85f, 0.9f, 1f), 0.3f), false).transform;
             Bob(pil);
             var block = GameFeatures.Px("Toy Block", p, new Vector3(x + R(2f, 4f), R(5f, 8f), R(3f, 5f)), Vector3.one * 0.8f, Color.HSVToRGB(Random.value, 0.4f, 1f), true).transform;
-            GameFeatures.Text(block, block.position + new Vector3(0f, 0f, -0.42f), "أبجد"[Random.Range(0, 4)].ToString(), 0.1f, Color.white);
+            GameFeatures.Text(block, block.position + new Vector3(0f, 0f, -0.42f), (Lang.English ? "ABCD" : "أبجد")[Random.Range(0, 4)].ToString(), 0.1f, Color.white);
             spin.Add(block); Bob(block);
             var z = GameFeatures.Text(p, new Vector3(x + R(0f, 3f), R(6f, 9f), R(4f, 8f)), "Z", R(0.12f, 0.25f), new Color(0.7f, 0.65f, 1f));
             Bob(z.transform);

@@ -393,7 +393,7 @@ public class EndingCutscene : MonoBehaviour
     string Label(int slot)
     {
         int level = SlotLevel(slot);
-        return level < 0 || level >= Levels.All.Count ? "" : ArabicText.Fix("المرحلة " + (level + 1) + " — " + Levels.All[level].title);
+        return level < 0 || level >= Levels.All.Count ? "" : ArabicText.Fix(Lang.F("المرحلة {0} — {1}", level + 1, Levels.All[level].title));
     }
 
     void BuildBook(Transform parent)
@@ -615,6 +615,7 @@ public class EndingCutscene : MonoBehaviour
         BuildBook(go.transform);
 
         caption = NewText(go.transform, 50, new Vector2(0.5f, 0f), new Vector2(0f, 120f), new Vector2(1700f, 90f));
+        if (Lang.English) caption.horizontalOverflow = HorizontalWrapMode.Wrap;
         bigText = NewText(go.transform, 150, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1200f, 220f));
         bigText.text = ArabicText.Fix("النهاية");
         bigText.color = Color.clear;
