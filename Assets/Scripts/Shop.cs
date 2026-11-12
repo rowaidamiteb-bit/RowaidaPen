@@ -13,17 +13,20 @@ public static class Shop
     static StoreController store;
     static Action<bool> waiting;
 
-    // السعر من المتجر بعملة البلد (لو ما وصل: ٢ دولار)
-    public static string Price
+    // السعر من المتجر بعملة البلد (null لو ما وصل، أو بالمحرر لأن سعره وهمي)
+    public static string StorePrice
     {
         get
         {
+            if (TestMode || Application.isEditor) return null;
             Product p = store?.GetProductById(PackId);
-            if (!TestMode && p != null && p.availableToPurchase && !string.IsNullOrEmpty(p.metadata.localizedPriceString))
+            if (p != null && p.availableToPurchase && !string.IsNullOrEmpty(p.metadata.localizedPriceString))
                 return p.metadata.localizedPriceString;
-            return "2 دولار";
+            return null;
         }
     }
+
+    public static string Price => StorePrice ?? "2 دولار";
 
     public static async void Init()
     {

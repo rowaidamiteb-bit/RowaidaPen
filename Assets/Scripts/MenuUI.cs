@@ -1208,7 +1208,11 @@ public class MenuUI : MonoBehaviour
     void RefreshShop()
     {
         shopBalance.text = ArabicText.Fix("معنا " + Coins.Balance + " كوينز");
-        shopBuy.text = ArabicText.Fix(buying ? "لحظة..." : "شراء — " + Shop.Price);
+        // سعر المتجر بالإنجليزي (مثل US$1.99): نحطه يسار الكلام بدون ما ينقلب
+        string storePrice = Shop.StorePrice;
+        if (buying) shopBuy.text = ArabicText.Fix("لحظة...");
+        else if (storePrice != null) shopBuy.text = storePrice + "  " + ArabicText.Fix("شراء —");
+        else shopBuy.text = ArabicText.Fix("شراء — " + Shop.Price);
     }
 
     void BuyPack()

@@ -55,6 +55,7 @@ public static class Ads
     // وصلت الباب: إعلان (لو جاهز)، وبعده نكمل لشاشة الفوز
     public static void ShowLevelEnd(Action then)
     {
+        if (Application.isEditor) { EditorAdPreview.Show("إعلان بين المراحل", then); return; }
         try
         {
             if (interstitial != null && interstitial.IsAdReady())
@@ -84,7 +85,7 @@ public static class Ads
     // نعرض إعلان المكافأة، و done(true) لو انشاف للآخر
     public static void ShowReward(Action<bool> done)
     {
-        if (Application.isEditor) { done(true); return; }
+        if (Application.isEditor) { EditorAdPreview.Show("إعلان المكافأة", () => done(true)); return; }
         try
         {
             if (rewarded == null || !rewarded.IsAdReady()) { rewarded?.LoadAd(); done(false); return; }
@@ -114,5 +115,67 @@ public static class Ads
         Action<bool> done = afterReward;
         afterReward = null;
         done?.Invoke(rewardEarned);
+    }
+}
+
+// بالمحرر بس: إعلانات يونتي ما تشتغل إلا بالجوال، فنعرض مكانه بطاقة تجريبية ثانيتين عشان نشوف الترتيب
+public class EditorAdPreview : MonoBehaviour
+{
+    System.Action done;
+    float age;
+
+    public static void Show(string title, System.Action onDone)
+    {
+        var go = new GameObject("Ad Preview", typeof(RectTransform), typeof(Canvas), typeof(UnityEngine.UI.CanvasScaler), typeof(UnityEngine.UI.GraphicRaycaster));
+        var canvas = go.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 100;
+        var scaler = go.GetComponent<UnityEngine.UI.CanvasScaler>();
+        scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        var root = (RectTransform)go.transform;
+        var dim = Box(root, new Color(0.1f, 0.08f, 0.16f, 0.96f));
+        dim.rectTransform.anchorMin = Vector2.zero;
+        dim.rectTransform.anchorMax = Vector2.one;
+        dim.rectTransform.offsetMin = dim.rectTransform.offsetMax = Vector2.zero;
+        dim.raycastTarget = true;
+        Text(root, title, 80, new Vector2(0f, 60f), new Color(1f, 0.47f, 0.56f));
+        Text(root, "(بالجوال يطلع هنا إعلان حقيقي من يونتي)", 36, new Vector2(0f, -40f), Color.white);
+        var preview = go.AddComponent<EditorAdPreview>();
+        preview.done = onDone;
+    }
+
+    void Update()
+    {
+        age += Time.unscaledDeltaTime;
+        if (age < 2.5f) return;
+        System.Action d = done;
+        done = null;
+        Destroy(gameObject);
+        d?.Invoke();
+    }
+
+    static UnityEngine.UI.Image Box(RectTransform parent, Color c)
+    {
+        var img = new GameObject("Dim", typeof(RectTransform), typeof(UnityEngine.UI.Image)).GetComponent<UnityEngine.UI.Image>();
+        img.transform.SetParent(parent, false);
+        img.color = c;
+        return img;
+    }
+
+    static void Text(RectTransform parent, string text, int size, Vector2 pos, Color c)
+    {
+        var t = new GameObject("Text", typeof(RectTransform), typeof(UnityEngine.UI.Text)).GetComponent<UnityEngine.UI.Text>();
+        t.transform.SetParent(parent, false);
+        t.font = ArabicText.Font;
+        t.text = ArabicText.Fix(text);
+        t.fontSize = ArabicText.Size(size);
+        t.fontStyle = FontStyle.Bold;
+        t.alignment = TextAnchor.MiddleCenter;
+        t.color = c;
+        t.horizontalOverflow = HorizontalWrapMode.Overflow;
+        t.verticalOverflow = VerticalWrapMode.Overflow;
+        t.rectTransform.anchoredPosition = pos;
+        t.rectTransform.sizeDelta = new Vector2(1600f, 120f);
     }
 }
