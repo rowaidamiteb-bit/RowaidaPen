@@ -60,14 +60,15 @@ public static class ArabicText
     static Font font;
 
     // نكبر الكتابة شوي بس (لو أكثر تطلع برا المربعات والأزرار)
-    public const float Scale = 1.08f;
+    public const float Scale = 1f;
     public static int Size(int s) => Mathf.RoundToInt(s * Scale);
 
-    // خط عربي داخل اللعبة نفسها (نوتو نسخ، رخصته مفتوحة) عشان يشتغل بالجوال، ولو ما لقيناه نرجع لخطوط الويندوز
+    // خط كرتوني داخل اللعبة (لاله‌زار، رخصته مفتوحة)، ولو ما لقيناه نوتو نسخ، وآخر شي خطوط الويندوز
     public static Font Font
     {
         get
         {
+            if (font == null) font = Resources.Load<Font>("Fonts/Lalezar-Regular");
             if (font == null) font = Resources.Load<Font>("Fonts/NotoNaskhArabic-Regular");
             if (font == null) font = Font.CreateDynamicFontFromOSFont(new[] { "Traditional Arabic", "Tahoma", "Segoe UI", "Arial" }, 64);
             return font;
@@ -120,7 +121,7 @@ public static class ArabicText
             if (prevJoins && nextJoins && f[3] != 0) glyph = f[3];
             else if (prevJoins && f[1] != 0) glyph = f[1];
             else if (nextJoins && f[2] != 0) glyph = f[2];
-            else glyph = f[0];
+            else glyph = c;   // الشكل المعزول = الحرف نفسه (بعض الخطوط الكرتونية ما فيها أشكال المعزول)
             shaped.Append((char)glyph);
         }
 

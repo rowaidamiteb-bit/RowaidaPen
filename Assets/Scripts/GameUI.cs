@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// واجهة اللعبة: شريط الحبر، رقم المرحلة، ورسائل في نص الشاشة
-// ملاحظة: النصوص بالإنجليزي لأن نصوص Unity العادية ما تدعم الحروف العربية المتصلة
+// واجهة اللعبة (كرتونية مثل القوائم): قلم الحبر، القلوب، اسم المرحلة على شريط، أزرار فوق يمين، ورسائل في نص الشاشة
 public class GameUI : MonoBehaviour
 {
-    RectTransform inkFill;
+    static readonly Color Ink = new Color(0.176f, 0.106f, 0.271f);
     Text levelText;
+    Image levelRibbon;
     Text messageText, subtitleText;
     Canvas canvasRef;
 
@@ -36,72 +36,25 @@ public class GameUI : MonoBehaviour
         safe.SetParent(canvasGo.transform, false);
         Transform root = safe;
 
-        // شريط الحبر
-        // حافة بيضا عشان الكلام الأسود يبان حتى في المراحل الغامقة
-        Label(root, ArabicText.Fix("الحبر"), 32, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(36f, -38f), new Vector2(90f, 44f)).gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.85f);
-        // شريط الحبر على شكل قلم رصاص: ممحاة وردية، حلقة معدن، جسم فيه الحبر، ورأس خشب ورصاص
-        Sprite round = MenuUI.RoundedSprite(), tri = MenuUI.TriangleSprite();
-        Image frame = Panel(root, "Ink Pencil", Color.clear);
-        Place(frame.rectTransform, new Vector2(0f, 1f), new Vector2(130f, -38f), new Vector2(430f, 46f));
-        Color outline = new Color(0.22f, 0.16f, 0.24f);
-        Image Piece(string n, Color c, Sprite sp, Vector2 min, Vector2 max)
-        {
-            Image im = Panel(frame.transform, n, c);
-            im.sprite = sp;
-            if (sp == round) im.type = Image.Type.Sliced;
-            im.rectTransform.anchorMin = im.rectTransform.anchorMax = new Vector2(0f, 0.5f);
-            im.rectTransform.pivot = new Vector2(0f, 0.5f);
-            im.rectTransform.anchoredPosition = new Vector2(min.x, (min.y + max.y) * 0.5f);
-            im.rectTransform.sizeDelta = new Vector2(max.x - min.x, max.y - min.y);
-            return im;
-        }
-        // الرأس (مثلث خشب) وطرف الرصاص
-        var tipWood = Piece("Tip Outline", outline, tri, new Vector2(372f, -25f), new Vector2(432f, 25f));
-        tipWood.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f);
-        tipWood.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        tipWood.rectTransform.anchoredPosition = new Vector2(404f, 0f);
-        tipWood.rectTransform.sizeDelta = new Vector2(48f, 56f);   // بعد التدوير: 48 طول و 56 عرض
-        var wood = Piece("Tip Wood", new Color(0.98f, 0.82f, 0.6f), tri, new Vector2(0f, 0f), new Vector2(50f, 40f));
-        wood.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        wood.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f);
-        wood.rectTransform.anchoredPosition = new Vector2(400f, 0f);
-        wood.rectTransform.sizeDelta = new Vector2(38f, 44f);
-        var lead = Piece("Tip Lead", outline, tri, new Vector2(0f, 0f), new Vector2(16f, 14f));
-        lead.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        lead.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f);
-        lead.rectTransform.anchoredPosition = new Vector2(418f, 0f);
-        lead.rectTransform.sizeDelta = new Vector2(13f, 15f);
-        // الجسم: حدود غامقة ثم ورق فاتح (المكان الفاضي) ثم الحبر
-        Piece("Body Outline", outline, round, new Vector2(34f, -23f), new Vector2(384f, 23f));
-        Piece("Body Paper", new Color(1f, 0.97f, 0.9f), round, new Vector2(38f, -19f), new Vector2(380f, 19f));
-        // الممحاة والحلقة المعدن
-        Piece("Eraser Outline", outline, round, new Vector2(0f, -23f), new Vector2(48f, 23f));
-        Piece("Eraser", new Color(1f, 0.62f, 0.7f), round, new Vector2(4f, -19f), new Vector2(46f, 19f));
-        Piece("Ferrule", new Color(0.78f, 0.8f, 0.84f), null, new Vector2(30f, -21f), new Vector2(52f, 21f));
-        for (int k = 0; k < 3; k++) Piece("Ferrule Line", new Color(0.55f, 0.57f, 0.62f), null, new Vector2(34f + k * 6f, -21f), new Vector2(36f + k * 6f, 21f));
-        Image area = Panel(frame.transform, "Fill Area", Color.clear);
-        area.rectTransform.anchorMin = area.rectTransform.anchorMax = new Vector2(0f, 0.5f);
-        area.rectTransform.pivot = new Vector2(0f, 0.5f);
-        area.rectTransform.anchoredPosition = new Vector2(54f, 0f);
-        area.rectTransform.sizeDelta = new Vector2(322f, 30f);
-        area.gameObject.AddComponent<RectMask2D>();
-        Image fill = Panel(area.transform, "Fill", Color.black);
-        fill.sprite = round;
-        fill.type = Image.Type.Sliced;
-        // لمعة فوق الحبر
-        Image shine = Panel(fill.transform, "Shine", new Color(1f, 1f, 1f, 0.22f));
-        shine.rectTransform.anchorMin = new Vector2(0.02f, 0.62f);
-        shine.rectTransform.anchorMax = new Vector2(0.98f, 0.82f);
-        shine.rectTransform.offsetMin = shine.rectTransform.offsetMax = Vector2.zero;
-        inkFillImage = fill;
-        inkFrame = frame.rectTransform;
-        inkFill = fill.rectTransform;
-        inkFill.anchorMin = Vector2.zero;
-        inkFill.anchorMax = Vector2.one;
-        inkFill.offsetMin = inkFill.offsetMax = Vector2.zero;
+        // الحبر: قلم أصفر بوجه داخل ورقة كريمية فوق يسار، وجسم القلم يقصر كل ما رسمتي
+        Image inkPill = Panel(root, "Ink Pencil", Color.white);
+        inkPill.sprite = MenuUI.Art("hud_ink");
+        Place(inkPill.rectTransform, new Vector2(0f, 1f), new Vector2(30f, -30f), new Vector2(480f, 124f));
+        Image body = Panel(inkPill.transform, "Ink", Color.white);
+        body.sprite = MenuUI.Art("hud_ink_body");
+        body.type = Image.Type.Filled;
+        body.fillMethod = Image.FillMethod.Horizontal;
+        body.fillOrigin = (int)Image.OriginHorizontal.Left;
+        PlaceCenter(body.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(9f, 5f), new Vector2(330f, 60f));
+        inkFillImage = body;
+        inkFrame = inkPill.rectTransform;
 
-        levelText = Label(root, "", 40, TextAnchor.MiddleRight, new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(400f, 50f));
-        levelText.gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.85f);
+        // اسم المرحلة على شريط أصفر فوق بالنص
+        levelRibbon = Panel(root, "Level Ribbon", Color.white);
+        levelRibbon.sprite = MenuUI.Art("ribbon_560");
+        Place(levelRibbon.rectTransform, new Vector2(0.5f, 1f), new Vector2(4f, -26f), new Vector2(790f, 130f));
+        levelText = Label(levelRibbon.transform, "", 38, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(-4f, -2f), new Vector2(560f, 80f));
+        levelText.color = Ink;
         BuildHearts(root);
         BuildWindArrow(root);
         BuildPalette(root);
@@ -109,7 +62,7 @@ public class GameUI : MonoBehaviour
         timerText = Label(root, "", 38, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0f, -45f), new Vector2(400f, 50f));
         timerText.gameObject.AddComponent<Outline>().effectColor = new Color(1f, 1f, 1f, 0.8f);
         BuildAirBar(root);
-        // لافتة ورق ملصوقة بشريط لاصق ورا عنوان المرحلة
+        // لافتة ورق كرتونية (حافة غامقة وظل حاد وشريط لاصق وردي) ورا عنوان المرحلة
         banner = new GameObject("Title Banner", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
         banner.SetParent(root, false);
         Place(banner, new Vector2(0.5f, 0.5f), new Vector2(0f, 152f), new Vector2(700f, 128f));
@@ -118,29 +71,33 @@ public class GameUI : MonoBehaviour
         bannerGroup = banner.GetComponent<CanvasGroup>();
         bannerGroup.blocksRaycasts = false;
         Sprite roundSp = MenuUI.RoundedSprite();
-        Image bShadow = Panel(banner, "Shadow", new Color(0.1f, 0.05f, 0.15f, 0.28f));
-        bShadow.sprite = roundSp; bShadow.type = Image.Type.Sliced;
-        Stretch(bShadow.rectTransform, 0f); bShadow.rectTransform.anchoredPosition = new Vector2(8f, -8f);
-        Image bPaper = Panel(banner, "Paper", new Color(1f, 0.98f, 0.92f));
-        bPaper.sprite = roundSp; bPaper.type = Image.Type.Sliced;
-        Stretch(bPaper.rectTransform, 0f);
-        Image bLine = Panel(banner, "Margin Line", new Color(0.95f, 0.55f, 0.6f, 0.6f));
-        bLine.rectTransform.anchorMin = new Vector2(0.06f, 0.12f); bLine.rectTransform.anchorMax = new Vector2(0.94f, 0.12f);
-        bLine.rectTransform.sizeDelta = new Vector2(0f, 3f);
+        Image bEdge = Panel(banner, "Edge", Ink);
+        bEdge.sprite = roundSp; bEdge.type = Image.Type.Sliced; bEdge.pixelsPerUnitMultiplier = 1.4f;
+        Stretch(bEdge.rectTransform, 0f);
+        var bShadow = bEdge.gameObject.AddComponent<Shadow>();
+        bShadow.effectColor = Ink;
+        bShadow.effectDistance = new Vector2(6f, -9f);
+        Image bPaper = Panel(banner, "Paper", new Color(1f, 0.97f, 0.86f));
+        bPaper.sprite = roundSp; bPaper.type = Image.Type.Sliced; bPaper.pixelsPerUnitMultiplier = 1.6f;
+        Stretch(bPaper.rectTransform, 7f);
+        Image bShade = Panel(bPaper.transform, "Shade", new Color(1f, 0.91f, 0.66f));
+        bShade.sprite = roundSp; bShade.type = Image.Type.Sliced; bShade.pixelsPerUnitMultiplier = 2f;
+        bShade.rectTransform.anchorMin = Vector2.zero; bShade.rectTransform.anchorMax = new Vector2(1f, 0.32f);
+        bShade.rectTransform.offsetMin = bShade.rectTransform.offsetMax = Vector2.zero;
         for (int k = -1; k <= 1; k += 2)
         {
-            Image tape = Panel(banner, "Tape", new Color(1f, 0.92f, 0.55f, 0.75f));
+            Image tape = Panel(banner, "Tape", new Color(1f, 0.7f, 0.8f, 0.92f));
             tape.rectTransform.anchorMin = tape.rectTransform.anchorMax = new Vector2(k < 0 ? 0f : 1f, 1f);
-            tape.rectTransform.sizeDelta = new Vector2(110f, 34f);
+            tape.rectTransform.sizeDelta = new Vector2(110f, 36f);
             tape.rectTransform.anchoredPosition = new Vector2(-k * 18f, -6f);
             tape.rectTransform.localRotation = Quaternion.Euler(0f, 0f, k * -28f);
         }
         banner.gameObject.SetActive(false);
-        messageText = Label(root, "", 80, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
+        messageText = Label(root, "", 76, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1600f, 140f));
+        messageText.color = Ink;
         subtitleText = Label(root, "", 40, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1700f, 70f));
         subtitleText.color = Color.white;
-        subtitleText.gameObject.AddComponent<Outline>().effectColor = new Color(0.05f, 0.03f, 0.1f, 0.9f);
-        messageText.gameObject.AddComponent<Outline>().effectColor = Color.white;
+        subtitleText.gameObject.AddComponent<Outline>().effectColor = Ink;
     }
 
     Image inkFillImage;
@@ -189,19 +146,25 @@ public class GameUI : MonoBehaviour
     }
     public void SetInk(float fraction)
     {
-        if (inkFill == null) return;
+        if (inkFillImage == null) return;
         fraction = Mathf.Clamp01(fraction);
         shownInk = fraction > shownInk ? fraction : Mathf.Lerp(shownInk, fraction, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 12f));
-        inkFill.anchorMax = new Vector2(shownInk, 1f);
+        inkFillImage.fillAmount = shownInk;
+        // لما يقل الحبر القلم يحمر وينبض
         bool low = fraction < 0.2f;
         float pulse = low ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f) : 0f;
-        inkFillImage.color = low ? Color.Lerp(new Color(0.55f, 0.08f, 0.12f), new Color(0.9f, 0.2f, 0.25f), pulse) : new Color(0.2f, 0.19f, 0.28f);
+        inkFillImage.color = low ? Color.Lerp(new Color(1f, 0.62f, 0.55f), new Color(1f, 0.35f, 0.35f), pulse) : Color.white;
         inkFrame.localScale = Vector3.one * (1f + pulse * 0.03f);
     }
 
+    // رقم المرحلة واسمها على الشريط (لو طويل نصغر الخط لين يدخل)
     public void SetLevel(int number)
     {
-        if (levelText != null) levelText.text = ArabicText.Fix("المرحلة " + number);
+        if (levelText == null) return;
+        string title = number >= 1 && number <= Levels.All.Count ? Levels.All[number - 1].title : null;
+        levelText.text = ArabicText.Fix(string.IsNullOrEmpty(title) ? "المرحلة " + number : "المرحلة " + number + " — " + title);
+        levelText.fontSize = ArabicText.Size(38);
+        while (levelText.fontSize > 20 && levelText.preferredWidth > 520f) levelText.fontSize -= 2;
     }
 
     // فيه كلام على الشاشة الحين (تعليمات أو تلميح)
@@ -246,15 +209,17 @@ public class GameUI : MonoBehaviour
 
     void BuildSideButtons(Transform root)
     {
+        // ستيكرات فوق يمين: الإعدادات (توقف اللعب)، الرجوع للرئيسية، وإعادة المرحلة
         AudioClip click = SynthAudio.Click();
-        SideButton(root, "Pause Button", new Vector2(-70f, -125f), IconSprite(false), () => GameManager.Instance.TogglePause(), click);
-        SideButton(root, "Restart Button", new Vector2(-160f, -125f), IconSprite(true), () => GameManager.Instance.RestartLevel(), click);
+        SideButton(root, "Settings Button", "st_gear", new Vector2(-95f, -105f), 165f, -6f, () => GameManager.Instance.OpenSettings(), click);
+        SideButton(root, "Home Button", "st_home", new Vector2(-235f, -105f), 168f, 4f, () => GameManager.Instance.GoToMainMenu(), click);
+        SideButton(root, "Restart Button", "st_restart", new Vector2(-375f, -105f), 168f, -4f, () => GameManager.Instance.RestartLevel(), click);
 
-        // زر القفز (للجوال): كبير تحت يمين، يطلع بس بالمراحل اللي فيها نط، وينط أول ما ينلمس
+        // زر القفز (للجوال): ستيكر وردي كبير تحت يمين، يطلع بس بالمراحل اللي فيها نط، وينط أول ما ينلمس
         Image jump = Panel(root, "Jump Button", Color.white);
-        jump.sprite = JumpSprite();
+        jump.sprite = MenuUI.Art("st_jump");
         jump.raycastTarget = true;
-        Place(jump.rectTransform, new Vector2(1f, 0f), new Vector2(-150f, 150f), new Vector2(170f, 170f));
+        PlaceCenter(jump.rectTransform, new Vector2(1f, 0f), new Vector2(-172f, 185f), new Vector2(260f, 260f));
         jump.gameObject.AddComponent<TapDown>().onDown = () =>
         {
             var gm = GameManager.Instance;
@@ -302,12 +267,13 @@ public class GameUI : MonoBehaviour
         return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 100f);
     }
 
-    void SideButton(Transform root, string name, Vector2 pos, Sprite icon, System.Action onClick, AudioClip click)
+    void SideButton(Transform root, string name, string sprite, Vector2 pos, float size, float rot, System.Action onClick, AudioClip click)
     {
         Image img = Panel(root, name, Color.white);
-        img.sprite = icon;
+        img.sprite = MenuUI.Art(sprite);
         img.raycastTarget = true;
-        Place(img.rectTransform, new Vector2(1f, 1f), pos, new Vector2(76f, 76f));
+        PlaceCenter(img.rectTransform, new Vector2(1f, 1f), pos, new Vector2(size, size));
+        img.rectTransform.localRotation = Quaternion.Euler(0f, 0f, rot);
         var button = img.gameObject.AddComponent<Button>();
         button.transition = Selectable.Transition.None;
         button.onClick.AddListener(() =>
@@ -500,18 +466,15 @@ public class GameUI : MonoBehaviour
     const int MaxHearts = 3;
     readonly Image[] hearts = new Image[MaxHearts];
     readonly float[] heartPop = new float[MaxHearts];
-    static readonly Color HeartColor = new Color(1f, 0.42f, 0.55f);
-    static readonly Color HeartLost = new Color(0.35f, 0.33f, 0.4f, 0.55f);
 
+    // قلوب حمرا بوجوه تحت قلم الحبر (القلب اللي راح يصير رمادي)
     void BuildHearts(Transform root)
     {
-        Sprite sprite = HeartSprite();
         for (int i = 0; i < MaxHearts; i++)
         {
-            Image img = Panel(root, "Heart " + (i + 1), HeartColor);
-            img.sprite = sprite;
-            img.preserveAspect = true;
-            Place(img.rectTransform, new Vector2(0f, 1f), new Vector2(40f + i * 62f, -96f), new Vector2(56f, 56f));
+            Image img = Panel(root, "Heart " + (i + 1), Color.white);
+            img.sprite = MenuUI.Art("heart");
+            PlaceCenter(img.rectTransform, new Vector2(0f, 1f), new Vector2(90f + i * 84f, -202f), new Vector2(100f, 96f));
             hearts[i] = img;
         }
     }
@@ -523,7 +486,7 @@ public class GameUI : MonoBehaviour
         {
             bool alive = i < remaining;
             if (!alive && animateLoss && i == remaining) heartPop[i] = 1f;
-            hearts[i].color = alive ? HeartColor : HeartLost;
+            hearts[i].sprite = MenuUI.Art(alive ? "heart" : "heart_off");
             if (alive) heartPop[i] = 0f;
         }
     }
@@ -583,6 +546,12 @@ public class GameUI : MonoBehaviour
         AnimateHearts();
         AnimateMessage();
         if (jumpButton != null) UpdateJumpButton();
+        // الشريط فوق بالنص يختفي لما يحتاج مكانه شي ثاني (الوقت، الريح، الهواء، ألوان الحبر)
+        if (levelRibbon != null)
+        {
+            bool busy = timerText.enabled || windArrow.enabled || (airRoot != null && airRoot.gameObject.activeSelf) || swatches[0].enabled;
+            if (levelRibbon.gameObject.activeSelf == busy) levelRibbon.gameObject.SetActive(!busy);
+        }
         if (messageTimer <= 0f) return;
         messageTimer -= Time.deltaTime;
         if (messageTimer <= 0f) { messageText.enabled = subtitleText.enabled = false; if (banner != null) banner.gameObject.SetActive(false); }
@@ -607,7 +576,7 @@ public class GameUI : MonoBehaviour
         t.verticalOverflow = VerticalWrapMode.Overflow;   // الخط العربي سطره عالي: ما نخليه ينقص ويختفي
         t.text = text;
         t.fontSize = ArabicText.Size(size);
-        t.fontStyle = FontStyle.Bold;
+        t.fontStyle = FontStyle.Normal;   // الخط الكرتوني عريض من نفسه
         t.alignment = align;
         t.color = Color.black;
         t.raycastTarget = false;
@@ -618,6 +587,15 @@ public class GameUI : MonoBehaviour
     static void Place(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size)
     {
         rt.anchorMin = rt.anchorMax = rt.pivot = anchor;
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+    }
+
+    // نفس Place بس النقطة اللي نحرك منها بنص الصورة
+    static void PlaceCenter(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size)
+    {
+        rt.anchorMin = rt.anchorMax = anchor;
+        rt.pivot = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = pos;
         rt.sizeDelta = size;
     }

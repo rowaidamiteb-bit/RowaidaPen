@@ -422,8 +422,15 @@ public static class ClaudeCapture
                 case "levels":
                     Object.FindAnyObjectByType<MenuUI>().ShowLevels(false);
                     break;
+                case "resume":
+                    GameManager.Instance.Resume();
+                    break;
+                case "ingamesettings":
+                    GameManager.Instance.OpenSettings();
+                    Time.timeScale = 1f;
+                    break;
                 case "pause":
-                    typeof(GameManager).GetMethod("Pause", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(GameManager.Instance, null);
+                    typeof(GameManager).GetMethod("Pause", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance, null, System.Type.EmptyTypes, null).Invoke(GameManager.Instance, null);
                     Time.timeScale = 1f;   // عشان وقت التصوير يكمل
                     break;
                 case "win":

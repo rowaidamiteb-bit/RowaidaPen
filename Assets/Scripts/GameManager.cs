@@ -171,15 +171,21 @@ public class GameManager : MonoBehaviour
         else Pause();
     }
 
-    void Pause()
+    void Pause() => Pause(false);
+
+    // settings: من زر الإعدادات فوق (تفتح الإعدادات على طول، ولما تتسكر نكمل اللعب)
+    void Pause(bool settings)
     {
         if (!IsPlaying || menu.AnyOpen || menu.Transitioning) return;
         Paused = true;
         IsPlaying = false;
         Time.timeScale = 0f;
         Sound.SetPencil(false, 0f);
-        menu.ShowPause();
+        if (settings) menu.ShowSettingsInGame();
+        else menu.ShowPause();
     }
+
+    public void OpenSettings() => Pause(true);
 
     public void Resume()
     {
