@@ -349,10 +349,9 @@ public static class ClaudeCapture
                 case "settings":
                     Object.FindAnyObjectByType<MenuUI>().ShowSettings(null);
                     break;
-                case "adtest":
-                    // يجرب الإعلان: كأنها خلصت خمس مراحل، وبعدين تبدأ المرحلة الجاية
-                    for (int k = 0; k < Ads.Every; k++) Ads.LevelCompleted(Coins.Reward);
-                    GameManager.Instance.StartLevelFromMenu(int.Parse(arg));
+                case "reward":
+                    // يجرب زر إعلان المكافأة بشاشة الفوز
+                    Object.FindAnyObjectByType<MenuUI>().SendMessage("WatchRewardAd");
                     break;
                 case "backup":
                     // نحفظ النجوم والكوينز قبل التجربة (restore يرجعها)

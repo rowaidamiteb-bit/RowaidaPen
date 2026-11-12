@@ -128,12 +128,9 @@ public class GameManager : MonoBehaviour
     {
         spokenLevel = -1;   // من القائمة: نسمع تعليمات المرحلة من جديد
         announceLater = false;
-        // لو خلصت خمس مراحل: إعلان قبل ما تبدأ المرحلة الجاية، وبعدين لو المرحلة تبي كوينز نسأل نفتحها
-        Ads.ShowIfDue(() =>
-        {
-            if (Coins.NeedsBuying(index)) menu.ShowUnlock(index);
-            else menu.Transition(() => LoadLevel(index));
-        });
+        // لو المرحلة تبي كوينز نسأل نفتحها
+        if (Coins.NeedsBuying(index)) menu.ShowUnlock(index);
+        else menu.Transition(() => LoadLevel(index));
     }
 
     int spokenLevel = -1;
@@ -535,7 +532,6 @@ public class GameManager : MonoBehaviour
         SaveData.SetStars(index, stars);
         if (!last) SaveData.Unlock(index + 1);
         int coins = Coins.LevelDone(index);
-        Ads.LevelCompleted(coins);
 
         yield return new WaitForSeconds(1.4f);
 
@@ -545,6 +541,10 @@ public class GameManager : MonoBehaviour
             LoadLevel(last ? 0 : index + 1);
             yield break;
         }
+        // وصلت الباب: إعلان، وإذا خلص تطلع شاشة الفوز
+        bool adDone = false;
+        Ads.ShowLevelEnd(() => adDone = true);
+        while (!adDone) yield return null;
         ui.SetVisible(false);
         menu.ShowComplete(index, earned, last, coins, () =>
         {

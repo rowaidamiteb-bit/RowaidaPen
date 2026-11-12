@@ -59,8 +59,8 @@ public static class ArabicText
 
     static Font font;
 
-    // خط النسخ التقليدي حروفه أصغر من تاهوما: نكبر كل الكتابة بهالنسبة
-    public const float Scale = 1.28f;
+    // نكبر الكتابة شوي بس (لو أكثر تطلع برا المربعات والأزرار)
+    public const float Scale = 1.08f;
     public static int Size(int s) => Mathf.RoundToInt(s * Scale);
 
     // خط عربي داخل اللعبة نفسها (نوتو نسخ، رخصته مفتوحة) عشان يشتغل بالجوال، ولو ما لقيناه نرجع لخطوط الويندوز

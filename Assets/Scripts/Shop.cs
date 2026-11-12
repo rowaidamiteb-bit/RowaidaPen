@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Purchasing;
 
-// المتجر: حزمة كوينز تكفي عشرين مرحلة بـ ٤ دولار (السعر نفسه ينحط بحساب قوقل بلاي وآبل بنفس رقم المنتج)
+// المتجر: حزمة كوينز تكفي عشرين مرحلة بـ ٢ دولار (السعر نفسه ينحط بحساب قوقل بلاي وآبل بنفس رقم المنتج)
 // TestMode: لو true الشراء تجريبي وما ينخصم شي (الحين مقفل: الشراء حقيقي من قوقل بلاي)
 public static class Shop
 {
@@ -13,7 +13,7 @@ public static class Shop
     static StoreController store;
     static Action<bool> waiting;
 
-    // السعر من المتجر بعملة البلد (لو ما وصل: ٤ دولار)
+    // السعر من المتجر بعملة البلد (لو ما وصل: ٢ دولار)
     public static string Price
     {
         get
@@ -21,7 +21,7 @@ public static class Shop
             Product p = store?.GetProductById(PackId);
             if (!TestMode && p != null && p.availableToPurchase && !string.IsNullOrEmpty(p.metadata.localizedPriceString))
                 return p.metadata.localizedPriceString;
-            return "4 دولار";
+            return "2 دولار";
         }
     }
 

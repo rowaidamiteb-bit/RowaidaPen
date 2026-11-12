@@ -1193,7 +1193,7 @@ public class MenuUI : MonoBehaviour
         shopBuy = PrimaryButton(card, "", new Vector2(-90f, -75f), new Vector2(420f, 96f), BuyPack, 36);
 
         Label(shopPanel, ArabicText.Fix("كل مرحلة ننهيها أول مرة تعطينا " + Coins.Reward + " كوينز"), 30, new Vector2(0f, -180f), new Vector2(900f, 46f)).color = Grey;
-        Label(shopPanel, ArabicText.Fix("وإذا شاهدنا الإعلان حتى النهاية تتضاعف!"), 30, new Vector2(0f, -225f), new Vector2(900f, 46f)).color = Grey;
+        Label(shopPanel, ArabicText.Fix("وبعدها نشاهد إعلانًا ونأخذ " + Coins.Reward + " أخرى!"), 30, new Vector2(0f, -225f), new Vector2(900f, 46f)).color = Grey;
         SecondaryButton(shopPanel, "رجوع", new Vector2(0f, -320f), new Vector2(280f, 90f), () => shopBack?.Invoke(), 36, MintC);
     }
 
@@ -1509,14 +1509,36 @@ public class MenuUI : MonoBehaviour
         Place(won.rectTransform, new Vector2(62f, 1f), new Vector2(58f, 58f));
         completeCoinsText = Label(completeCoins, "", 40, new Vector2(-30f, 0f), new Vector2(130f, 70f));
         completeCoinsText.color = new Color(0.8f, 0.5f, 0.1f);
+        // تحت الكوينز: إعلان بمكافأة يعطي ٥٠ زيادة (١٠٠ بدل ٥٠)
+        rewardButton = SecondaryButton(completePanel, "شاهد إعلانًا واربح " + Coins.Reward, new Vector2(-320f, -2f), new Vector2(330f, 70f), WatchRewardAd, 26, MintC).transform.parent.gameObject;
         nextLabel = PrimaryButton(completePanel, "", new Vector2(0f, -330f), new Vector2(520f, 104f), () => nextAction?.Invoke(), 42);
         SecondaryButton(completePanel, "إعادة", new Vector2(130f, -428f), new Vector2(230f, 72f), () => gm.RestartLevel(), 32, MintC);
         SecondaryButton(completePanel, "خريطة المراحل", new Vector2(-130f, -428f), new Vector2(250f, 72f), () => ShowLevels(false), 30, SkyBlue);
     }
 
+    GameObject rewardButton;
+    int completeWon;
+
+    void WatchRewardAd()
+    {
+        if (!rewardButton.activeSelf) return;
+        rewardButton.SetActive(false);
+        Ads.ShowReward(ok =>
+        {
+            if (!ok) { rewardButton.SetActive(Ads.RewardReady); return; }
+            Coins.Add(Coins.Reward);
+            completeWon += Coins.Reward;
+            completeCoinsText.text = "+" + completeWon;
+            gm.Sound.Play(SynthAudio.Ding(2f), 0.6f);
+            Toast("حصلنا على " + Coins.Reward + " كوينز إضافية");
+        });
+    }
+
     public void ShowComplete(int index, bool[] earned, bool last, int coinsWon, Action next)
     {
         nextAction = next;
+        completeWon = coinsWon;
+        rewardButton.SetActive(coinsWon > 0 && Ads.RewardReady);
         Transform coinBox = completeCoins.parent;
         coinBox.gameObject.SetActive(coinsWon > 0);
         coinBox.localScale = Vector3.zero;

@@ -1,14 +1,14 @@
 using System;
+using System.Collections;
 using Unity.Services.LevelPlay;
 using UnityEngine;
-using UnityEngine.UI;
 
-// الإعلانات (يونتي LevelPlay): بعد كل خمس مراحل يطلع إعلان قبل المرحلة الجاية (ما يقاطع اللعب أبدًا).
-// لو شافته اللاعبة للآخر تتدبل الكوينز اللي جمعتها من آخر خمس مراحل.
+// الإعلانات (يونتي LevelPlay):
+// ١. إعلان بين المراحل: أول ما رويدا توصل الباب، وبعده تطلع شاشة الفوز
+// ٢. إعلان بمكافأة: زر "شاهد إعلان +50" بشاشة الفوز، لو انشاف للآخر تاخذ ٥٠ كوينز زيادة (١٠٠ بدل ٥٠)
 // المفتاح ورموز الإعلانين من لوحة LevelPlay (لو فاضية: ما فيه إعلانات واللعبة تكمل عادي)
 public static class Ads
 {
-    public const int Every = 5;
 #if UNITY_IOS
     const string AppKey = "";
     const string RewardedId = "";
@@ -19,13 +19,12 @@ public static class Ads
     const string RewardedId = "jglhr81kmtpagg0a";       // Double Coins Rewarded
     const string InterstitialId = "bngenpt4djx3l4ci";   // Between Levels Interstitial
 #endif
-    const string CountKey = "ads_levels_done";
-    const string BonusKey = "ads_bonus";   // كوينز آخر خمس مراحل (تنضاف مرة ثانية لو شافت الإعلان كامل)
-    static bool pending, started;
+    static bool started;
     static LevelPlayRewardedAd rewarded;
     static LevelPlayInterstitialAd interstitial;
-    static Action afterAd;   // نكمل بعد ما يتسكر الإعلان
-    static int rewardBonus;  // الكوينز اللي تنضاف لو شافت الإعلان الحالي للآخر
+    static Action afterInterstitial;      // نكمل بعد ما يتسكر الإعلان
+    static Action<bool> afterReward;      // نقول شافته للآخر أو لا
+    static bool rewardEarned;
 
     public static void Init()
     {
@@ -40,165 +39,80 @@ public static class Ads
     static void CreateAds()
     {
         rewarded = new LevelPlayRewardedAd(RewardedId);
-        rewarded.OnAdRewarded += (info, reward) =>
-        {
-            if (rewardBonus <= 0) return;
-            Coins.Add(rewardBonus);
-            GameManager.Instance.Menu.Toast("تضاعفت الكوينز! حصلنا على " + rewardBonus + " إضافية");
-            rewardBonus = 0;
-        };
-        rewarded.OnAdClosed += info => { rewarded.LoadAd(); Continue(); };
-        rewarded.OnAdDisplayFailed += (info, error) => { rewarded.LoadAd(); Continue(); };
+        rewarded.OnAdRewarded += (info, reward) => rewardEarned = true;
+        rewarded.OnAdClosed += info => { rewarded.LoadAd(); FinishReward(); };
+        rewarded.OnAdDisplayFailed += (info, error) => { rewarded.LoadAd(); FinishReward(); };
         rewarded.LoadAd();
 
         interstitial = new LevelPlayInterstitialAd(InterstitialId);
-        interstitial.OnAdClosed += info => { interstitial.LoadAd(); Continue(); };
-        interstitial.OnAdDisplayFailed += (info, error) => { interstitial.LoadAd(); Continue(); };
+        interstitial.OnAdClosed += info => { interstitial.LoadAd(); FinishInterstitial(); };
+        interstitial.OnAdDisplayFailed += (info, error) => { interstitial.LoadAd(); FinishInterstitial(); };
         interstitial.LoadAd();
     }
 
-    static void Continue()
-    {
-        Action next = afterAd;
-        afterAd = null;
-        next?.Invoke();
-    }
+    // ---------- إعلان آخر المرحلة ----------
 
-    // خلصت مرحلة: نحسب كوينزها للمضاعفة، وكل خمس مراحل يصير فيه إعلان ينتظر
-    public static void LevelCompleted(int coins)
+    // وصلت الباب: إعلان (لو جاهز)، وبعده نكمل لشاشة الفوز
+    public static void ShowLevelEnd(Action then)
     {
-        int n = PlayerPrefs.GetInt(CountKey, 0) + 1;
-        PlayerPrefs.SetInt(CountKey, n);
-        PlayerPrefs.SetInt(BonusKey, PlayerPrefs.GetInt(BonusKey, 0) + coins);
-        PlayerPrefs.Save();
-        if (n % Every == 0) pending = true;
-    }
-
-    // قبل ما نبدأ المرحلة الجاية: لو فيه إعلان ينتظر نعرضه، وبعدين نكمل
-    public static void ShowIfDue(Action then)
-    {
-        if (!pending) { then(); return; }
-        pending = false;
-        int bonus = PlayerPrefs.GetInt(BonusKey, 0);
-        PlayerPrefs.SetInt(BonusKey, 0);
-        PlayerPrefs.Save();
         try
         {
-            // فيه كوينز تتدبل: إعلان بمكافأة (قبله بطاقة صغيرة تقول المكافأة، وتقدر تتخطاه)
-            if (bonus > 0 && rewarded != null && rewarded.IsAdReady())
+            if (interstitial != null && interstitial.IsAdReady())
             {
-                AdIntro.Open(bonus, watch =>
-                {
-                    if (!watch) { then(); return; }
-                    rewardBonus = bonus;
-                    Show(() => rewarded.ShowAd(), then);
-                });
+                afterInterstitial = then;
+                interstitial.ShowAd();
                 return;
             }
-            if (interstitial != null && interstitial.IsAdReady()) { Show(() => interstitial.ShowAd(), then); return; }
-            // ما جهز (ما فيه نت مثلًا): نطلب واحد للمرة الجاية
-            if (rewarded != null && !rewarded.IsAdReady()) rewarded.LoadAd();
-            if (interstitial != null && !interstitial.IsAdReady()) interstitial.LoadAd();
+            if (interstitial != null) interstitial.LoadAd();   // ما جهز (ما فيه نت مثلًا): نطلب واحد للمرة الجاية
         }
-        catch (Exception e) { Debug.LogWarning(e); }
+        catch (Exception e) { Debug.LogWarning(e); afterInterstitial = null; }
         then();
     }
 
-    static void Show(Action show, Action then)
+    static void FinishInterstitial()
     {
-        afterAd = then;
-        try { show(); }
-        catch (Exception e) { Debug.LogWarning(e); Continue(); }
-    }
-}
-
-// قبل الإعلان بمكافأة: بطاقة تقول كم كوينز تتدبل، وعد تنازلي ثلاث ثواني، وزر تخطي
-public class AdIntro : MonoBehaviour
-{
-    const float Wait = 3f;
-    Action<bool> done;
-    float age;
-    Text countdown;
-
-    public static void Open(int bonus, Action<bool> onDone)
-    {
-        var go = new GameObject("Ad Intro", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        var canvas = go.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 100;
-        var scaler = go.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
-        var intro = go.AddComponent<AdIntro>();
-        intro.done = onDone;
-        intro.Build((RectTransform)go.transform, bonus);
+        Action next = afterInterstitial;
+        afterInterstitial = null;
+        next?.Invoke();
     }
 
-    void Build(RectTransform root, int bonus)
+    // ---------- إعلان المكافأة ----------
+
+    // فيه إعلان مكافأة جاهز؟ (بالمحرر دايم نعم، عشان نجرب الزر)
+    public static bool RewardReady => Application.isEditor || (rewarded != null && rewarded.IsAdReady());
+
+    // نعرض إعلان المكافأة، و done(true) لو انشاف للآخر
+    public static void ShowReward(Action<bool> done)
     {
-        Sprite round = MenuUI.RoundedSprite();
-        var dim = Box(root, "Dim", new Color(0.08f, 0.06f, 0.12f, 0.85f), null, Vector2.zero, Vector2.zero);
-        dim.rectTransform.anchorMin = Vector2.zero; dim.rectTransform.anchorMax = Vector2.one;
-        dim.raycastTarget = true;   // ما تقدر ترسم ورا البطاقة
-        var card = Box(root, "Card", new Color(1f, 0.97f, 0.9f), round, Vector2.zero, new Vector2(1000f, 600f));
-        Label(card.rectTransform, "إعلان قصير", 64, new Vector2(0f, 200f), new Color(1f, 0.47f, 0.56f));
-        Label(card.rectTransform, "نشاهده حتى النهاية فتتضاعف كوينز آخر خمس مراحل", 34, new Vector2(0f, 105f), new Color(0.17f, 0.24f, 0.31f));
-        var coin = Box(card.rectTransform, "Coin", Color.white, MenuUI.CoinSprite(), new Vector2(150f, 5f), new Vector2(110f, 110f));
-        coin.type = Image.Type.Simple;
-        Label(card.rectTransform, "", 80, new Vector2(-55f, 5f), new Color(0.93f, 0.6f, 0.15f)).text = "+" + bonus;   // رقم بس: بدون قلب الحروف
-        countdown = Label(card.rectTransform, "", 32, new Vector2(0f, -100f), new Color(0.45f, 0.47f, 0.5f));
-        // زر التخطي (بدون مضاعفة)
-        var skip = Box(card.rectTransform, "Skip", new Color(0.6f, 0.59f, 0.57f), round, new Vector2(0f, -205f), new Vector2(260f, 84f));
-        skip.raycastTarget = true;
-        Label(skip.rectTransform, "تخطي", 36, new Vector2(0f, 2f), Color.white);
-        skip.gameObject.AddComponent<Button>().onClick.AddListener(() => Finish(false));
+        if (Application.isEditor) { done(true); return; }
+        try
+        {
+            if (rewarded == null || !rewarded.IsAdReady()) { rewarded?.LoadAd(); done(false); return; }
+            afterReward = done;
+            rewardEarned = false;
+            rewarded.ShowAd();
+        }
+        catch (Exception e) { Debug.LogWarning(e); afterReward = null; done(false); }
     }
 
-    void Update()
+    // المكافأة أحيانًا توصل بعد ما يتسكر الإعلان بشوي: نستنى نص ثانية قبل ما نقرر
+    static void FinishReward()
     {
-        age += Time.unscaledDeltaTime;
-        int left = Mathf.CeilToInt(Wait - age);
-        countdown.text = ArabicText.Fix("يبدأ الإعلان بعد " + Mathf.Max(left, 1));
-        if (age >= Wait) Finish(true);
+        if (afterReward == null) return;
+        if (GameManager.Instance != null) GameManager.Instance.StartCoroutine(FinishRewardLater());
+        else EndReward();
     }
 
-    void Finish(bool watch)
+    static IEnumerator FinishRewardLater()
     {
-        if (done == null) return;
-        Action<bool> d = done;
-        done = null;
-        Destroy(gameObject);
-        d(watch);
+        yield return new WaitForSecondsRealtime(0.5f);
+        EndReward();
     }
 
-    static Image Box(RectTransform parent, string name, Color c, Sprite sprite, Vector2 pos, Vector2 size)
+    static void EndReward()
     {
-        var img = new GameObject(name, typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-        img.transform.SetParent(parent, false);
-        img.color = c;
-        img.raycastTarget = false;
-        if (sprite != null) { img.sprite = sprite; img.type = Image.Type.Sliced; img.pixelsPerUnitMultiplier = 1f; }
-        img.rectTransform.anchoredPosition = pos;
-        img.rectTransform.sizeDelta = size;
-        return img;
-    }
-
-    static Text Label(RectTransform parent, string text, int size, Vector2 pos, Color c)
-    {
-        var t = new GameObject("Text", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
-        t.transform.SetParent(parent, false);
-        t.font = ArabicText.Font;
-        t.text = ArabicText.Fix(text);
-        t.fontSize = ArabicText.Size(size);
-        t.fontStyle = FontStyle.Bold;
-        t.alignment = TextAnchor.MiddleCenter;
-        t.color = c;
-        t.raycastTarget = false;
-        t.horizontalOverflow = HorizontalWrapMode.Overflow;
-        t.verticalOverflow = VerticalWrapMode.Overflow;
-        t.rectTransform.anchoredPosition = pos;
-        t.rectTransform.sizeDelta = new Vector2(900f, 100f);
-        return t;
+        Action<bool> done = afterReward;
+        afterReward = null;
+        done?.Invoke(rewardEarned);
     }
 }
