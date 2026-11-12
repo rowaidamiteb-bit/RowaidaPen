@@ -759,7 +759,7 @@ public class MenuUI : MonoBehaviour
         infoHint = Label(pol, "", 23, new Vector2(0f, -162f), new Vector2(400f, 90f));
         infoHint.color = InkSoft;
 
-        startLabel = PencilBtn(levelsPanel, "short", "لنبدأ!", new Vector2(-476f, -320f), () =>
+        startLabel = PencilBtn(levelsPanel, "short", "لنبدأ!", new Vector2(-476f, -305f), () =>
         {
             if (selected <= SaveData.Unlocked) gm.StartLevelFromMenu(selected);
         }, 44, 1f, 3f);
@@ -1214,14 +1214,14 @@ public class MenuUI : MonoBehaviour
         Label(pausePanel, ArabicText.Fix("الدفتر في الانتظار..."), 28, new Vector2(0f, -385f), new Vector2(500f, 44f)).color = InkSoft;
     }
 
-    // ---------- شاشة الفوز: شريط "أحسنتِ!"، نجوم بوجوه، الكوينز وزر الإعلان، وقلم الصفحة التالية ----------
+    // ---------- شاشة الفوز: شريط "أحسنتِ!"، نجوم بوجوه، الكوينز وزر الإعلان، وقلم الصفحة التالية (صغير عشان يبقى مكان للكلام) ----------
 
     Text completeTitle, completeLevel, nextLabel;
     readonly Image[] bigStars = new Image[SaveData.MaxStars];
     readonly bool[] bigStarOn = new bool[SaveData.MaxStars];
     readonly Text[] reasons = new Text[SaveData.MaxStars];
     readonly Image[] reasonChecks = new Image[SaveData.MaxStars];
-    RectTransform burst, completeCoins, confettiRoot;
+    RectTransform completeCoins, confettiRoot;
     Text completeCoinsText;
     Action nextAction;
     readonly List<RectTransform> confetti = new List<RectTransform>();
@@ -1253,25 +1253,24 @@ public class MenuUI : MonoBehaviour
             confettiVel.Add(new Vector3(rng.Next(-30, 30), -70f - rng.Next(90), rng.Next(-200, 200)));
         }
 
-        burst = Pic(completePanel, "burst", new Vector2(0f, 170f)).rectTransform;
         // النجمة الأولى يمين (القراءة من اليمين)، واللي بالنص أكبر
         Vector2[] starPos = { new Vector2(160f, 150f), new Vector2(0f, 190f), new Vector2(-160f, 150f) };
         for (int i = 0; i < SaveData.MaxStars; i++)
             bigStars[i] = Pic(completePanel, "star_off", starPos[i], i == 1 ? 1.7f : 1.25f);
         completeTitle = TopRibbon(completePanel, 420, "", 52, 2f);
-        completeLevel = Label(completePanel, "", 34, new Vector2(0f, 34f), new Vector2(800f, 56f));
+        completeLevel = Label(completePanel, "", 34, new Vector2(0f, 50f), new Vector2(800f, 56f));
         Fit(completeLevel, 760f);
 
         for (int i = 0; i < SaveData.MaxStars; i++)
         {
-            float y = -38f - i * 52f;
+            float y = -18f - i * 50f;
             reasonChecks[i] = Pic(completePanel, "check_on", new Vector2(252f, y));
             reasons[i] = Label(completePanel, "", 28, new Vector2(36f, y + 2f), new Vector2(360f, 44f));
             reasons[i].alignment = TextAnchor.MiddleRight;
         }
 
         // الكوينز اللي أخذتها (أول مرة بس)، وتحتها زر إعلان بمكافأة يعطي ٥٠ زيادة (١٠٠ بدل ٥٠)
-        var pill = Pic(completePanel, "pill", new Vector2(-259f, -54f), 0.75f, 6f);
+        var pill = Pic(completePanel, "pill", new Vector2(-259f, -38f), 0.75f, 6f);
         completeCoins = pill.rectTransform;
         Pic(completeCoins, "coin", new Vector2(72f, 2f), 0.62f);
         completeCoinsText = Label(completeCoins, "", 46, new Vector2(-22f, 5f), new Vector2(140f, 70f));
@@ -1280,16 +1279,16 @@ public class MenuUI : MonoBehaviour
         ce.effectColor = Ink;
         ce.effectDistance = new Vector2(2.5f, -2.5f);
 
-        var reward = Pic(completePanel, "btn_green", new Vector2(-250f, -156f), 1f, 4f);
+        var reward = Pic(completePanel, "btn_green", new Vector2(-250f, -135f), 1f, 4f);
         Click(reward, WatchRewardAd);
         var rt = Label(reward.rectTransform, ArabicText.Fix("شاهد إعلانًا واربح " + Coins.Reward), 28, new Vector2(-33f, 7f), new Vector2(230f, 60f));
         Toon(rt, 2.5f);
         Fit(rt, 205f);
         rewardButton = reward.gameObject;
 
-        nextLabel = PencilBtn(completePanel, "mid", "", new Vector2(14f, -271f), () => nextAction?.Invoke(), 46);
-        Sticker(completePanel, "restart", new Vector2(-397f, -285f), () => gm.RestartLevel(), 0.9f, 6f);
-        Sticker(completePanel, "map", new Vector2(403f, -285f), () => ShowLevels(false), 0.85f, -6f);
+        nextLabel = PencilBtn(completePanel, "mid", "", new Vector2(14f, -262f), () => nextAction?.Invoke(), 46);
+        Sticker(completePanel, "restart", new Vector2(-330f, -262f), () => gm.RestartLevel(), 0.9f, 6f);
+        Sticker(completePanel, "map", new Vector2(345f, -262f), () => ShowLevels(false), 0.85f, -6f);
     }
 
     GameObject rewardButton;
@@ -1391,11 +1390,9 @@ public class MenuUI : MonoBehaviour
         }
         if (pausePanel.gameObject.activeSelf)
             pauseIcon.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 2.5f) * 6f);
-        // شاشة الفوز: الانفجار يتنفس، النجوم تتمايل، والقصاصات تطيح
+        // شاشة الفوز: النجوم تتمايل والقصاصات تطيح
         if (completePanel.gameObject.activeSelf)
         {
-            burst.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 0.9f) * 5f);
-            burst.localScale = Vector3.one * (1f + Mathf.Sin(t * 2.2f) * 0.04f);
             for (int i = 0; i < SaveData.MaxStars; i++)
                 if (bigStarOn[i]) bigStars[i].rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 2f + i) * 6f);
             for (int i = 0; i < confetti.Count; i++)
@@ -1474,8 +1471,13 @@ public class MenuUI : MonoBehaviour
 
     // زر على شكل قلم (اللعب، التالي، الشراء...): الكلام على جسم القلم يسار الوجه
     // long: قلم طويل بوجه، mid: متوسط بوجه، short: قصير بدون وجه
+    // كل أزرار القلم أصغر من التصميم الأول عشان يبقى مكان للكلام حولها
+    const float PencilSize = 0.72f;
+
     Text PencilBtn(RectTransform parent, string kind, string label, Vector2 pos, Action onClick, int fontSize, float scale = 1f, float rot = -3f)
     {
+        scale *= PencilSize;
+        fontSize = Mathf.RoundToInt(fontSize * Mathf.Min(1f, scale * 1.15f));
         var img = Pic(parent, "pencil_" + kind, pos, scale, rot);
         Click(img, onClick);
         float x = kind == "long" ? -110f : kind == "mid" ? -66f : -16f;
