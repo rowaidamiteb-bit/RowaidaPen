@@ -55,6 +55,8 @@ public static class ClaudeCapture
             if (request == "quit") { EditorApplication.Exit(0); return; }
             // نفتح مشهد اللعبة بس (بدون تشغيل) عشان رويدا تكمل منه
             if (request == "openscene") { if (!EditorApplication.isPlaying) EditorSceneManager.OpenScene("Assets/Scenes/Game.unity"); Status("scene-opened"); return; }
+            // نركّب إضافة قوقل (AdMob) داخل LevelPlay ونحط رقم التطبيق: lpadmob:رقم التطبيق
+            if (request.StartsWith("lpadmob:")) { LevelPlayAdMob(request.Substring("lpadmob:".Length).Trim()); return; }
             Directory.CreateDirectory(OutDir);
             foreach (string f in Directory.GetFiles(OutDir)) File.Delete(f);
             SessionState.SetString(ShotsKey, request);
@@ -140,6 +142,64 @@ public static class ClaudeCapture
                 EditorApplication.isPlaying = false;
             }
         }
+    }
+
+    // يركّب إضافة "Google (AdMob and Ad Manager)" من مدير الشبكات حق LevelPlay، ويفعّل AdMob برقم التطبيق
+    // (LevelPlay يحط الرقم بملف AndroidManifest وقت البناء)
+    static async void LevelPlayAdMob(string appId)
+    {
+        try
+        {
+            Status("admob-installing");
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+            System.Reflection.Assembly asm = null;
+            foreach (var a in System.AppDomain.CurrentDomain.GetAssemblies()) if (a.GetName().Name == "Unity.LevelPlay.Editor") asm = a;
+            var services = asm.GetType("Unity.Services.LevelPlay.Editor.EditorServices");
+            object inst = services.GetProperty("Instance", flags).GetValue(null);
+            object network = services.GetProperty("LevelPlayNetworkManager", flags).GetValue(inst);
+            // نجهز قائمة الشبكات والإصدارات أول (نفس اللي يسويه مدير الشبكات لما ينفتح)
+            object logger = services.GetProperty("LevelPlayLogger", flags).GetValue(inst);
+            var installerType = asm.GetType("Unity.Services.LevelPlay.Editor.SdkInstaller");
+            object installer = System.Activator.CreateInstance(installerType, flags, null, new[] { logger, network }, null);
+            await (System.Threading.Tasks.Task)installerType.GetMethod("PreInstallAsync", flags).Invoke(installer, null);
+            var nt = network.GetType();
+            var adapters = (System.Collections.IDictionary)nt.GetProperty("Adapters", flags).GetValue(network);
+            object admob = null;
+            foreach (System.Collections.DictionaryEntry e in adapters)
+            {
+                object ad = e.Value;
+                var kp = ad.GetType().GetProperty("KeyName", flags);
+                var kf = ad.GetType().GetField("KeyName", flags);
+                string key = kp != null ? kp.GetValue(ad) as string : kf?.GetValue(ad) as string;
+                if (key == "AdMob") admob = ad;
+            }
+            if (admob == null) throw new System.Exception("AdMob adapter not found in LevelPlay list");
+            object version = null;
+            foreach (object v in (System.Collections.IEnumerable)nt.GetMethod("CompatibleAdapterVersions", flags).Invoke(network, new[] { admob })) { version = v; break; }
+            if (version == null) throw new System.Exception("no compatible AdMob adapter version");
+            System.Reflection.MethodInfo install = null;
+            foreach (var m in nt.GetMethods(flags))
+                if (m.Name == "Install" && m.GetParameters().Length == 2 && m.GetParameters()[0].ParameterType == admob.GetType()) install = m;
+            await (System.Threading.Tasks.Task)install.Invoke(network, new[] { admob, version });
+
+            var st = asm.GetType("LevelPlayMediationNetworkSettings");
+            string path = (string)st.GetField("MEDIATION_SETTINGS_ASSET_PATH", flags).GetValue(null);
+            var so = AssetDatabase.LoadAssetAtPath(path, st);
+            if (so == null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                so = ScriptableObject.CreateInstance(st);
+                AssetDatabase.CreateAsset(so, path);
+            }
+            st.GetField("EnableAdmob").SetValue(so, true);
+            st.GetField("AdmobAndroidAppId").SetValue(so, appId);
+            EditorUtility.SetDirty(so);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            var vp = version.GetType().GetProperty("Version", flags);
+            Status("admob-done version=" + (vp != null ? vp.GetValue(version) : version) + " settings=" + path);
+        }
+        catch (System.Exception e) { Status("admob-failed " + e.Message); Debug.LogError("ADMOB INSTALL FAILED " + e); }
     }
 
     static async void LevelPlayInstall()
