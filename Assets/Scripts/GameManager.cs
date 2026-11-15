@@ -88,6 +88,8 @@ public class GameManager : MonoBehaviour
         // أول ما تفتح اللعبة: شاشة البداية (الاسم، زر اللعب، والصوت)
         ShowMainMenu();
         menu.ShowTitle();
+        // قبلها شعارات (شفرة قيم وغيرها) فوق القائمة، والقائمة تجهز وراها
+        SplashLogos.Play(null);
     }
 
     // ---------- القوائم ----------

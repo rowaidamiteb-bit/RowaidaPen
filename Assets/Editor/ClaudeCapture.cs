@@ -53,6 +53,8 @@ public static class ClaudeCapture
             File.Delete(RequestFile);
             // نسكر يونتي (عشان نبني نسخة الجوال من برا)
             if (request == "quit") { EditorApplication.Exit(0); return; }
+            // نفتح مشهد اللعبة بس (بدون تشغيل) عشان رويدا تكمل منه
+            if (request == "openscene") { if (!EditorApplication.isPlaying) EditorSceneManager.OpenScene("Assets/Scenes/Game.unity"); Status("scene-opened"); return; }
             Directory.CreateDirectory(OutDir);
             foreach (string f in Directory.GetFiles(OutDir)) File.Delete(f);
             SessionState.SetString(ShotsKey, request);
@@ -103,6 +105,8 @@ public static class ClaudeCapture
             float elapsed = Time.timeSinceLevelLoad;
             if (now - start > 120f) elapsed = float.MaxValue;
 
+            // الشعارات اللي قبل اللعبة: نتخطاها وقت التصوير (إلا لو الطلب فيه splash)
+            SplashLogos.Skip = !SessionState.GetString(ShotsKey, "").Contains("splash");
             // كل طلب: "الوقت:نوع" مثل 2:main أو 3:close
             string done = SessionState.GetString(DoneKey, "");
             var shots = SessionState.GetString(ShotsKey, "").Split(new[] { ',', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);

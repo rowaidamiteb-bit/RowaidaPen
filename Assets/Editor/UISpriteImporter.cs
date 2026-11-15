@@ -5,13 +5,15 @@ public class UISpriteImporter : AssetPostprocessor
 {
     void OnPreprocessTexture()
     {
-        if (!assetPath.Replace('\\', '/').Contains("/Resources/UI/")) return;
+        string path = assetPath.Replace('\\', '/');
+        bool splash = path.Contains("/Resources/Splash/");   // شعارات قبل اللعبة
+        if (!path.Contains("/Resources/UI/") && !splash) return;
         var importer = (TextureImporter)assetImporter;
         importer.textureType = TextureImporterType.Sprite;
         importer.spriteImportMode = SpriteImportMode.Single;
         importer.mipmapEnabled = false;
         importer.alphaIsTransparency = true;
-        importer.maxTextureSize = 4096;
+        importer.maxTextureSize = splash ? 2048 : 4096;   // الشعار كبير جدا: نصغره للجوال
         importer.textureCompression = TextureImporterCompression.CompressedHQ;
         importer.npotScale = TextureImporterNPOTScale.None;
     }
